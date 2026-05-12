@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "528770650363",
+    "project_id": "gospeler-3ff1d",
+    "storage_bucket": "gospeler-3ff1d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528770650363:android:91280b24dd88ca7136205e",
+        "android_client_info": {
+          "package_name": "com.gospelar.sundayschool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACsb20eDNhq5mvLfgMKG3eJ34bQXoMQuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

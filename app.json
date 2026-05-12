@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Gospelar",
+    "slug": "newnew",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/loooogooo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "gospelar",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gospelar.sundayschool",
+      "associatedDomains": [
+        "applinks:gospelar.com",
+        "applinks:www.gospelar.com"
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/loooogooo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
+      "googleServicesFile": "./google-services.json",
+      "package": "com.gospelar.sundayschool",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "gospelar.com" },
+            { "scheme": "https", "host": "www.gospelar.com" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/gofamint_logo.png",
+          "color": "#2563EB",
+          "sounds": [
+            "./assets/notification.wav"
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8f41ae41-c68c-459a-9e7d-bfb0430076a6"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8f41ae41-c68c-459a-9e7d-bfb0430076a6"
+    }
+  }
+}
