@@ -4,7 +4,7 @@
     "slug": "newnew",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/loooogooo.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-logo.png",
@@ -28,7 +28,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/loooogooo.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [

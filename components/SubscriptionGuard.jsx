@@ -587,27 +587,33 @@ const oc = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SubscriptionGuard({ children, navigation }) {
   const {
-    isSubscribed, isLoading, hasChecked, serverError,
+    isSubscribed, hasSundaySchool, isLoading, hasChecked, serverError,
     email, recheck, daysRemaining = null, plans,
   } = useSubscription();
+
+  // This guard wraps the Sunday-School flow (HomeScreen, Lessons, Devotional,
+  // etc.). Access requires an actual Sunday-School plan ('single' / 'all') —
+  // a per-book purchase (Victory Month etc.) does NOT count. Book-only users
+  // get bounced to the PaymentScreen just like an unsubscribed user.
+  const hasAccess = hasSundaySchool;
 
   const { isDark } = useTheme();
   const { t }      = useLanguage();
   useEffect(() => { if (!hasChecked) recheck(); }, [hasChecked]);
 
-  // When the guard determines the user isn't subscribed, send them straight
-  // to PaymentScreen. We use `replace` so the gated screen (e.g. HomeScreen)
+  // When the guard determines the user doesn't have a Sunday-School plan,
+  // send them straight to PaymentScreen. We use `replace` so the gated screen
   // doesn't sit in the back stack — otherwise hitting back from PaymentScreen
-  // returns to HomeScreen, the guard fires again, and the user ping-pongs.
-  // PaymentScreen's own back arrow now navigates to Library explicitly.
+  // returns the user to the gated screen, the guard fires again, and they
+  // ping-pong. PaymentScreen's own back arrow now navigates to Library.
   useEffect(() => {
-    if (hasChecked && !isLoading && !isSubscribed && !serverError) {
+    if (hasChecked && !isLoading && !hasAccess && !serverError) {
       (navigation?.replace || navigation?.navigate)?.call(navigation, 'PaymentScreen');
     }
-  }, [hasChecked, isLoading, isSubscribed, serverError, navigation]);
+  }, [hasChecked, isLoading, hasAccess, serverError, navigation]);
 
   // ── Loading ──────────────────────────────────────────────────────────────
-  if (!hasChecked || (isLoading && !isSubscribed)) {
+  if (!hasChecked || (isLoading && !hasAccess)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F7FA' }}>
         <ActivityIndicator color={BLUE} size="large" />
@@ -619,7 +625,7 @@ export default function SubscriptionGuard({ children, navigation }) {
   }
 
   // ── Server error ─────────────────────────────────────────────────────────
-  if (serverError && !isSubscribed) {
+  if (serverError && !hasAccess) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F7FA', padding: 32 }}>
         <Text style={{ fontSize: 48, marginBottom: 16 }}>📡</Text>
@@ -638,12 +644,10 @@ export default function SubscriptionGuard({ children, navigation }) {
     );
   }
 
-  // ── Subscribed ───────────────────────────────────────────────────────────
-  // The expiry-warning banner that used to live above `children` was removed
-  // — it sat above HomeScreen and gave the Sunday School page a "warning"
-  // look. The Settings → Account screen still surfaces days remaining and a
-  // Renew CTA, which is the right place for low-frequency reminders.
-  if (isSubscribed) return children;
+  // ── Subscribed (with a Sunday-School plan) ──────────────────────────────
+  // A book-only buyer falls through to the redirect below — they have an
+  // active row in subscribers but no SS plan_type, so hasAccess is false.
+  if (hasAccess) return children;
 
   // ── Not subscribed — quick redirect to PaymentScreen ─────────────────────
   // The useEffect above fires the navigation; this just keeps the screen

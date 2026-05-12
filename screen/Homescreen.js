@@ -338,6 +338,22 @@ export default function Homescreen({ navigation }) {
     if (i === 3) navigation.navigate('Progress');
   }, [navigation, safeRoute, cat]);
 
+  // Safe-navigate helper.
+  //
+  // Wrapping `navigation.navigate(...)` in requestAnimationFrame defers it to
+  // the next frame so the TouchableOpacity's internal Pressability finishes
+  // its press-up cycle BEFORE the screen unmounts. Without this, a press that
+  // triggers a synchronous navigation tears the touchable's responder out
+  // mid-flight and React Native throws:
+  //
+  //     Cannot read property 'stopTracking' of undefined
+  //
+  // …from Pressability's cleanup. The defer fully resolves it without
+  // perceptible delay (one frame ≈ 16 ms).
+  const navTo = useCallback((screen, params) => {
+    requestAnimationFrame(() => navigation.navigate(screen, params));
+  }, [navigation]);
+
   const displayName = userName || t('learner', 'Learner');
 
   // Quick access items.
@@ -361,9 +377,13 @@ export default function Homescreen({ navigation }) {
         contentContainerStyle={s.scrollContent}
         style={{ opacity: fade, transform: [{ translateY }] }}>
 
-        {/* ── TOP BAR ── */}
+        {/* ── TOP BAR ──
+            All navigation calls go through navTo() so the press animation
+            finishes before the screen unmounts (see Pressability comment
+            above). Bare `navigation.navigate(...)` here was the source of
+            the "stopTracking of undefined" crash. */}
         <View style={[s.topbar, { backgroundColor:tk.pageBg }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.8} style={s.userRow}>
+          <TouchableOpacity onPress={() => navTo('Profile')} activeOpacity={0.8} style={s.userRow}>
             <View style={[s.avatar, { backgroundColor:BLUE }]}>
               <Text style={s.avatarLetter}>{displayName[0]?.toUpperCase() || 'G'}</Text>
             </View>
@@ -375,13 +395,13 @@ export default function Homescreen({ navigation }) {
           <View style={s.topActions}>
             {/* Back to the Library so the user can switch books without
                 fully logging out + relaunching the app. */}
-            <TouchableOpacity onPress={() => navigation.navigate('Library')} activeOpacity={0.75}
+            <TouchableOpacity onPress={() => navTo('Library')} activeOpacity={0.75}
               accessibilityLabel="Library"
               style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
               <ICONS.BookStack color={BLUE} size={18} sw={1.9} />
             </TouchableOpacity>
             {userRole === 'teacher' && (
-              <TouchableOpacity onPress={() => navigation.navigate('TeacherDashboard')} activeOpacity={0.75}
+              <TouchableOpacity onPress={() => navTo('TeacherDashboard')} activeOpacity={0.75}
                 accessibilityLabel="Teacher dashboard"
                 style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
                 <ICONS.Classes color={BLUE} size={18} sw={1.9} />

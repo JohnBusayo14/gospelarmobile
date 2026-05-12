@@ -34,6 +34,10 @@ const DEFAULT_PLANS = {
 
 const SubscriptionContext = createContext({
   isSubscribed:        false,
+  // True only when the user holds a real Sunday-School plan ('single' or
+  // 'all') — used by SubscriptionGuard so a Victory-Month-only buyer can't
+  // walk into the SS flow.
+  hasSundaySchool:     false,
   isLoading:           true,
   hasChecked:          false,
   serverError:         false,
@@ -50,6 +54,12 @@ const SubscriptionContext = createContext({
   verifyPayment:       async () => ({ success: false }),
   recheck:             () => {},
 });
+
+// A Sunday-School plan is the only kind of subscription that grants access
+// to category-gated screens. Book SKUs (plan_type starting with 'book_') do
+// not. We bucket null/undefined/legacy values defensively.
+const isSundaySchoolPlan = (planType) =>
+  planType === 'single' || planType === 'all';
 
 export const useSubscription = () => useContext(SubscriptionContext);
 
@@ -385,12 +395,22 @@ export const SubscriptionProvider = ({ children }) => {
   }, [subscribedBooks]);
 
   // ── Synchronous category access check (uses in-memory state) ──────────────
-  // For a server-authoritative check use /api/subscription/can-access/:email/:catId
+  // For a server-authoritative check use /api/subscription/can-access/:email/:catId.
+  // Importantly: a per-book purchase (plan_type='book_*') must NOT grant
+  // Sunday-School category access — historically a brand-new book-only buyer
+  // ended up with subscribed_category='adult' because of a DB column default,
+  // so we double-gate on plan_type here.
   const canAccessCategory = (categoryId) => {
     if (!isSubscribed) return false;
+    if (!isSundaySchoolPlan(planType)) return false;
     if (planType === 'all' || subscribedCategory === 'all') return true;
     return subscribedCategory === categoryId;
   };
+
+  // Derived: true iff the user holds a Sunday-School plan that's currently
+  // active. SubscriptionGuard reads this to decide whether to let the user
+  // into HomeScreen / Lessons / Devotional, etc.
+  const hasSundaySchool = isSubscribed && isSundaySchoolPlan(planType);
 
   // ── Synchronous per-book access check ─────────────────────────────────────
   // Empty/undefined bookId → true (caller didn't specify a book; nothing to gate).
@@ -404,6 +424,7 @@ export const SubscriptionProvider = ({ children }) => {
   return (
     <SubscriptionContext.Provider value={{
       isSubscribed,
+      hasSundaySchool,
       isLoading,
       hasChecked,
       serverError,
