@@ -179,9 +179,9 @@ export default function AboutScreen({ navigation }) {
               <ContactRow
                 icon="✉️"
                 label={t('about_email', 'EMAIL')}
-                value="askgospelar@gmail.com"
+                value="askgospelars@gmail.com"
                 tk={tk}
-                onPress={() => Linking.openURL('mailto:askgospelar@gmail.com')}
+                onPress={() => Linking.openURL('mailto:askgospelars@gmail.com')}
                 noBorder
               />
             </View>

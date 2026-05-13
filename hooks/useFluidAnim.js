@@ -40,10 +40,18 @@ export function useScreenEntry({ delay = 0, duration = 420, slide = 16 } = {}) {
   const translateY = useRef(new Animated.Value(slide)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    // Hold a reference to the running parallel so the unmount cleanup can
+    // stop it. Without this, a screen that unmounts mid-entry (the common
+    // case when the user taps a nav button before the 420ms entry finishes)
+    // leaves the native animator with an Animated.Value whose owner is gone
+    // — which surfaces as `Cannot read property 'stopTracking' of undefined`
+    // when the animation engine finally tries to finalise the value.
+    const handle = Animated.parallel([
       Animated.timing(fade,       { toValue: 1, duration, delay, easing: EASE_OUT, useNativeDriver: true }),
       Animated.timing(translateY, { toValue: 0, duration, delay, easing: EASE_OUT, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [duration, delay, fade, translateY]);
 
   return { fade, translateY };
@@ -82,14 +90,23 @@ export function useCountUp(target, duration = 800) {
   const [value, set]  = useState(0);
 
   useEffect(() => {
-    const id = anim.addListener(({ value: v }) => set(v));
-    Animated.timing(anim, {
+    // Listener + Animated.timing handle. We keep a reference to both so the
+    // cleanup can stop the in-flight animation if the component unmounts
+    // before it finishes — otherwise RN can throw "Cannot read property
+    // 'stopTracking' of undefined" when the animation engine tries to finalise
+    // a value whose owner has been garbage-collected.
+    const id     = anim.addListener(({ value: v }) => set(v));
+    const handle = Animated.timing(anim, {
       toValue: Number(target) || 0,
       duration,
       easing: EASE_OUT,
       useNativeDriver: false,   // listener requires JS driver
-    }).start();
-    return () => anim.removeListener(id);
+    });
+    handle.start();
+    return () => {
+      try { handle.stop(); } catch { /* swallow — animation already finished */ }
+      anim.removeListener(id);
+    };
   }, [target, duration, anim]);
 
   return value;
@@ -102,12 +119,16 @@ export function useCountUp(target, duration = 800) {
 export function useAnimatedWidth(targetPct = 0, duration = 700) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(anim, {
+    const handle = Animated.timing(anim, {
       toValue: Math.max(0, Math.min(100, Number(targetPct) || 0)),
       duration,
       easing: EASE_OUT,
       useNativeDriver: false,
-    }).start();
+    });
+    handle.start();
+    // Stop in-flight animation on unmount so the engine doesn't try to call
+    // stopTracking() on a value whose owning component is gone.
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [targetPct, duration, anim]);
   return anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
 }
