@@ -303,7 +303,7 @@ const sh = StyleSheet.create({
 // LESSON HERO CARD — no top stripe border, left accent bar only
 // ─────────────────────────────────────────────────────────────────────────────
 const LessonHeroCard = ({
-  lesson, content, tk, onQuiz, quizDone,
+  lesson, content, tk, isDark, onQuiz, quizDone,
   // Quiz-button gate state. When `gated` is true, the user hasn't read for
   // the minimum dwell time yet — show a disabled button with the remaining
   // time so they know why and how long is left.
@@ -331,7 +331,8 @@ const LessonHeroCard = ({
             {!!content.memoryVerse_bible_passage && (
               <View style={[hc.passagePill, { backgroundColor:BLUE_LIGHT }]}>
                 <Text style={{ fontSize:13 }}>📜</Text>
-                <Text style={[hc.passageTxt, { color:BLUE }]}>{content.memoryVerse_bible_passage}</Text>
+                <RichVerseText text={content.memoryVerse_bible_passage} isDark={isDark} lineHeight={18}
+                  style={[hc.passageTxt, { color:BLUE }]} />
               </View>
             )}
             {quizDone ? (
@@ -668,8 +669,11 @@ export default function LessonPage({ route, navigation }) {
           } catch {}
         }}
       />
+      {/* HymnModal expects hymnRef + isDark — the previous prop names
+          (hymnsString / T) silently became undefined, so parseHymnRef
+          returned [] and nothing ever rendered. */}
       <HymnModal visible={hymnVisible} onClose={()=>setHymnVisible(false)}
-        hymnsString={c.suggested_hymns} T={buildTheme(isDark)}/>
+        hymnRef={c.suggested_hymns} isDark={isDark}/>
 
       {/* ── CONTENT MODALS (center overlay) ── */}
       <ContentModal visible={verseModal} onClose={()=>setVerseModal(false)}
@@ -678,7 +682,10 @@ export default function LessonPage({ route, navigation }) {
         {!!c.memoryVerse_bible_passage && (
           <View style={[s.modalPassage, { backgroundColor:BLUE_LIGHT, borderColor:BLUE+'30' }]}>
             <Text style={{ fontSize:18 }}>📖</Text>
-            <Text style={[s.modalPassageTxt, { color:BLUE }]}>{c.memoryVerse_bible_passage}</Text>
+            <View style={{ flex: 1 }}>
+              <RichVerseText text={c.memoryVerse_bible_passage} isDark={isDark} lineHeight={20}
+                style={[s.modalPassageTxt, { color:BLUE }]} />
+            </View>
           </View>
         )}
       </ContentModal>
@@ -740,7 +747,7 @@ export default function LessonPage({ route, navigation }) {
           {/* HERO */}
           <View style={s.section}>
             <LessonHeroCard
-              lesson={lesson} content={c} tk={tk}
+              lesson={lesson} content={c} tk={tk} isDark={isDark}
               onQuiz={() => !quizDone && readingTimer.ready && setQuizVisible(true)}
               quizDone={quizDone}
               // Quiz only unlocks after the 2-min dwell gate has elapsed.
