@@ -34,7 +34,7 @@ import {
 // Slug used in the backend `books.slug` column. Frontend code referring to the
 // book elsewhere uses `victory_month_prayer` (underscore form); the database
 // convention is kebab-case (matching `sunday-school`).
-export const VICTORY_BOOK_SLUG = 'victory-month-prayer';
+export const VICTORY_BOOK_SLUG = 'victory-month-2026';
 
 // Vigil entry_types stored in the DB. Anything not in this set is treated as a
 // day. Matches the comment in backend/server.js (book_entries CREATE TABLE).
@@ -77,6 +77,27 @@ const vigilIdFor = (type, n) => {
   const group = (VIGIL_GROUP_BY_TYPE[type] || 'general').toLowerCase();
   return group === 'family' ? `family-${n}` : group;
 };
+
+// Reverse of vigilIdFor — needed by fetchVictoryVigil so it can hit the
+// full-body backend endpoint (the /entries list only returns focus +
+// scripture, which is why the message / prayer points / discussion were
+// missing on the vigil screens).
+//   'family-1' → { entry_type: 'family_vigil', entry_number: 1 }
+//   'youth'    → { entry_type: 'youth_vigil',  entry_number: 1 }
+const VIGIL_TYPE_BY_GROUP = {
+  family:  'family_vigil',
+  youth:   'youth_vigil',
+  women:   'women_vigil',
+  men:     'men_vigil',
+  general: 'general_vigil',
+};
+function vigilIdToEntry(id) {
+  const raw = String(id || '').toLowerCase();
+  const [group, num] = raw.split('-');
+  const entry_type = VIGIL_TYPE_BY_GROUP[group] || 'general_vigil';
+  const entry_number = group === 'family' ? Math.max(1, parseInt(num, 10) || 1) : 1;
+  return { entry_type, entry_number };
+}
 const mapVigil = (row) => ({
   id:            vigilIdFor(row.entry_type, row.entry_number),
   group:         VIGIL_GROUP_BY_TYPE[row.entry_type] || 'General',
@@ -172,14 +193,32 @@ export const fetchVictoryDay = async (n) =>
     }
   });
 
-// Single vigil. Reverses the `vigilIdFor` derivation so callers can pass the
-// frontend id ('family-1', 'youth', etc.) and we resolve the backend entry.
+// Single vigil. Resolves the frontend id ('family-1', 'youth', etc.) to a
+// (entry_type, entry_number) pair and hits the full-body backend endpoint —
+// the /entries list endpoint is intentionally lightweight (no message /
+// prayer_points / discussion_questions), so reading from there leaves the
+// vigil detail screen mostly blank. Fixed: query the single-entry route
+// instead.
 export const fetchVictoryVigil = async (id) =>
   cacheFirst(`victory:vigil:${id}`, async () => {
+    const { entry_type, entry_number } = vigilIdToEntry(id);
     try {
-      const all = await fetchVictoryVigils();
-      return all.find((v) => v.id === id) || null;
+      const { data } = await client.get(
+        `/api/books/${VICTORY_BOOK_SLUG}/entries/${entry_number}`,
+        { params: { type: entry_type } },
+      );
+      return mapVigil(data);
     } catch {
-      return BUNDLED_VIGILS.find((v) => v.id === id) || null;
+      // Fall back to the lightweight list (still better than nothing), then
+      // to the bundled local copy. The lightweight list at least gives us
+      // focus + scripture for the cached card preview.
+      try {
+        const all = await fetchVictoryVigils();
+        return all.find((v) => v.id === id)
+          || BUNDLED_VIGILS.find((v) => v.id === id)
+          || null;
+      } catch {
+        return BUNDLED_VIGILS.find((v) => v.id === id) || null;
+      }
     }
   });
