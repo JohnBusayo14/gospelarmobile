@@ -72,7 +72,7 @@ export default function VictoryVigilList({ navigation }) {
         <View style={s.introWrap}>
           <View style={[s.introCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <Text style={[s.introEyebrow, { color: tones.chipFg }]}>
-              SPECIAL GATHERINGS
+              {t('vmp_vigils_intro_eyebrow', 'SPECIAL GATHERINGS')}
             </Text>
             <Text style={[s.introTitle, { color: tk.textPrimary }]}>
               {t('vmp_vigils_intro_title', 'Pray together as a family of faith')}

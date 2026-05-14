@@ -186,7 +186,7 @@ export default function VictoryDayList({ navigation }) {
                 {t('vmp_no_results', 'No days match this view.')}
               </Text>
               <Text style={[s.emptySub, { color: tk.textMuted }]}>
-                Try a different filter or clear the search.
+                {t('vmp_no_results_sub', 'Try a different filter or clear the search.')}
               </Text>
             </View>
           ) : (

@@ -38,6 +38,7 @@ import { getTokens }     from '../../theme/tokens';
 import { useReadingTimer } from '../../hooks/useReadingTimer';
 import { ICONS }         from '../../components/AppTabBar';
 import { useVictoryDay, useVictoryDays } from '../../hooks/useVictoryContent';
+import { RichVerseText } from '../../components/BibleVerseLink';
 import {
   BLUE, INDIGO, EMERALD, AMBER, RADII, AMBIENT_SHADOW, victoryTones,
 } from './victoryTheme';
@@ -86,7 +87,7 @@ export default function VictoryReadingMode({ route, navigation }) {
     if (day.scripture) {
       list.push({
         kind:    'scripture',
-        eyebrow: 'SCRIPTURE',
+        eyebrow: t('vmp_reading_scripture_eyebrow', 'SCRIPTURE'),
         title:   day.scripture,
         body:    t('vmp_read_open_bible', 'Pause here. Open your Bible and read the passage above before continuing.'),
       });
@@ -94,7 +95,7 @@ export default function VictoryReadingMode({ route, navigation }) {
     if (day.message) {
       list.push({
         kind:    'message',
-        eyebrow: 'INSPIRATIONAL MESSAGE',
+        eyebrow: t('vmp_reading_message_eyebrow', 'INSPIRATIONAL MESSAGE'),
         title:   day.focus,
         body:    day.message,
       });
@@ -103,7 +104,9 @@ export default function VictoryReadingMode({ route, navigation }) {
       list.push({
         kind:    'point',
         index:   i + 1,
-        eyebrow: `PRAYER POINT ${i + 1} OF ${day.prayer_points.length}`,
+        eyebrow: t('vmp_reading_point_eyebrow', 'PRAYER POINT {n} OF {total}')
+                   .replace('{n}', String(i + 1))
+                   .replace('{total}', String(day.prayer_points.length)),
         title:   '',
         body:    p,
       });
@@ -111,7 +114,7 @@ export default function VictoryReadingMode({ route, navigation }) {
     if (day.intercession) {
       list.push({
         kind:    'inter',
-        eyebrow: '★ SPECIAL INTERCESSION',
+        eyebrow: t('vmp_reading_intercession_eyebrow', '★ SPECIAL INTERCESSION'),
         title:   '',
         body:    day.intercession,
       });
@@ -238,21 +241,29 @@ export default function VictoryReadingMode({ route, navigation }) {
           )}
 
           {!!cur.title && (
-            <Text style={[s.title, { color: tk.textPrimary }]}>{cur.title}</Text>
+            cur.kind === 'scripture' ? (
+              <RichVerseText
+                text={cur.title}
+                isDark={isDark}
+                lineHeight={s.title?.lineHeight || 36}
+                style={[s.title, { color: tk.textPrimary }]}
+              />
+            ) : (
+              <Text style={[s.title, { color: tk.textPrimary }]}>{cur.title}</Text>
+            )
           )}
 
           {!!cur.body && (
-            <Text
+            <RichVerseText
+              text={cur.body}
+              isDark={isDark}
+              lineHeight={cur.kind === 'inter' ? 28 : (s.bodyTxt?.lineHeight || 26)}
               style={[
                 s.bodyTxt,
                 { color: tk.textSec },
-                // Special intercession reads as a "callout" — bigger, semi-
-                // emphasised, indented from the rest.
-                cur.kind === 'inter' && { fontSize: 19, lineHeight: 28, fontWeight: '600', color: accent },
+                cur.kind === 'inter' && { fontSize: 19, fontWeight: '600', color: accent },
               ]}
-            >
-              {cur.body}
-            </Text>
+            />
           )}
         </ScrollView>
       </Animated.View>

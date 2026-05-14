@@ -33,6 +33,7 @@ import {
 } from '../../hooks/useVictoryContent';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BLUE, INDIGO, AMBER, EMERALD, RADII, AMBIENT_SHADOW, victoryTones, groupAccent } from './victoryTheme';
+import { RichVerseText } from '../../components/BibleVerseLink';
 
 const { width: W } = Dimensions.get('window');
 const STORAGE_KEY = 'vmp_completed_days';
@@ -116,7 +117,7 @@ export default function VictoryMonthHome({ navigation }) {
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryAbout')}
             activeOpacity={0.75}
-            accessibilityLabel="About this guide"
+            accessibilityLabel={t('vmp_about_eyebrow', 'About this guide')}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
             <Text style={[s.iconBtnTxt, { color: tones.chipFg }]}>i</Text>
@@ -161,9 +162,10 @@ export default function VictoryMonthHome({ navigation }) {
             {!!today.scripture && (
               <View style={[s.versePill, { backgroundColor: tones.versePillBg }]}>
                 <ICONS.Book color={tones.versePillFg} size={14} sw={2} />
-                <Text style={[s.versePillTxt, { color: tones.versePillFg }]} numberOfLines={1}>
-                  {today.scripture}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <RichVerseText text={today.scripture} isDark={isDark} lineHeight={18}
+                    style={[s.versePillTxt, { color: tones.versePillFg }]} />
+                </View>
               </View>
             )}
 
@@ -355,6 +357,7 @@ export default function VictoryMonthHome({ navigation }) {
         }}
         tk={tk}
         tones={tones}
+        t={t}
       />
     </SafeAreaView>
   );
@@ -463,7 +466,7 @@ const TOOLKIT_ITEMS = [
   { emoji: '🏆', label: 'Achievements',        sub: 'Badges, streaks, milestones', route: 'VictoryAchievementsScreen', gradient: [AMBER[500], '#DC2626'] },
 ];
 
-const ToolkitSheet = ({ visible, onClose, onPick, tk, tones }) => {
+const ToolkitSheet = ({ visible, onClose, onPick, tk, tones, t = (k, f) => f }) => {
   const slide   = useRef(new Animated.Value(0)).current; // 0 = hidden, 1 = shown
   const backdrop = useRef(new Animated.Value(0)).current;
 
@@ -496,13 +499,13 @@ const ToolkitSheet = ({ visible, onClose, onPick, tk, tones }) => {
       >
         <View style={sheet.handle} />
         <View style={sheet.headerRow}>
-          <Text style={[sheet.eyebrow, { color: tones.chipFg }]}>DEEPEN YOUR WALK</Text>
+          <Text style={[sheet.eyebrow, { color: tones.chipFg }]}>{t('vmp_toolkit_eyebrow', 'DEEPEN YOUR WALK')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={10}
             style={[sheet.closeBtn, { backgroundColor: tones.chipBg }]}>
             <ICONS.X color={tones.chipFg} size={14} sw={2.4} />
           </TouchableOpacity>
         </View>
-        <Text style={[sheet.title, { color: tk.textPrimary }]}>Spiritual toolkit</Text>
+        <Text style={[sheet.title, { color: tk.textPrimary }]}>{t('vmp_toolkit_title', 'Spiritual toolkit')}</Text>
 
         <View style={{ gap: 10, marginTop: 14 }}>
           {TOOLKIT_ITEMS.map((it) => (
