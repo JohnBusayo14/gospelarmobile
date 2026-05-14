@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme }    from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
 import {
@@ -52,6 +53,7 @@ const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 export default function VictoryReminders({ navigation }) {
   const { isDark } = useTheme();
+  const { t }      = useLanguage();
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
@@ -112,8 +114,8 @@ export default function VictoryReminders({ navigation }) {
       >
         <BackBar
           onBack={() => navigation.goBack()}
-          eyebrow="VICTORY MONTH"
-          title="Prayer Reminders"
+          eyebrow={t('vmp_caps', 'VICTORY MONTH')}
+          title={t('vmp_reminders_title', 'Prayer Reminders')}
           tones={tones}
           tk={tk}
         />
@@ -121,20 +123,21 @@ export default function VictoryReminders({ navigation }) {
         {/* ── INTRO ────────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
           <GlassCard tones={tones} padding={18}>
-            <Eyebrow color={tones.chipFg}>STAY IN RHYTHM</Eyebrow>
+            <Eyebrow color={tones.chipFg}>{t('vmp_reminders_eyebrow', 'STAY IN RHYTHM')}</Eyebrow>
             <Text style={[s.heroTitle, { color: tk.textPrimary }]}>
-              Set times to meet with God
+              {t('vmp_reminders_hero_title', 'Set times to meet with God')}
             </Text>
             <Text style={[s.heroBody, { color: tk.textSec }]}>
-              Build a daily rhythm. Each reminder fires at the time you choose, on the days you choose.
-              Tap a preset below to start fast.
+              {t('vmp_reminders_hero_body', 'Build a daily rhythm. Each reminder fires at the time you choose, on the days you choose. Tap a preset below to start fast.')}
             </Text>
           </GlassCard>
         </View>
 
         {/* ── PRESETS ──────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
-          <SectionHead tk={tk} tones={tones} eyebrow="QUICK" title="Presets" />
+          <SectionHead tk={tk} tones={tones}
+            eyebrow={t('vmp_reminders_presets_eyebrow', 'QUICK')}
+            title={t('vmp_reminders_presets_title', 'Presets')} />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -160,25 +163,25 @@ export default function VictoryReminders({ navigation }) {
         <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
           <SectionHead
             tk={tk} tones={tones}
-            eyebrow={editing ? 'EDITING' : 'CREATE'}
-            title={editing ? 'Edit this reminder' : 'Add a new reminder'}
-            action={editing ? 'Cancel edit' : null}
+            eyebrow={editing ? t('vmp_reminders_editing_eyebrow', 'EDITING') : t('vmp_reminders_create_eyebrow', 'CREATE')}
+            title={editing ? t('vmp_reminders_editing_title', 'Edit this reminder') : t('vmp_reminders_create_title', 'Add a new reminder')}
+            action={editing ? t('vmp_reminders_cancel_edit', 'Cancel edit') : null}
             onAction={editing ? () => { setEditing(null); setLabel(''); setTime('06:00'); setDays(ALL_DAYS); } : null}
           />
           <GlassCard tones={tones} padding={16}>
             <View style={{ gap: 14 }}>
               <View>
-                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>LABEL</Text>
+                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>{t('vmp_reminders_field_label', 'LABEL')}</Text>
                 <TextInput
                   value={label}
                   onChangeText={setLabel}
-                  placeholder="Morning Devotion"
+                  placeholder={t('vmp_reminders_label_placeholder', 'Morning Devotion')}
                   placeholderTextColor={tk.textMuted}
                   style={[s.field, { color: tk.textPrimary, backgroundColor: tones.chipBg }]}
                 />
               </View>
               <View>
-                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>TIME (24H)</Text>
+                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>{t('vmp_reminders_field_time', 'TIME (24H)')}</Text>
                 <TextInput
                   value={time}
                   onChangeText={setTime}
@@ -189,7 +192,7 @@ export default function VictoryReminders({ navigation }) {
                 />
               </View>
               <View>
-                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>REPEAT ON</Text>
+                <Text style={[s.fieldLbl, { color: tones.chipFg }]}>{t('vmp_reminders_field_repeat', 'REPEAT ON')}</Text>
                 <View style={s.daysRow}>
                   {DAYS.map((d) => {
                     const active = days.includes(d.i);
@@ -212,7 +215,7 @@ export default function VictoryReminders({ navigation }) {
                 </View>
               </View>
               <GradientCTA
-                label={editing ? 'Save changes' : 'Add reminder'}
+                label={editing ? t('vmp_reminders_save', 'Save changes') : t('vmp_reminders_add', 'Add reminder')}
                 onPress={addReminder}
                 size="md"
               />
@@ -222,13 +225,15 @@ export default function VictoryReminders({ navigation }) {
 
         {/* ── EXISTING ─────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 28 }}>
-          <SectionHead tk={tk} tones={tones} eyebrow="YOUR" title="Active reminders" />
+          <SectionHead tk={tk} tones={tones}
+            eyebrow={t('vmp_reminders_active_eyebrow', 'YOUR')}
+            title={t('vmp_reminders_active_title', 'Active reminders')} />
           {list.length === 0 ? (
             <EmptyState
               tones={tones} tk={tk}
               emoji="🔔"
-              title="No reminders yet"
-              body="Add a daily rhythm of prayer above — your reminders will appear here."
+              title={t('vmp_reminders_empty_title', 'No reminders yet')}
+              body={t('vmp_reminders_empty_body', 'Add a daily rhythm of prayer above — your reminders will appear here.')}
             />
           ) : (
             <View style={{ gap: 10 }}>
@@ -239,6 +244,7 @@ export default function VictoryReminders({ navigation }) {
                   index={i}
                   tk={tk}
                   tones={tones}
+                  t={t}
                   onEdit={() => startEdit(r)}
                   onRemove={() => remove(r.id)}
                   onToggle={() => update(r.id, { enabled: !r.enabled })}
@@ -252,12 +258,12 @@ export default function VictoryReminders({ navigation }) {
   );
 }
 
-const ReminderRow = ({ r, index, tk, tones, onEdit, onRemove, onToggle }) => {
+const ReminderRow = ({ r, index, tk, tones, onEdit, onRemove, onToggle, t = (k, f) => f }) => {
   const { fade, translateY } = useStaggerEntry(Math.min(index, 6));
   const daysLabel = (() => {
-    if (r.days.length === 7) return 'Every day';
-    if (r.days.length === 5 && r.days.every((d) => d >= 1 && d <= 5)) return 'Weekdays';
-    if (r.days.length === 2 && r.days.includes(0) && r.days.includes(6)) return 'Weekends';
+    if (r.days.length === 7) return t('vmp_reminders_every_day', 'Every day');
+    if (r.days.length === 5 && r.days.every((d) => d >= 1 && d <= 5)) return t('vmp_reminders_weekdays', 'Weekdays');
+    if (r.days.length === 2 && r.days.includes(0) && r.days.includes(6)) return t('vmp_reminders_weekends', 'Weekends');
     return r.days.map((i) => DAYS[i].full).join(', ');
   })();
   return (
@@ -281,10 +287,10 @@ const ReminderRow = ({ r, index, tk, tones, onEdit, onRemove, onToggle }) => {
           <Text style={[s.rowMeta, { color: tones.chipFg }]}>{daysLabel}</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity onPress={onEdit} activeOpacity={0.78}>
-              <Text style={[s.rowAction, { color: BLUE[600] }]}>Edit</Text>
+              <Text style={[s.rowAction, { color: BLUE[600] }]}>{t('vmp_edit_btn', 'Edit')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onRemove} activeOpacity={0.78}>
-              <Text style={[s.rowAction, { color: ROSE[500] }]}>Delete</Text>
+              <Text style={[s.rowAction, { color: ROSE[500] }]}>{t('vmp_delete_btn', 'Delete')}</Text>
             </TouchableOpacity>
           </View>
         </View>

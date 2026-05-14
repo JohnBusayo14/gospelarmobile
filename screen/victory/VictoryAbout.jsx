@@ -90,7 +90,7 @@ export default function VictoryAbout({ navigation }) {
         <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
           <View style={[s.hero, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <Text style={[s.heroYear, { color: tones.chipFg }]}>
-              {meta.year} VICTORY MONTH
+              {meta.year} {t('vmp_caps', 'VICTORY MONTH')}
             </Text>
             <Text style={[s.heroTitle, { color: tk.textPrimary }]}>{meta.theme}</Text>
             <View style={[s.heroPill, { backgroundColor: tones.versePillBg }]}>
@@ -106,33 +106,28 @@ export default function VictoryAbout({ navigation }) {
 
         {/* ── STATS ──────────────────────────────────────────────────────── */}
         <View style={s.statsWrap}>
-          <Stat label="Days of prayer"   value={totalDays}    accent={BLUE[600]}    bg={tones.glassFill} tk={tk} />
-          <Stat label="Group vigils"     value={totalVigils}  accent={INDIGO[600]}  bg={tones.glassFill} tk={tk} />
-          <Stat label="Pages"            value={meta.pages}   accent={EMERALD[500]} bg={tones.glassFill} tk={tk} />
+          <Stat label={t('vmp_about_stat_days', 'Days of prayer')}   value={totalDays}    accent={BLUE[600]}    bg={tones.glassFill} tk={tk} />
+          <Stat label={t('vmp_about_stat_vigils', 'Group vigils')}   value={totalVigils}  accent={INDIGO[600]}  bg={tones.glassFill} tk={tk} />
+          <Stat label={t('vmp_about_stat_pages', 'Pages')}           value={meta.pages}   accent={EMERALD[500]} bg={tones.glassFill} tk={tk} />
         </View>
 
         {/* ── INTRO MESSAGE ──────────────────────────────────────────────── */}
-        <Section title="Foreword" tk={tk} tones={tones}>
+        <Section title={t('vmp_about_foreword', 'Foreword')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             <Text style={[s.body, { color: tk.textSec }]}>
-              Revival is the best and greatest thing that can happen to the world — especially the Church.
-              It is a divine manifestation with commensurate reception by humans. Under a true revival
-              atmosphere, God's needs are met by human beings and human needs are also met by God.
+              {t('vmp_about_foreword_p1', 'Revival is the best and greatest thing that can happen to the world — especially the Church. It is a divine manifestation with commensurate reception by humans. Under a true revival atmosphere, God\'s needs are met by human beings and human needs are also met by God.')}
             </Text>
             <Text style={[s.body, { color: tk.textSec, marginTop: 12 }]}>
-              We expect that as our hearts unite in prayer, expectation and consecration, God will
-              position us for deeper encounters with His power and greater demonstrations of His glory.
-              True revival is not merely an event — it is a heart awakened, a faith strengthened, and a
-              church stirred to action.
+              {t('vmp_about_foreword_p2', 'We expect that as our hearts unite in prayer, expectation and consecration, God will position us for deeper encounters with His power and greater demonstrations of His glory. True revival is not merely an event — it is a heart awakened, a faith strengthened, and a church stirred to action.')}
             </Text>
             <Text style={[s.attribution, { color: tones.chipFg }]}>
-              — Pastor (Dr.) Elijah Oludele Abina, General Overseer, GOFAMINT
+              {t('vmp_about_attribution', '— Pastor (Dr.) Elijah Oludele Abina, General Overseer, GOFAMINT')}
             </Text>
           </View>
         </Section>
 
         {/* ── DOS ────────────────────────────────────────────────────────── */}
-        <Section title="Guidelines for Prayer & Fasting" tk={tk} tones={tones}>
+        <Section title={t('vmp_about_guidelines', 'Guidelines for Prayer & Fasting')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             {DOS.map((d, i) => (
               <ListRow key={i} index={i + 1} text={d} accentBg={tones.chipBg} accentFg={tones.chipFg} tk={tk} />
@@ -141,7 +136,7 @@ export default function VictoryAbout({ navigation }) {
         </Section>
 
         {/* ── COMMITTEE ──────────────────────────────────────────────────── */}
-        <Section title="Victory Month Committee" tk={tk} tones={tones}>
+        <Section title={t('vmp_about_committee', 'Victory Month Committee')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             {COMMITTEE.map((p, i) => (
               <View key={i} style={s.committeeRow}>
@@ -161,14 +156,14 @@ export default function VictoryAbout({ navigation }) {
             activeOpacity={0.86}
             style={[s.cta, { backgroundColor: BLUE[600], shadowColor: tones.ctaShadow }]}
           >
-            <Text style={s.ctaTxt}>Start with Day 1  →</Text>
+            <Text style={s.ctaTxt}>{t('vmp_about_cta_start', 'Start with Day 1  →')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryVigilList')}
             activeOpacity={0.86}
             style={[s.ctaSoft, { backgroundColor: tones.chipBg }]}
           >
-            <Text style={[s.ctaSoftTxt, { color: tones.chipFg }]}>Browse group vigils</Text>
+            <Text style={[s.ctaSoftTxt, { color: tones.chipFg }]}>{t('vmp_about_cta_vigils', 'Browse group vigils')}</Text>
           </TouchableOpacity>
         </View>
       </Animated.ScrollView>

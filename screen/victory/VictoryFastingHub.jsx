@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme }    from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
 import {
@@ -41,6 +42,7 @@ const TEMPLATES = [
 
 export default function VictoryFastingHub({ navigation }) {
   const { isDark } = useTheme();
+  const { t }      = useLanguage();
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
@@ -95,8 +97,8 @@ export default function VictoryFastingHub({ navigation }) {
       >
         <BackBar
           onBack={() => navigation.goBack()}
-          eyebrow="VICTORY MONTH"
-          title="Fasting Hub"
+          eyebrow={t('vmp_caps', 'VICTORY MONTH')}
+          title={t('vmp_fasting_title', 'Fasting Hub')}
           tones={tones}
           tk={tk}
         />
@@ -117,10 +119,10 @@ export default function VictoryFastingHub({ navigation }) {
                 <View style={s.endedRow}>
                   <Text style={{ fontSize: 32 }}>⏰</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.endedEyebrow}>FASTING TIME IS OVER</Text>
+                    <Text style={s.endedEyebrow}>{t('vmp_fasting_time_over', 'FASTING TIME IS OVER')}</Text>
                     <Text style={s.endedTitle} numberOfLines={1}>{f.title}</Text>
                     <Text style={s.endedSub}>
-                      Break your fast in thanksgiving — God has heard you.
+                      {t('vmp_fasting_break_msg', 'Break your fast in thanksgiving — God has heard you.')}
                     </Text>
                   </View>
                 </View>
@@ -130,7 +132,7 @@ export default function VictoryFastingHub({ navigation }) {
                   style={[s.endedCta, { backgroundColor: '#fff' }]}
                 >
                   <Text style={[s.endedCtaTxt, { color: EMERALD[600] }]}>
-                    ✓  Mark complete
+                    {t('vmp_fasting_mark_complete', '✓  Mark complete')}
                   </Text>
                 </TouchableOpacity>
               </LinearGradient>
@@ -146,7 +148,7 @@ export default function VictoryFastingHub({ navigation }) {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={[s.activeCard, AMBIENT_SHADOW]}
             >
-              <Eyebrow color="rgba(255,255,255,0.78)">FASTING NOW</Eyebrow>
+              <Eyebrow color="rgba(255,255,255,0.78)">{t('vmp_fasting_now', 'FASTING NOW')}</Eyebrow>
               <Text style={s.activeTitle}>{active.title}</Text>
               <View style={s.activeRingRow}>
                 <ProgressRing
@@ -160,9 +162,9 @@ export default function VictoryFastingHub({ navigation }) {
                   <Text style={s.activeRingSub}>complete</Text>
                 </ProgressRing>
                 <View style={{ flex: 1 }}>
-                  <KV label="Remaining" value={countdown.remainStr} accent="#fff" />
-                  <KV label="Elapsed"   value={countdown.elapsedStr} accent="rgba(255,255,255,0.85)" />
-                  <KV label="Type"      value={active.type}        accent="rgba(255,255,255,0.85)" />
+                  <KV label={t('vmp_fasting_remaining', 'Remaining')} value={countdown.remainStr} accent="#fff" />
+                  <KV label={t('vmp_fasting_elapsed', 'Elapsed')}     value={countdown.elapsedStr} accent="rgba(255,255,255,0.85)" />
+                  <KV label={t('vmp_fasting_type', 'Type')}           value={active.type}        accent="rgba(255,255,255,0.85)" />
                 </View>
               </View>
               <View style={s.activeFootRow}>
@@ -172,7 +174,7 @@ export default function VictoryFastingHub({ navigation }) {
                   style={[s.activeBtn, { backgroundColor: '#fff' }]}
                 >
                   <Text style={[s.activeBtnTxt, { color: BLUE[800] }]}>
-                    ✓ Mark complete
+                    {t('vmp_fasting_mark_complete_short', '✓ Mark complete')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -180,7 +182,7 @@ export default function VictoryFastingHub({ navigation }) {
                   activeOpacity={0.85}
                   style={[s.activeBtn, { backgroundColor: 'rgba(255,255,255,0.16)' }]}
                 >
-                  <Text style={s.activeBtnTxt}>Cancel</Text>
+                  <Text style={s.activeBtnTxt}>{t('vmp_fasting_cancel', 'Cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -188,13 +190,12 @@ export default function VictoryFastingHub({ navigation }) {
         ) : (
           <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
             <GlassCard tones={tones} padding={20}>
-              <Eyebrow color={tones.chipFg}>NO ACTIVE FAST</Eyebrow>
+              <Eyebrow color={tones.chipFg}>{t('vmp_fasting_no_active', 'NO ACTIVE FAST')}</Eyebrow>
               <Text style={[s.noFastTitle, { color: tk.textPrimary }]}>
-                Set apart a time to seek God
+                {t('vmp_fasting_no_active_title', 'Set apart a time to seek God')}
               </Text>
               <Text style={[s.noFastBody, { color: tk.textSec }]}>
-                Fasting humbles the soul and amplifies prayer. Choose a quick template below
-                or set a custom start and end.
+                {t('vmp_fasting_no_active_body', 'Fasting humbles the soul and amplifies prayer. Choose a quick template below or set a custom start and end.')}
               </Text>
             </GlassCard>
           </View>
@@ -205,8 +206,8 @@ export default function VictoryFastingHub({ navigation }) {
           <SectionHead
             tk={tk}
             tones={tones}
-            eyebrow="QUICK START"
-            title="Choose a fasting template"
+            eyebrow={t('vmp_fasting_quick_start', 'QUICK START')}
+            title={t('vmp_fasting_quick_start_title', 'Choose a fasting template')}
           />
           <View style={s.templateGrid}>
             {TEMPLATES.map((t, i) => (
@@ -229,16 +230,16 @@ export default function VictoryFastingHub({ navigation }) {
           <SectionHead
             tk={tk}
             tones={tones}
-            eyebrow="UPCOMING"
-            title="Scheduled fasts"
+            eyebrow={t('vmp_fasting_upcoming', 'UPCOMING')}
+            title={t('vmp_fasting_upcoming_title', 'Scheduled fasts')}
           />
           {upcoming.length === 0 ? (
             <EmptyState
               tones={tones} tk={tk}
               emoji="🗓️"
-              title="No scheduled fasts"
-              body="Plan ahead — knowing when you'll fast helps you prepare your body and spirit."
-              action="Schedule a fast"
+              title={t('vmp_fasting_empty_title', 'No scheduled fasts')}
+              body={t('vmp_fasting_empty_body', "Plan ahead — knowing when you'll fast helps you prepare your body and spirit.")}
+              action={t('vmp_fasting_schedule_action', 'Schedule a fast')}
               onAction={() => navigation.navigate('VictoryFastingScheduler', { template: 'custom' })}
             />
           ) : (

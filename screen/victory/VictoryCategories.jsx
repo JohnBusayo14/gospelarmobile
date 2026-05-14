@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme }    from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
 import {
@@ -32,6 +33,7 @@ const TILE_W = (W - 20 * 2 - 12) / 2;
 
 export default function VictoryCategories({ navigation }) {
   const { isDark } = useTheme();
+  const { t }      = useLanguage();
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
@@ -67,8 +69,8 @@ export default function VictoryCategories({ navigation }) {
       >
         <BackBar
           onBack={() => navigation.goBack()}
-          eyebrow="VICTORY MONTH"
-          title="Prayer Categories"
+          eyebrow={t('vmp_caps', 'VICTORY MONTH')}
+          title={t('vmp_categories_title', 'Prayer Categories')}
           tones={tones}
           tk={tk}
         />
@@ -76,20 +78,19 @@ export default function VictoryCategories({ navigation }) {
         {/* Intro */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <GlassCard tones={tones} padding={18}>
-            <Eyebrow color={tones.chipFg}>SPIRITUAL GATHERINGS</Eyebrow>
+            <Eyebrow color={tones.chipFg}>{t('vmp_categories_eyebrow', 'SPIRITUAL GATHERINGS')}</Eyebrow>
             <Text style={[s.heroTitle, { color: tk.textPrimary }]}>
-              Pray with focus — choose your battle line
+              {t('vmp_categories_hero_title', 'Pray with focus — choose your battle line')}
             </Text>
             <Text style={[s.heroBody, { color: tk.textSec }]}>
-              Each category opens a curated set of prayers you can pray immediately,
-              plus space for your own intercessions on the same theme.
+              {t('vmp_categories_hero_body', 'Each category opens a curated set of prayers you can pray immediately, plus space for your own intercessions on the same theme.')}
             </Text>
             <View style={s.heroStats}>
-              <Stat label="Categories" value={CATEGORIES.length}  bg={tones.chipBg} fg={tones.chipFg} />
-              <Stat label="Starter prayers"
+              <Stat label={t('vmp_categories_stat_categories', 'Categories')} value={CATEGORIES.length}  bg={tones.chipBg} fg={tones.chipFg} />
+              <Stat label={t('vmp_categories_stat_starters', 'Starter prayers')}
                     value={CATEGORIES.reduce((sum, c) => sum + c.starters.length, 0)}
                     bg={tones.versePillBg} fg={tones.versePillFg} />
-              <Stat label="Your prayers" value={totalUser} bg="#FEF3C7" fg="#92400E" />
+              <Stat label={t('vmp_categories_stat_yours', 'Your prayers')} value={totalUser} bg="#FEF3C7" fg="#92400E" />
             </View>
           </GlassCard>
         </View>
