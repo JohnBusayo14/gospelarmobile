@@ -44,6 +44,136 @@ const PAUSE_OPTIONS = [
   { sec: 120, label: '2 min' },
 ];
 
+// ── Reflection-pause overlay ─────────────────────────────────────────────────
+// Full-screen modal that takes over while the voice reader is between
+// segments. Three shock-wave rings emanate outward from a pulsing central
+// orb that shows the remaining seconds. Tapping anywhere on the screen
+// dismisses the pause (calls onSkip — same effect as the old "Skip →"
+// button). Transparent backdrop with a gradient wash in the accent colour;
+// uses RN's native Modal so it stays above the audio player UI and survives
+// status bar / nav bar correctly on Android.
+function ReflectionPauseOverlay({ visible, remain, total, onSkip, accent = BLUE[600] }) {
+  // One Animated.Value per shockwave ring. They run on a continuous loop with
+  // a staggered start so the user sees a regular "explosion" pulse rather
+  // than three rings firing in sync.
+  const r0 = useRef(new Animated.Value(0)).current;
+  const r1 = useRef(new Animated.Value(0)).current;
+  const r2 = useRef(new Animated.Value(0)).current;
+  // Central orb breathes between 1.0× and 1.08× scale.
+  const pulse = useRef(new Animated.Value(1)).current;
+  // Backdrop fades in on activation so dismissal feels intentional.
+  const backdrop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      backdrop.setValue(0);
+      return undefined;
+    }
+    Animated.timing(backdrop, {
+      toValue: 1, duration: 260, useNativeDriver: true,
+    }).start();
+
+    const ringLoop = (v, delay) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(v, {
+            toValue: 1,
+            duration: 2100,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          // Snap back to 0 instantly so the next iteration starts small.
+          Animated.timing(v, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      );
+
+    const loops = [ringLoop(r0, 0), ringLoop(r1, 700), ringLoop(r2, 1400)];
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1.08, duration: 900,
+          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1.0,  duration: 900,
+          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
+        }),
+      ]),
+    );
+    loops.forEach((l) => l.start());
+    pulseLoop.start();
+    return () => {
+      loops.forEach((l) => l.stop());
+      pulseLoop.stop();
+    };
+  }, [visible, r0, r1, r2, pulse, backdrop]);
+
+  const ringStyle = (v) => ({
+    opacity: v.interpolate({ inputRange: [0, 0.12, 1], outputRange: [0, 0.7, 0] }),
+    transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 2.9] }) }],
+  });
+
+  const pct = total ? Math.max(0, Math.min(1, (total - remain) / total)) : 0;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onSkip}
+    >
+      <Pressable
+        onPress={onSkip}
+        style={s.overlayRoot}
+        accessibilityRole="button"
+        accessibilityLabel="Skip reflection pause"
+      >
+        {/* Soft gradient backdrop — accent at top + bottom, dark wash in the
+            middle so the orb pops without feeling like a hard scrim. */}
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: backdrop }]}>
+          <LinearGradient
+            colors={[`${accent}3a`, '#000000aa', `${accent}3a`]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
+
+        {/* Shockwave rings (not interactive so taps fall through to the root). */}
+        <View pointerEvents="none" style={s.overlayCenter}>
+          <Animated.View style={[s.shockRing, { borderColor: accent }, ringStyle(r0)]} />
+          <Animated.View style={[s.shockRing, { borderColor: accent }, ringStyle(r1)]} />
+          <Animated.View style={[s.shockRing, { borderColor: accent }, ringStyle(r2)]} />
+
+          {/* Pulsing central orb with the countdown number. */}
+          <Animated.View style={[s.overlayOrb, { transform: [{ scale: pulse }] }]}>
+            <LinearGradient
+              colors={[accent, '#1a1a2e', accent]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View style={s.overlayOrbInner}>
+              <Text style={s.overlayEye}>REFLECTION PAUSE</Text>
+              <Text style={s.overlayNum}>{remain}</Text>
+              <Text style={s.overlayBody}>Praying…</Text>
+              <View style={s.overlayProgressTrack}>
+                <View style={[s.overlayProgressFill, { width: `${Math.round(pct * 100)}%` }]} />
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
+        <View pointerEvents="none" style={s.overlayHintWrap}>
+          <Text style={s.overlayHint}>Tap anywhere to continue ›</Text>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export default function VictoryAudioPlayer({ route, navigation }) {
   // Pull the days list from the backend so TOTAL_DAYS is admin-driven; the
   // hook returns the bundled fallback synchronously on first render, so the
@@ -398,24 +528,9 @@ export default function VictoryAudioPlayer({ route, navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         >
-          {/* Reflection-pause countdown card — only visible while paused */}
-          {pause.active && (
-            <View style={[s.pauseCard, { backgroundColor: tones.versePillBg }]}>
-              <View style={s.pauseHead}>
-                <Text style={[s.pauseEye, { color: tones.versePillFg }]}>REFLECTION PAUSE</Text>
-                <TouchableOpacity onPress={skipPause} activeOpacity={0.78} style={s.pauseSkip}>
-                  <Text style={s.pauseSkipTxt}>Skip →</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={[s.pauseRemain, { color: tones.versePillFg }]}>{pause.remain}s</Text>
-              <Text style={[s.pauseBody, { color: tk.textSec }]}>
-                Pray quietly. The next reading will continue automatically.
-              </Text>
-              <View style={[s.pauseBar, { backgroundColor: 'rgba(15,23,42,0.12)' }]}>
-                <View style={[s.pauseBarFill, { width: `${pausePct}%`, backgroundColor: BLUE[600] }]} />
-              </View>
-            </View>
-          )}
+          {/* Reflection-pause overlay renders below — outside this ScrollView
+              so it takes over the full screen. Tapping anywhere on the
+              overlay calls skipPause(). */}
 
           {/* Speed picker */}
           <View style={{ marginBottom: 18 }}>
@@ -556,6 +671,15 @@ export default function VictoryAudioPlayer({ route, navigation }) {
         }}
         tk={tk}
         tones={tones}
+      />
+
+      {/* ── Reflection-pause overlay (sits above the player UI) ──────────── */}
+      <ReflectionPauseOverlay
+        visible={pause.active}
+        remain={pause.remain}
+        total={pause.total}
+        accent={BLUE[600]}
+        onSkip={skipPause}
       />
     </SafeAreaView>
   );
@@ -825,6 +949,98 @@ const s = StyleSheet.create({
   pauseBody:   { fontSize: 12.5, fontWeight: '600', marginTop: 4, lineHeight: 18 },
   pauseBar:    { height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 12 },
   pauseBarFill:{ height: 6, borderRadius: 3 },
+
+  // ── Reflection-pause overlay ──────────────────────────────────────────────
+  overlayRoot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 260,
+    height: 260,
+  },
+  // Concentric shockwave rings. Sized so the smallest scale (0.55) still
+  // appears around the orb (220) and the largest (2.9) reaches well past
+  // the edge of the screen on typical phones.
+  shockRing: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    borderWidth: 3,
+  },
+  // Central orb. Gradient lives inside an absolutely-positioned LinearGradient;
+  // overflow:'hidden' on the orb clips the gradient + inner column.
+  overlayOrb: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 22,
+  },
+  overlayOrbInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(15,23,42,0.45)',
+  },
+  overlayEye: {
+    color: '#fff',
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 2.6,
+    opacity: 0.92,
+  },
+  overlayNum: {
+    color: '#fff',
+    fontSize: 72,
+    fontWeight: '900',
+    letterSpacing: -2.6,
+    lineHeight: 78,
+    marginTop: 4,
+  },
+  overlayBody: {
+    color: '#fff',
+    opacity: 0.92,
+    fontSize: 12.5,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  overlayProgressTrack: {
+    width: 150,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginTop: 14,
+    overflow: 'hidden',
+  },
+  overlayProgressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  overlayHintWrap: {
+    position: 'absolute',
+    bottom: 64,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  overlayHint: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
 
   helperTxt:   { fontSize: 11.5, fontWeight: '600', marginTop: 8, lineHeight: 16 },
 });
