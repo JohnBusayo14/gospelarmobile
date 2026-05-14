@@ -156,13 +156,18 @@ const UnitBlock = ({ unit, index, navigation, lang, tk, category, t }) => {
   const [loading, setLoading] = useState(false);
   const [loaded,  setLoaded]  = useState(false);
 
-  // Entrance animation
+  // Entrance animation. Hold the handle so unmount can stop it — without
+  // this, navigating away mid-animation throws
+  // "Cannot read property 'stopTracking' of undefined" because the native
+  // animator finalises an Animated.Value whose owning component is gone.
   const enterAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(enterAnim, {
+    const handle = Animated.timing(enterAnim, {
       toValue: 1, duration: 420, delay: index * 80,
       easing: Easing.out(Easing.cubic), useNativeDriver: true,
-    }).start();
+    });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
   const ty = enterAnim.interpolate({ inputRange:[0,1], outputRange:[20,0] });
 

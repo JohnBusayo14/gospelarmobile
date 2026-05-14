@@ -52,10 +52,17 @@ const LessonRow = ({ lesson, index, onPress, isDark, t }) => {
 
   useEffect(() => {
     const delay = index * 75;
-    Animated.parallel([
+    // Hold the handle so unmount can stop it. Without this, a card whose
+    // entry animation is still running when the user taps the screen
+    // header (back / book switcher) leaves the native animator with an
+    // Animated.Value whose owner has been GC'd — surfaces as
+    // "Cannot read property 'stopTracking' of undefined".
+    const handle = Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
       Animated.spring(slideY,  { toValue: 0, delay, tension: 65, friction: 9, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   const pressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 200 }).start();
@@ -134,7 +141,11 @@ export default function UnitLessonsPage({ route, navigation }) {
   const lessons = useMemo(() => rawLessons ? rawLessons.map(normaleLesson) : null, [rawLessons]);
 
   useEffect(() => {
-    Animated.timing(heroAnim, { toValue: 1, duration: 650, useNativeDriver: true }).start();
+    // Same cleanup pattern as the card-entry animation above. The hero
+    // is a 650ms timing, so a quick header tap can easily catch it mid-flight.
+    const handle = Animated.timing(heroAnim, { toValue: 1, duration: 650, useNativeDriver: true });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   return (
