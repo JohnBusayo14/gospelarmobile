@@ -31,6 +31,7 @@ import { ICONS } from '../../components/AppTabBar';
 import { useVictoryDay, useVictoryDays } from '../../hooks/useVictoryContent';
 import { BLUE, INDIGO, EMERALD, AMBER, RADII, AMBIENT_SHADOW, victoryTones } from './victoryTheme';
 import VictoryBackdrop from './VictoryBackdrop';
+import { RichVerseText } from '../../components/BibleVerseLink';
 
 const STORAGE_KEY = 'vmp_completed_days';
 // User must dwell on a day's content for at least this many seconds before
@@ -118,6 +119,8 @@ export default function VictoryDayScreen({ route, navigation }) {
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
         {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
+        {/* Single-line eyebrow keeps the topbar tight — the date used to live
+            here too but it's now in the hero, so showing it twice was a waste. */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -126,16 +129,11 @@ export default function VictoryDayScreen({ route, navigation }) {
           >
             <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
           </TouchableOpacity>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[s.eyebrow, { color: tones.chipFg }]}>
-              {t('vmp_day_n_of_30', 'DAY {n} OF {total}')
-                .replace('{n}', String(dayNum))
-                .replace('{total}', String(TOTAL_DAYS))}
-            </Text>
-            <Text style={[s.topTitle, { color: tk.textPrimary }]} numberOfLines={1}>
-              {day.date?.split(',')[1]?.trim() || 'Prayer'}
-            </Text>
-          </View>
+          <Text style={[s.eyebrow, { color: tones.chipFg }]}>
+            {t('vmp_day_n_of_30', 'DAY {n} OF {total}')
+              .replace('{n}', String(dayNum))
+              .replace('{total}', String(TOTAL_DAYS))}
+          </Text>
           <TouchableOpacity
             onPress={toggleCompleted}
             disabled={!completed && !ready}
@@ -151,6 +149,10 @@ export default function VictoryDayScreen({ route, navigation }) {
         </View>
 
         {/* ── HERO ───────────────────────────────────────────────────────── */}
+        {/* Compact rearrangement: badge + date/focus column on one row, then
+            a single bottom row with scripture pill and a textual Listen pill.
+            The old 44×44 listen icon button was removed — it was the third
+            listen affordance on the screen (the action row also has one). */}
         <View style={s.heroWrap}>
           <View style={[s.heroCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <View style={s.heroHeadRow}>
@@ -161,30 +163,30 @@ export default function VictoryDayScreen({ route, navigation }) {
                 <Text style={[s.heroDate, { color: tk.textMuted }]} numberOfLines={1}>
                   {day.date}
                 </Text>
+                {/* Some Victory Month topics run 3-4 lines (e.g. Day 5
+                    "Prayer for church-wide revival: Lord, grant a dawn of true
+                    revival and great exploits…"). Don't clamp — readers need
+                    the full focus to know what they're praying. */}
                 <Text style={[s.heroFocus, { color: tk.textPrimary }]}>
                   {day.focus}
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
-                activeOpacity={0.82}
-                accessibilityLabel={t('vmp_listen', 'Listen to this prayer')}
-                style={[s.listenIcon, { backgroundColor: BLUE[600], shadowColor: tones.ctaShadow }]}
-              >
-                <Text style={s.listenIconTxt}>🔊</Text>
-              </TouchableOpacity>
             </View>
             <View style={s.heroBottomRow}>
               {!!day.scripture && (
                 <View style={[s.versePill, { backgroundColor: tones.versePillBg }]}>
-                  <ICONS.Book color={tones.versePillFg} size={13} sw={2} />
-                  <Text style={[s.versePillTxt, { color: tones.versePillFg }]}>{day.scripture}</Text>
+                  <ICONS.Book color={tones.versePillFg} size={12} sw={2} />
+                  <View style={{ flex: 1 }}>
+                    <RichVerseText text={day.scripture} isDark={isDark} lineHeight={16}
+                      style={[s.versePillTxt, { color: tones.versePillFg }]} />
+                  </View>
                 </View>
               )}
               <TouchableOpacity
                 onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
                 activeOpacity={0.82}
                 style={[s.listenPill, { backgroundColor: tones.todayBg }]}
+                accessibilityLabel={t('vmp_listen', 'Listen to this prayer')}
               >
                 <Text style={[s.listenPillTxt, { color: tones.todayFg }]}>🔊  Listen</Text>
               </TouchableOpacity>
@@ -196,7 +198,8 @@ export default function VictoryDayScreen({ route, navigation }) {
         {!!day.message && (
           <Section title={t('vmp_section_message', 'Inspirational Message')} tk={tk} tones={tones}>
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
-              <Text style={[s.body, { color: tk.textSec }]}>{day.message}</Text>
+              <RichVerseText text={day.message} isDark={isDark} lineHeight={s.body?.lineHeight || 24}
+                style={[s.body, { color: tk.textSec }]} />
             </View>
           </Section>
         )}
@@ -206,7 +209,7 @@ export default function VictoryDayScreen({ route, navigation }) {
           <Section title={t('vmp_section_prayer_points', 'Prayer Points')} tk={tk} tones={tones}>
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
               {day.prayer_points.map((p, i) => (
-                <PrayerRow key={i} index={i + 1} text={p} tk={tk} tones={tones} />
+                <PrayerRow key={i} index={i + 1} text={p} tk={tk} tones={tones} isDark={isDark} />
               ))}
             </View>
           </Section>
@@ -217,9 +220,8 @@ export default function VictoryDayScreen({ route, navigation }) {
           <Section title={t('vmp_section_intercession', 'Special Intercession')} tk={tk} tones={tones}>
             <View style={[s.intercessionBox, { backgroundColor: tones.versePillBg }]}>
               <Text style={[s.intercessionLabel, { color: tones.versePillFg }]}>★ FOCUS PRAYER</Text>
-              <Text style={[s.intercessionTxt, { color: tones.versePillFg }]}>
-                {day.intercession}
-              </Text>
+              <RichVerseText text={day.intercession} isDark={isDark} lineHeight={s.intercessionTxt?.lineHeight || 24}
+                style={[s.intercessionTxt, { color: tones.versePillFg }]} />
             </View>
           </Section>
         )}
@@ -342,14 +344,17 @@ const Section = ({ title, tk, tones, children }) => {
   );
 };
 
-const PrayerRow = ({ index, text, tk, tones }) => {
+const PrayerRow = ({ index, text, tk, tones, isDark }) => {
   const { fade, translateY } = useStaggerEntry(Math.min(index, 8));
   return (
     <Animated.View style={[s.prayerRow, { opacity: fade, transform: [{ translateY }] }]}>
       <View style={[s.prayerNum, { backgroundColor: tones.chipBg }]}>
         <Text style={[s.prayerNumTxt, { color: tones.chipFg }]}>{index}</Text>
       </View>
-      <Text style={[s.prayerTxt, { color: tk.textSec }]}>{text}</Text>
+      <View style={{ flex: 1 }}>
+        <RichVerseText text={text} isDark={isDark} lineHeight={s.prayerTxt?.lineHeight || 22}
+          style={[s.prayerTxt, { color: tk.textSec }]} />
+      </View>
     </Animated.View>
   );
 };
@@ -357,40 +362,36 @@ const PrayerRow = ({ index, text, tk, tones }) => {
 const s = StyleSheet.create({
   topbar:   {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12,
+    paddingHorizontal: 20, paddingTop: 6, paddingBottom: 8,
   },
-  iconBtn:  { width: 42, height: 42, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
+  iconBtn:  { width: 38, height: 38, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
   eyebrow:  { fontSize: 10, fontWeight: '900', letterSpacing: 2 },
-  topTitle: { fontSize: 13, fontWeight: '800', marginTop: 2, maxWidth: 180, textAlign: 'center' },
 
-  // Hero
-  heroWrap:    { paddingHorizontal: 20, marginBottom: 22 },
-  heroCard:    { padding: 20, borderRadius: RADII.xl },
-  heroHeadRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 14 },
+  // Hero — compact rearrangement. Day badge shrunk 62→48, focus 21→17,
+  // padding 20→14, hero marginBottom 22→14, headRow marginBottom 14→8.
+  // Net: ~70px less vertical space before the message section begins.
+  heroWrap:    { paddingHorizontal: 20, marginBottom: 14 },
+  heroCard:    { padding: 14, borderRadius: RADII.xl },
+  heroHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   dayBadge:    {
-    width: 62, height: 62, borderRadius: RADII.md,
+    width: 48, height: 48, borderRadius: RADII.md,
     justifyContent: 'center', alignItems: 'center',
   },
-  dayBadgeNum: { fontSize: 28, fontWeight: '900', letterSpacing: -1, lineHeight: 30 },
-  heroDate:    { fontSize: 11.5, fontWeight: '700', letterSpacing: 0.2, marginBottom: 4 },
-  heroFocus:   { fontSize: 21, fontWeight: '900', lineHeight: 27, letterSpacing: -0.4 },
+  dayBadgeNum: { fontSize: 22, fontWeight: '900', letterSpacing: -0.8, lineHeight: 24 },
+  heroDate:    { fontSize: 11, fontWeight: '700', letterSpacing: 0.2, marginBottom: 2 },
+  heroFocus:   { fontSize: 17, fontWeight: '900', lineHeight: 22, letterSpacing: -0.3 },
   versePill:   {
-    flexDirection: 'row', alignItems: 'center', gap: 7,
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADII.pill,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADII.pill,
+    flexShrink: 1,
   },
-  versePillTxt: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1 },
-  heroBottomRow:{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  versePillTxt: { fontSize: 12, fontWeight: '800', letterSpacing: 0.1 },
+  heroBottomRow:{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   listenPill:   {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: RADII.pill,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: RADII.pill,
   },
-  listenPillTxt:{ fontSize: 12.5, fontWeight: '900', letterSpacing: 0.3 },
-  listenIcon:   {
-    width: 44, height: 44, borderRadius: 22,
-    justifyContent: 'center', alignItems: 'center',
-    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 1, shadowRadius: 14, elevation: 5,
-  },
-  listenIconTxt:{ fontSize: 20 },
+  listenPillTxt:{ fontSize: 12, fontWeight: '900', letterSpacing: 0.3 },
 
   // Section
   sectionLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 2.2, marginBottom: 10 },
