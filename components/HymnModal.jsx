@@ -45,12 +45,21 @@ const palette = (i) => ({
 });
 
 // ─── sub-components ───────────────────────────────────────────────────────────
-const VerseBlock = ({ text, index, accent, tk, t = (_,f)=>f }) => (
+// `text` can be a plain string (legacy bundled data) or a `{text, number}`
+// object (the shape JSONB returns from the hymns.verses column). Normalise
+// here so VerseBlock always gets a string to render — without this guard,
+// React throws "Objects are not valid as a React child".
+const verseString = (v) =>
+  v == null ? '' : (typeof v === 'string' ? v : String(v.text ?? ''));
+const verseNumber = (v, fallback) =>
+  v && typeof v === 'object' && Number.isFinite(v.number) ? v.number : fallback;
+
+const VerseBlock = ({ text, label, accent, tk, t = (_,f)=>f }) => (
   <View style={[vb.wrap, { borderColor: tk.border }]}>
     <View style={[vb.badge, { backgroundColor: accent + '18', borderColor: accent + '35', borderWidth: 1 }]}>
-      <Text style={[vb.num, { color: accent }]}>{t('hymn_verse_n', 'Verse {n}').replace('{n}', String(index + 1))}</Text>
+      <Text style={[vb.num, { color: accent }]}>{label || t('hymn_verse_n', 'Verse {n}').replace('{n}', '1')}</Text>
     </View>
-    <Text style={[vb.text, { color: tk.textPrimary }]}>{text}</Text>
+    <Text style={[vb.text, { color: tk.textPrimary }]}>{verseString(text)}</Text>
   </View>
 );
 const vb = StyleSheet.create({
@@ -112,15 +121,26 @@ const HymnView = ({ hymn, colorIdx, tk, t = (_,f)=>f }) => {
           </Text>
         </View>
 
-        {/* Verses interleaved with chorus */}
-        {(hymn.verses || []).map((verse, i) => (
-          <React.Fragment key={i}>
-            <VerseBlock text={verse} index={i} accent={accent} tk={tk} t={t} />
-            {!!hymn.chorus && (
-              <ChorusBlock text={hymn.chorus} accent={accent} tk={tk} t={t} />
-            )}
-          </React.Fragment>
-        ))}
+        {/* Verses interleaved with chorus. Verses can be strings or
+            {text, number} objects from JSONB — verseString() inside VerseBlock
+            handles both. */}
+        {(hymn.verses || []).map((verse, i) => {
+          const n = verseNumber(verse, i + 1);
+          return (
+            <React.Fragment key={i}>
+              <VerseBlock
+                text={verse}
+                label={t('hymn_verse_n', 'Verse {n}').replace('{n}', String(n))}
+                accent={accent}
+                tk={tk}
+                t={t}
+              />
+              {!!hymn.chorus && (
+                <ChorusBlock text={hymn.chorus} accent={accent} tk={tk} t={t} />
+              )}
+            </React.Fragment>
+          );
+        })}
       </View>
     </ScrollView>
   );
