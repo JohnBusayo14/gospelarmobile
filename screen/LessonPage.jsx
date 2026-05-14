@@ -304,10 +304,6 @@ const sh = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 const LessonHeroCard = ({
   lesson, content, tk, isDark, onQuiz, quizDone,
-  // Quiz-button gate state. When `gated` is true, the user hasn't read for
-  // the minimum dwell time yet — show a disabled button with the remaining
-  // time so they know why and how long is left.
-  gated = false, remainingLabel = '',
   t = (k,f)=>f,
 }) => (
   <View style={[hc.card, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
@@ -339,13 +335,6 @@ const LessonHeroCard = ({
               <View style={[hc.quizBtn, { backgroundColor:'#10B981' }]}>
                 <Text style={{ fontSize:14 }}>✅</Text>
                 <Text style={hc.quizBtnTxt}>{t('btn_done', 'Done')}</Text>
-              </View>
-            ) : gated ? (
-              // Pre-gate: visually muted, non-tappable, shows mm:ss remaining
-              // so the user understands they need to keep reading.
-              <View style={[hc.quizBtn, { backgroundColor: tk.surfaceEl }]}>
-                <Text style={{ fontSize:14 }}>⏳</Text>
-                <Text style={[hc.quizBtnTxt, { color: tk.textMuted }]}>{remainingLabel}</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={onQuiz} activeOpacity={0.85}
@@ -547,7 +536,6 @@ export default function LessonPage({ route, navigation }) {
 
   // Content modals
   const [verseModal,      setVerseModal]      = useState(false);
-  const [hymnsModal,      setHymnsModal]      = useState(false);
   const [backgroundModal, setBackgroundModal] = useState(false);
   const [conclusionModal, setConclusionModal] = useState(false);
 
@@ -582,17 +570,17 @@ export default function LessonPage({ route, navigation }) {
     return unsubscribe;
   }, [navigation, fetchLesson]);
 
-  // ── Auto reading check-in + completion gate ─────────────────────────────
+  // ── Auto reading check-in ───────────────────────────────────────────────
   // Start a timer on mount; pause on background / foreground transitions.
   // On unmount, if the user spent ≥ 120 s actively on the page, fire a
   // silent check-in. Server is idempotent for same-day re-fires, so the
   // user can come back and the streak does not double-count.
   //
-  // The same timer also gates the Quiz button — users must dwell on the
-  // lesson for the minimum dwell time before they can take the quiz (and
-  // therefore before the lesson is marked complete). Stops drive-by taps
-  // from inflating completion counts / streaks.
-  const MIN_READ_SECONDS = 120;   // 2 minutes
+  // (The dwell timer used to also gate the Quiz button — users had to read
+  // for 2 minutes before "Start Quiz" unlocked. That gate was removed; the
+  // quiz is now available immediately. The timer still runs only for the
+  // silent check-in below.)
+  const MIN_READ_SECONDS = 120;   // 2 minutes — silent check-in threshold
   const readingTimer = useReadingTimer({
     enabled:    !quizDone,
     minSeconds: MIN_READ_SECONDS,
@@ -611,13 +599,6 @@ export default function LessonPage({ route, navigation }) {
       }).catch(() => {});
     };
   }, []); // intentionally empty — fires only on unmount
-
-  // mm:ss helper for the gate label.
-  const fmtMMSS = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  };
 
   // Track recently visited
   useEffect(() => {
@@ -690,17 +671,7 @@ export default function LessonPage({ route, navigation }) {
         )}
       </ContentModal>
 
-      <ContentModal visible={hymnsModal} onClose={()=>setHymnsModal(false)}
-        title={t('lesson_suggested_hymns', 'Suggested Hymns')} icon="🎵" tk={tk} isDark={isDark} t={t}>
-        <Text style={[s.modalBodyTxt, { color:tk.textSec }]}>{c.suggested_hymns}</Text>
-        <TouchableOpacity onPress={() => { setHymnsModal(false); setHymnVisible(true); }}
-          activeOpacity={0.85} style={[s.modalActionBtn, { backgroundColor:BLUE }]}>
-          <Text style={{ fontSize:18 }}>🎵</Text>
-          <Text style={s.modalActionTxt}>{t('lesson_view_full_hymn', 'View Full Hymn')}</Text>
-        </TouchableOpacity>
-      </ContentModal>
-
-      <ContentModal visible={backgroundModal} onClose={()=>setBackgroundModal(false)}
+<ContentModal visible={backgroundModal} onClose={()=>setBackgroundModal(false)}
         title={t('lesson_background', 'Lesson Background')} icon="🏛" tk={tk} isDark={isDark} t={t}>
         <RichVerseText text={c.lesson_background||''} isDark={isDark}
           style={[s.modalBodyTxt, { color:tk.textSec }]} lineHeight={24}/>
@@ -748,11 +719,8 @@ export default function LessonPage({ route, navigation }) {
           <View style={s.section}>
             <LessonHeroCard
               lesson={lesson} content={c} tk={tk} isDark={isDark}
-              onQuiz={() => !quizDone && readingTimer.ready && setQuizVisible(true)}
+              onQuiz={() => !quizDone && setQuizVisible(true)}
               quizDone={quizDone}
-              // Quiz only unlocks after the 2-min dwell gate has elapsed.
-              gated={!quizDone && !readingTimer.ready}
-              remainingLabel={`${fmtMMSS(readingTimer.remaining)} ${t('lesson_to_quiz', 'to quiz')}`}
               t={t}
             />
           </View>
@@ -773,7 +741,7 @@ export default function LessonPage({ route, navigation }) {
                   <OverviewCard Icon={ICONS.Music} title={t('lesson_suggested_hymns', 'Suggested Hymns')}
                     preview={c.suggested_hymns}
                     accent="#7C3AED"
-                    onPress={()=>setHymnsModal(true)} tk={tk} t={t}/>
+                    onPress={()=>setHymnVisible(true)} tk={tk} t={t}/>
                 )}
                 {!!c.lesson_background && (
                   <OverviewCard Icon={ICONS.Landmark} title={t('lesson_background_short', 'Background')}
@@ -847,16 +815,6 @@ export default function LessonPage({ route, navigation }) {
                     <View style={[s.quizBtn, { backgroundColor:'#10B981' }]}>
                       <Text style={{ fontSize:18 }}>✅</Text>
                       <Text style={s.quizBtnTxt}>{t('lesson_quiz_completed', 'Quiz Completed')}</Text>
-                    </View>
-                  ) : !readingTimer.ready ? (
-                    // 2-min dwell gate not yet satisfied — show a disabled
-                    // pill with mm:ss remaining so the user knows what they
-                    // need to do to unlock the quiz.
-                    <View style={[s.quizBtn, { backgroundColor: tk.surfaceEl }]}>
-                      <Text style={{ fontSize:18 }}>⏳</Text>
-                      <Text style={[s.quizBtnTxt, { color: tk.textMuted }]}>
-                        {t('lesson_quiz_in', 'Quiz unlocks in')} {fmtMMSS(readingTimer.remaining)}
-                      </Text>
                     </View>
                   ) : (
                     <TouchableOpacity onPress={()=>setQuizVisible(true)} activeOpacity={0.85}
