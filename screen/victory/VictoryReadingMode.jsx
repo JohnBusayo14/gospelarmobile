@@ -131,12 +131,17 @@ export default function VictoryReadingMode({ route, navigation }) {
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     fade.setValue(0);
-    Animated.timing(fade, {
+    // Hold the handle so the cleanup can stop it on segment change or
+    // unmount — otherwise leaving the screen mid-fade triggers
+    // "Cannot read property 'stopTracking' of undefined".
+    const handle = Animated.timing(fade, {
       toValue: 1,
       duration: 320,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
-    }).start();
+    });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [idx, fade]);
 
   const goNext = () => idx < total - 1 && setIdx(idx + 1);

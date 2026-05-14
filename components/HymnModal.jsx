@@ -178,19 +178,25 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark }) {
   const backdropO = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Hold the handle so a fast visible-toggle (or unmount while the sheet
+    // is animating) doesn't leave the engine finalising a dead value.
+    let handle;
     if (visible) {
       setPageIdx(0);
-      Animated.parallel([
+      handle = Animated.parallel([
         Animated.spring(slideY,    { toValue: 0,       useNativeDriver: true, damping: 22, stiffness: 130 }),
         Animated.timing(backdropO, { toValue: 1,       duration: 260, useNativeDriver: true }),
-      ]).start();
+      ]);
+      handle.start();
       if (numbers.length > 0) fetchHymns(numbers);
     } else {
-      Animated.parallel([
+      handle = Animated.parallel([
         Animated.timing(slideY,    { toValue: SHEET_H, duration: 280, useNativeDriver: true }),
         Animated.timing(backdropO, { toValue: 0,       duration: 220, useNativeDriver: true }),
-      ]).start();
+      ]);
+      handle.start();
     }
+    return () => { try { handle && handle.stop(); } catch { /* already done */ } };
   }, [visible, hymnRef]);
 
   const fetchHymns = async (nums) => {

@@ -45,10 +45,14 @@ const NoteCard = ({ note, index, tk, onEdit, onDelete, t = (_,f)=>f }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim= useRef(new Animated.Value(16)).current;
   useEffect(()=>{
-    Animated.parallel([
+    // Hold the handle so a card unmounting mid-stagger doesn't leave the
+    // animator finalising a dead Animated.Value.
+    const handle = Animated.parallel([
       Animated.timing(fadeAnim, {toValue:1,duration:380,delay:index*50,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
       Animated.timing(slideAnim,{toValue:0,duration:380,delay:index*50,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   },[]);
   const preview = (note.body||'').trim().slice(0,120) + ((note.body||'').length>120?'…':'');
   const wc = wordCount(note.body);

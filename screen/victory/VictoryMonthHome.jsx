@@ -125,18 +125,30 @@ export default function VictoryMonthHome({ navigation }) {
         </View>
 
         {/* ── THEME RIBBON ───────────────────────────────────────────────── */}
+        {/* Rich royal-blue-to-indigo gradient. Same fancy treatment in both
+            modes — the depth of the colour carries the card on any backdrop,
+            and the text is always light so contrast stays high. */}
         <View style={s.themeRibbonWrap}>
-          <View style={[s.themeRibbon, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge }]}>
-            <Text style={[s.themeLabel, { color: tones.chipFg }]}>
+          <LinearGradient
+            colors={['#1D4ED8', '#2563EB', '#4F46E5']} // BLUE 700 → BLUE 600 → INDIGO 600
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[s.themeRibbon, {
+              borderColor: 'rgba(255,255,255,0.16)',
+            }]}
+          >
+            <Text style={[s.themeLabel, { color: 'rgba(219,234,254,0.95)' }]}>
               {t('vmp_theme', 'THEME')}
             </Text>
-            <Text style={[s.themeText, { color: tk.textPrimary }]} numberOfLines={2}>
+            <Text
+              style={[s.themeText, { color: '#FFFFFF' }]}
+              numberOfLines={2}
+            >
               {meta.theme}
             </Text>
-            <Text style={[s.themeWindow, { color: tones.textMuted }]}>
+            <Text style={[s.themeWindow, { color: 'rgba(219,234,254,0.85)' }]}>
               {meta.window}
             </Text>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* ── TODAY HERO ─────────────────────────────────────────────────── */}
@@ -205,7 +217,9 @@ export default function VictoryMonthHome({ navigation }) {
         </View>
 
         {/* ── 30-DAY GRID ────────────────────────────────────────────────── */}
-        <View style={s.section}>
+        {/* Tighter bottom margin here so "Explore" sits closer to the grid —
+            the two sections feel related (calendar → ways to use it). */}
+        <View style={[s.section, { marginBottom: 12 }]}>
           <SectionHead
             title={t('vmp_30_days', '30 Days of Prayer')}
             action={t('vmp_browse_all', 'Browse all')}
@@ -471,10 +485,14 @@ const ToolkitSheet = ({ visible, onClose, onPick, tk, tones, t = (k, f) => f }) 
   const backdrop = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    // Hold the handle so toggling visible rapidly (or unmounting while
+    // mid-animation) doesn't leave the animator finalising a dead value.
+    const handle = Animated.parallel([
       Animated.timing(slide,    { toValue: visible ? 1 : 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(backdrop, { toValue: visible ? 1 : 0, duration: 220, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [visible, slide, backdrop]);
 
   const translateY = slide.interpolate({ inputRange: [0, 1], outputRange: [420, 0] });

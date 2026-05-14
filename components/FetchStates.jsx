@@ -16,12 +16,18 @@ import { useLanguage } from '../context/LanguageContext';
 const ShimmerBlock = ({ width = '100%', height = 16, radius = 8, T }) => {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.loop(
+    // ShimmerBlock is used everywhere skeletons render — if a list unmounts
+    // mid-shimmer (e.g. user navigates back during fetch) and the loop
+    // wasn't stopped, the animator throws "Cannot read property
+    // 'stopTracking' of undefined" finalising the dead Animated.Value.
+    const handle = Animated.loop(
       Animated.sequence([
         Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
   return (

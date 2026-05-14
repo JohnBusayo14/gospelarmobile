@@ -24,40 +24,43 @@ export default function SplashScreen({ navigation }) {
   const orb2       = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Ambient orb float
+    // Every animation handle is captured so the cleanup can .stop() them
+    // all when the screen unmounts (e.g. if the user taps fast enough to
+    // exit Splash before the 2s timer fires, or auto-nav happens mid-loop).
+    // Without this, RN's native animator throws "Cannot read property
+    // 'stopTracking' of undefined" trying to finalise an Animated.Value
+    // whose owner has been GC'd.
     const floatOrb = (anim, dur, delay) =>
       Animated.loop(Animated.sequence([
         Animated.timing(anim, { toValue:1, duration:dur, delay, easing:Easing.inOut(Easing.sin), useNativeDriver:true }),
         Animated.timing(anim, { toValue:0, duration:dur, easing:Easing.inOut(Easing.sin), useNativeDriver:true }),
       ]));
-    floatOrb(orb1, 3500, 0).start();
-    floatOrb(orb2, 4800, 700).start();
 
-    // Logo entrance: fade in + spring scale + quick spin-in for personality.
-    Animated.parallel([
+    const orb1Loop  = floatOrb(orb1, 3500, 0);
+    const orb2Loop  = floatOrb(orb2, 4800, 700);
+    const entrance  = Animated.parallel([
       Animated.spring(logoScale, { toValue:1, tension:60, friction:8, useNativeDriver:true }),
       Animated.timing(logoOpac,  { toValue:1, duration:550, easing:Easing.out(Easing.cubic), useNativeDriver:true }),
       Animated.timing(logoRot,   { toValue:1, duration:900, easing:Easing.out(Easing.cubic), useNativeDriver:true }),
       Animated.timing(glowOpac,  { toValue:1, duration:700, delay:200, useNativeDriver:true }),
-    ]).start();
-
-    // Gentle continuous pulse on the logo after entrance.
+    ]);
     const pulseLoop = Animated.loop(Animated.sequence([
       Animated.timing(pulse, { toValue:1, duration:1100, delay:600, easing:Easing.inOut(Easing.quad), useNativeDriver:true }),
       Animated.timing(pulse, { toValue:0, duration:1100, easing:Easing.inOut(Easing.quad), useNativeDriver:true }),
     ]));
-    pulseLoop.start();
-
-    // Slow rotation of the glow ring for an ambient halo effect.
     const ringLoop = Animated.loop(
       Animated.timing(ringRot, { toValue:1, duration:6000, easing:Easing.linear, useNativeDriver:true })
     );
-    ringLoop.start();
+
+    const handles = [orb1Loop, orb2Loop, entrance, pulseLoop, ringLoop];
+    handles.forEach((h) => h.start());
 
     // Auto-navigate after 2s.
     const timer = setTimeout(async () => {
-      // Fade out
-      Animated.timing(logoOpac, { toValue:0, duration:280, useNativeDriver:true }).start();
+      // Fade out — also held so we can stop it on unmount.
+      const fadeOut = Animated.timing(logoOpac, { toValue:0, duration:280, useNativeDriver:true });
+      fadeOut.start();
+      handles.push(fadeOut);
 
       try {
         const email = await AsyncStorage.getItem('userEmail');
@@ -69,7 +72,10 @@ export default function SplashScreen({ navigation }) {
       }
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      handles.forEach((h) => { try { h.stop(); } catch { /* already done */ } });
+    };
   }, []);
 
   const orb1Y = orb1.interpolate({ inputRange:[0,1], outputRange:[0,-22] });
