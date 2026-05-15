@@ -140,16 +140,19 @@ export default function AdBanner() {
 }
 
 const s = StyleSheet.create({
-  overlay:      { flex:1, backgroundColor:'rgba(0,0,0,0.65)', justifyContent:'center', alignItems:'center', paddingHorizontal:24 },
-  sheet:        { width:'100%', maxWidth:420, borderRadius:24, backgroundColor:'#fff', overflow:'hidden',
+  // 80% × 80% of the phone screen, centred. Sheet is a fixed-size flex
+  // container — the image inside flexes to fill whatever space the
+  // optional title bar / close button leaves behind.
+  overlay:      { flex:1, backgroundColor:'rgba(0,0,0,0.65)', justifyContent:'center', alignItems:'center' },
+  sheet:        { width: width * 0.8, height: height * 0.8, borderRadius:24, backgroundColor:'#fff', overflow:'hidden',
                   shadowColor:'#000', shadowOffset:{width:0,height:16}, shadowOpacity:.22, shadowRadius:32, elevation:20 },
   handle:       { display:'none' },  // not needed for center modal
   closeBtn:     { position:'absolute', top:12, right:12, zIndex:10 },
   closeCircle:  { width:34, height:34, borderRadius:17, backgroundColor:'rgba(0,0,0,0.40)', justifyContent:'center', alignItems:'center' },
   closeX:       { color:'#fff', fontSize:14, fontWeight:'800' },
-  content:      { width:'100%' },
-  bannerImage:  { width:'100%', height:width*0.55, backgroundColor:'#F0F2F5' },
-  fallback:     { width:'100%', height:200, justifyContent:'center', alignItems:'center' },
+  content:      { width:'100%', flex:1 },
+  bannerImage:  { width:'100%', flex:1, backgroundColor:'#F0F2F5' },
+  fallback:     { width:'100%', flex:1, justifyContent:'center', alignItems:'center' },
   fallbackEmoji:{ fontSize:52, marginBottom:12 },
   fallbackTitle:{ fontSize:22, fontWeight:'900', color:'#fff', textAlign:'center', paddingHorizontal:24 },
   titleBar:     { padding:16, paddingBottom:16, backgroundColor:'#fff' },
