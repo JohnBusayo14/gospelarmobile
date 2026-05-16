@@ -21,7 +21,7 @@ import { useLanguage }  from '../../context/LanguageContext';
 import AppTabBar        from '../../components/AppTabBar';
 import {
   getAttendanceForLesson, setBulkAttendance,
-  getMarksForLesson, addMark,
+  getMarksForLesson, addMark, removeMark, updateMark,
 } from '../../services/teacherLocal';
 import { getTokens } from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
@@ -62,7 +62,7 @@ const sh = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // STUDENT CARD
 // ─────────────────────────────────────────────────────────────────────────────
-const StudentCard = ({ student, onTogglePresent, onAwardMark, marks, tk, t, isDark, index = 0 }) => {
+const StudentCard = ({ student, onTogglePresent, onAwardMark, onEditMark, marks, tk, t, isDark, index = 0 }) => {
   const MARK_TYPES = buildMarkTypes(t);
   const studentMarks = marks.filter(m => m.student_email === student.student_email);
   const totalPts     = studentMarks.reduce((s, m) => s + (parseInt(m.points) || 0), 0);
@@ -126,11 +126,13 @@ const StudentCard = ({ student, onTogglePresent, onAwardMark, marks, tk, t, isDa
         ))}
       </View>
 
-      {/* Awarded marks summary */}
+      {/* Awarded marks summary. Each pill is tappable — opens an action sheet
+          where the teacher can change the mark's type/points or remove it. */}
       {studentMarks.length > 0 && (
         <View style={[sc.awardRow, { borderTopColor: tk.border }]}>
           <Text style={[sc.awardLbl, { color: tk.textMuted }]}>
             {t('tmark_pts_awarded', '+{n} pts awarded').replace('{n}', String(totalPts))}
+            <Text style={[sc.awardEditHint, { color: tk.textMuted }]}>  ·  tap to edit</Text>
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection:'row', gap:6 }}>
@@ -138,16 +140,20 @@ const StudentCard = ({ student, onTogglePresent, onAwardMark, marks, tk, t, isDa
                 const mt = MARK_TYPES.find(x => x.key === m.mark_type) || MARK_TYPES[2];
                 const markPending = m.synced === false;
                 return (
-                  <View key={i} style={[sc.awardPill, {
-                    backgroundColor: mt.color + '15',
-                    borderColor:     markPending ? '#F59E0B' : (mt.color + '30'),
-                    borderStyle:     markPending ? 'dashed' : 'solid',
-                    borderWidth:     markPending ? 1.5 : 1,
-                  }]}>
+                  <TouchableOpacity
+                    key={m.id || i}
+                    onPress={() => onEditMark && onEditMark(m)}
+                    activeOpacity={0.7}
+                    style={[sc.awardPill, {
+                      backgroundColor: mt.color + '15',
+                      borderColor:     markPending ? '#F59E0B' : (mt.color + '30'),
+                      borderStyle:     markPending ? 'dashed' : 'solid',
+                      borderWidth:     markPending ? 1.5 : 1,
+                    }]}>
                     <Text style={{ fontSize: 10 }}>{mt.icon}</Text>
                     <Text style={[sc.awardPillTxt, { color: mt.color }]}>+{m.points}</Text>
                     {markPending && <Text style={sc.awardPillPending}>⏳</Text>}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -174,6 +180,7 @@ const sc = StyleSheet.create({
   awardPill:   { borderRadius:8, borderWidth:1, paddingHorizontal:8, paddingVertical:4, flexDirection:'row', alignItems:'center', gap:3 },
   awardPillTxt:{ fontSize:10, fontWeight:'800' },
   awardPillPending: { fontSize: 9, marginLeft: 1 },
+  awardEditHint:    { fontSize: 10, fontWeight: '600', fontStyle: 'italic' },
 
   nameRow:        { flexDirection:'row', alignItems:'center', gap:6 },
   pendingPill:    { backgroundColor:'#FEF3C7', borderColor:'#F59E0B', borderWidth:1, borderStyle:'dashed', borderRadius:8, paddingHorizontal:6, paddingVertical:2 },
@@ -221,6 +228,7 @@ export default function TeacherMarkSheet({ route, navigation }) {
         studentSynced:    r.studentSynced !== false,
       })));
       setMarks(lessonMarks.map(m => ({
+        id:            m.id,                  // preserve so edit/remove can target this row
         student_email: m.studentId,
         mark_type:     m.mark_type,
         points:        m.points,
@@ -240,21 +248,85 @@ export default function TeacherMarkSheet({ route, navigation }) {
   };
 
   const awardMark = async (studentId, markType) => {
-    // Optimistic UI update first, then persist to AsyncStorage
+    // Optimistic UI update with a temp id we can swap once AsyncStorage assigns
+    // the real one. Without the temp id, the pill is un-tappable until the
+    // async write completes, which feels broken on slow devices.
+    const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     setMarks(prev => [...prev, {
+      id:            tempId,
       student_email: studentId,
       mark_type:     markType.key,
       points:        markType.points,
       note:          markType.label,
+      synced:        false,
     }]);
     try {
-      await addMark(classId, lessonNumber, {
+      const entry = await addMark(classId, lessonNumber, {
         studentId,
         mark_type: markType.key,
         points:    markType.points,
         note:      markType.label,
       });
+      // Swap the temp id for the persistent one so subsequent edits/removes
+      // address the same row the store knows about.
+      if (entry?.id) {
+        setMarks(prev => prev.map(m => (m.id === tempId ? { ...m, id: entry.id } : m)));
+      }
     } catch (e) { console.warn('awardMark:', e.message); }
+  };
+
+  // Tap an awarded pill → action sheet. Lets the teacher remove a mistaken
+  // mark or convert it to a different type/points without having to delete
+  // and re-add. Local store and UI state stay in lockstep — if the persist
+  // fails the optimistic update is reverted from the original snapshot.
+  const editMark = async (mark, newType) => {
+    const snapshot = marks;
+    setMarks(prev => prev.map(m =>
+      m.id === mark.id
+        ? { ...m, mark_type: newType.key, points: newType.points, note: newType.label, synced: false }
+        : m
+    ));
+    try {
+      await updateMark(classId, lessonNumber, mark.id, {
+        mark_type: newType.key,
+        points:    newType.points,
+        note:      newType.label,
+      });
+    } catch (e) {
+      console.warn('editMark:', e.message);
+      setMarks(snapshot);
+    }
+  };
+
+  const deleteMark = async (mark) => {
+    const snapshot = marks;
+    setMarks(prev => prev.filter(m => m.id !== mark.id));
+    try {
+      await removeMark(classId, lessonNumber, mark.id);
+    } catch (e) {
+      console.warn('removeMark:', e.message);
+      setMarks(snapshot);
+    }
+  };
+
+  // Open the per-pill action sheet. We hand the StudentCard a single handler
+  // that already knows about MARK_TYPES + the current mark, so the card stays
+  // dumb and presentation-only.
+  const openMarkActions = (mark) => {
+    const current = MARK_TYPES.find(x => x.key === mark.mark_type) || MARK_TYPES[2];
+    const otherTypes = MARK_TYPES.filter(x => x.key !== current.key);
+    Alert.alert(
+      `${current.icon} ${current.label} · +${mark.points}`,
+      'Change this mark or remove it.',
+      [
+        ...otherTypes.map(mt => ({
+          text: `Change to ${mt.label} (+${mt.points})`,
+          onPress: () => editMark(mark, mt),
+        })),
+        { text: 'Remove', style: 'destructive', onPress: () => deleteMark(mark) },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
   };
 
   const saveAttendance = async () => {
@@ -392,6 +464,7 @@ export default function TeacherMarkSheet({ route, navigation }) {
                 marks={marks}
                 onTogglePresent={togglePresent}
                 onAwardMark={awardMark}
+                onEditMark={openMarkActions}
                 tk={tk}
                 t={t}
                 isDark={isDark}

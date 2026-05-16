@@ -172,7 +172,7 @@ export async function getMarksForLesson(classId, lessonNumber) {
 export async function addMark(classId, lessonNumber, { studentId, mark_type, points, note }) {
   const data = await loadClass(classId);
   const arr  = data.marks[String(lessonNumber)] || [];
-  arr.push({
+  const entry = {
     id: newId(),                     // local id so sync can mark this exact entry synced later
     studentId,
     mark_type,
@@ -180,9 +180,48 @@ export async function addMark(classId, lessonNumber, { studentId, mark_type, poi
     note: note || null,
     awardedAt: new Date().toISOString(),
     synced: false,
-  });
+  };
+  arr.push(entry);
   data.marks[String(lessonNumber)] = arr;
   await saveClass(classId, data);
+  return entry;
+}
+
+// Remove a single mark by its local id. Used by the mark-sheet screen when a
+// teacher taps an awarded pill and picks "Remove" — they may have tapped the
+// wrong row, mis-assessed the answer, or awarded a duplicate. No-ops silently
+// if the mark is already gone (idempotent).
+export async function removeMark(classId, lessonNumber, markId) {
+  const data = await loadClass(classId);
+  const key  = String(lessonNumber);
+  const arr  = data.marks[key] || [];
+  const filtered = arr.filter(m => m.id !== markId);
+  if (filtered.length === arr.length) return false;   // nothing removed
+  data.marks[key] = filtered;
+  await saveClass(classId, data);
+  return true;
+}
+
+// Patch the editable fields on one mark (mark_type, points, note). The synced
+// flag is forced back to false so the sync worker re-sends the new values to
+// the server even if the original row already synced through. studentId and
+// id are immutable here — to "reassign" a mark you remove + add a new one.
+export async function updateMark(classId, lessonNumber, markId, patch) {
+  const data = await loadClass(classId);
+  const key  = String(lessonNumber);
+  const arr  = data.marks[key] || [];
+  const idx  = arr.findIndex(m => m.id === markId);
+  if (idx < 0) return null;
+  const next = { ...arr[idx] };
+  if (patch.mark_type != null) next.mark_type = patch.mark_type;
+  if (patch.points    != null) next.points    = parseInt(patch.points, 10) || 0;
+  if (patch.note      !== undefined) next.note = patch.note || null;
+  next.editedAt = new Date().toISOString();
+  next.synced   = false;
+  arr[idx] = next;
+  data.marks[key] = arr;
+  await saveClass(classId, data);
+  return next;
 }
 
 // ── Aggregated stats per student (powers the leaderboard) ────────────────────
