@@ -60,6 +60,10 @@ const mapDay = (row) => ({
   prayer_points: Array.isArray(row.prayer_points) ? row.prayer_points : [],
   intercession:  row.special_intercession || '',
   published:     row.published !== false,
+  // Preserved so screens can swap in the user's selected language at render
+  // time via localizeDay(). Shape: { yo: {...}, ig: {...}, ha: {...} } with
+  // keys matching the DB column names (focus / scripture_text / etc).
+  translations:  row.translations && typeof row.translations === 'object' ? row.translations : null,
 });
 
 // Vigil group + slug derive from entry_type ('family_vigil' → 'Family',
@@ -109,6 +113,7 @@ const mapVigil = (row) => ({
   discussion:    Array.isArray(row.discussion_questions) ? row.discussion_questions : [],
   prayer_points: Array.isArray(row.prayer_points) ? row.prayer_points : [],
   published:     row.published !== false,
+  translations:  row.translations && typeof row.translations === 'object' ? row.translations : null,
 });
 
 const mapMeta = (book) => ({
@@ -199,6 +204,53 @@ export const fetchVictoryDay = async (n) =>
 // prayer_points / discussion_questions), so reading from there leaves the
 // vigil detail screen mostly blank. Fixed: query the single-entry route
 // instead.
+// ── Per-language overlays ──────────────────────────────────────────────────
+// The admin enters Yoruba / Igbo / Hausa versions of each entry's translatable
+// fields in BookManage; they land in book_entries.translations as a JSONB blob
+// keyed by language code. The shape uses the DB column names (focus,
+// scripture_text, inspirational_message, prayer_points, special_intercession,
+// discussion_questions) — these helpers overlay them onto the already-mapped
+// frontend shape so screens never have to know about either format.
+//
+// Falls back silently when:
+//   • lang is 'en' or falsy
+//   • the day/vigil has no translations object
+//   • the requested language block is missing
+//   • a specific field is missing or empty
+// In every case the English value passes through unchanged, so users on a
+// partially-translated day still see something readable instead of blanks.
+
+const _hasText  = (v) => typeof v === 'string' && v.trim().length > 0;
+const _hasArr   = (v) => Array.isArray(v) && v.length > 0;
+
+export function localizeDay(day, lang) {
+  if (!day || !lang || lang === 'en') return day;
+  const block = day.translations?.[lang];
+  if (!block || typeof block !== 'object') return day;
+  return {
+    ...day,
+    focus:         _hasText(block.focus)                 ? block.focus                 : day.focus,
+    scripture:     _hasText(block.scripture_text)        ? block.scripture_text        : day.scripture,
+    message:       _hasText(block.inspirational_message) ? block.inspirational_message : day.message,
+    prayer_points: _hasArr(block.prayer_points)          ? block.prayer_points         : day.prayer_points,
+    intercession:  _hasText(block.special_intercession)  ? block.special_intercession  : day.intercession,
+  };
+}
+
+export function localizeVigil(vigil, lang) {
+  if (!vigil || !lang || lang === 'en') return vigil;
+  const block = vigil.translations?.[lang];
+  if (!block || typeof block !== 'object') return vigil;
+  return {
+    ...vigil,
+    focus:         _hasText(block.focus)                 ? block.focus                 : vigil.focus,
+    scripture:     _hasText(block.scripture_text)        ? block.scripture_text        : vigil.scripture,
+    message:       _hasText(block.inspirational_message) ? block.inspirational_message : vigil.message,
+    prayer_points: _hasArr(block.prayer_points)          ? block.prayer_points         : vigil.prayer_points,
+    discussion:    _hasArr(block.discussion_questions)   ? block.discussion_questions  : vigil.discussion,
+  };
+}
+
 export const fetchVictoryVigil = async (id) =>
   cacheFirst(`victory:vigil:${id}`, async () => {
     const { entry_type, entry_number } = vigilIdToEntry(id);

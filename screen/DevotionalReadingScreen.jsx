@@ -13,6 +13,7 @@ import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces'
 import { useScreenEntry } from '../hooks/useFluidAnim';
 import { useReadingTimer } from '../hooks/useReadingTimer';
 import { silentReadingCheckIn } from '../services/reading';
+import { RichVerseText } from '../components/BibleVerseLink';
 
 const { width } = Dimensions.get('window');
 const BLUE='#1A56DB', BLUE_MID='#3B82F6', BLUE_LIGHT='#EFF6FF', AMBER='#F59E0B', AMBER_LIGHT='#FEF3C7';
@@ -100,7 +101,8 @@ const DevSection = ({sectionKey,Icon,label,color,lightBg,content,highlights,onHi
       </TouchableOpacity>
       {open&&(
         <View style={{borderTopWidth:1,borderTopColor:tk.glassEdge,padding:18}}>
-          <Text style={{fontSize:14.5,lineHeight:26,fontWeight:'400',marginBottom:10,color:tk.textSec}}>{content}</Text>
+          <RichVerseText text={content} isDark={isDark} lineHeight={26}
+            style={{fontSize:14.5,fontWeight:'400',marginBottom:10,color:tk.textSec}} />
           <Text style={{fontSize:10,fontStyle:'italic',color:tk.textMuted}}>{t('dev_long_press_to_hl', 'Long-press to highlight')}</Text>
         </View>
       )}
@@ -214,7 +216,10 @@ export default function DevotionalReadingScreen({route,navigation}) {
               {!!currentDay?.scripture&&(
                 <View style={{flexDirection:'row',alignItems:'center',gap:8,borderRadius:10,borderWidth:1,paddingHorizontal:12,paddingVertical:8,marginBottom:12,backgroundColor:AMBER_LIGHT,borderColor:AMBER+'40'}}>
                   <ICONS.Book color="#92400E" size={16} sw={2} />
-                  <Text style={{fontSize:13,fontWeight:'700',flex:1,color:'#92400E'}}>{currentDay.scripture}</Text>
+                  <View style={{flex:1}}>
+                    <RichVerseText text={currentDay.scripture} isDark={isDark} lineHeight={18}
+                      style={{fontSize:13,fontWeight:'700',color:'#92400E'}} />
+                  </View>
                 </View>
               )}
               {allDays.length>1&&(

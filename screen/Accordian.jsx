@@ -1,6 +1,7 @@
 // components/Accordion.jsx
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { RichVerseText } from '../components/BibleVerseLink';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -54,10 +55,11 @@ export default function Accordion({ day, title, scripture, content }) {
 
       {expanded && (
         <View style={styles.body}>
-          <Text style={styles.bodyText}>
-            {content ||
-              'In this devotional reading, meditate on how the scripture for today connects to the lesson theme. Consider how you can apply this passage in your daily walk this week. Journal your reflections and bring a thought to share with your study group.'}
-          </Text>
+          <RichVerseText
+            text={content || 'In this devotional reading, meditate on how the scripture for today connects to the lesson theme. Consider how you can apply this passage in your daily walk this week. Journal your reflections and bring a thought to share with your study group.'}
+            lineHeight={styles.bodyText.lineHeight}
+            style={styles.bodyText}
+          />
         </View>
       )}
     </View>

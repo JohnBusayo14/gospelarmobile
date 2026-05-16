@@ -34,6 +34,11 @@ import VictoryBackdrop from './VictoryBackdrop';
 import { RichVerseText } from '../../components/BibleVerseLink';
 
 const STORAGE_KEY = 'vmp_completed_days';
+// Per-prayer-point check-off state, shaped as { [dayNum]: { [idx]: true } }.
+// Kept separate from STORAGE_KEY so the day-completion gate doesn't depend on
+// every individual point being ticked — some users mark the whole day prayed
+// without ticking each point, and we want both flows to work.
+const PRAYED_POINTS_KEY = 'vmp_prayed_points';
 // User must dwell on a day's content for at least this many seconds before
 // "Mark as prayed" can be tapped. Stops drive-by completions from inflating
 // streaks / unlocking achievements without real engagement.
@@ -41,7 +46,11 @@ const MIN_PRAY_SECONDS = 120;
 
 export default function VictoryDayScreen({ route, navigation }) {
   const { isDark } = useTheme();
-  const { t }      = useLanguage();
+  const { t, lang } = useLanguage();
+  // Voice reading uses expo-speech, which doesn't ship Yoruba / Igbo / Hausa
+  // voices on most devices — feeding non-English text to it produces garbled
+  // mispronounced English. Hide Listen everywhere unless the user is in 'en'.
+  const ttsAvailable = lang === 'en';
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
@@ -72,6 +81,49 @@ export default function VictoryDayScreen({ route, navigation }) {
       .then((raw) => setCompleted(!!(raw ? JSON.parse(raw) : {})[dayNum]))
       .catch(() => setCompleted(false));
   }, [dayNum]);
+
+  // Per-prayer-point check-off — { [idx]: true } for the currently-viewed
+  // day. Tapping a point's number badge toggles its prayed state and
+  // persists to AsyncStorage so the marks survive app restarts.
+  const [prayedPoints, setPrayedPoints] = useState({});
+
+  useEffect(() => {
+    AsyncStorage.getItem(PRAYED_POINTS_KEY)
+      .then((raw) => {
+        const all = raw ? JSON.parse(raw) : {};
+        setPrayedPoints(all?.[dayNum] || {});
+      })
+      .catch(() => setPrayedPoints({}));
+  }, [dayNum]);
+
+  const togglePrayerPoint = async (idx) => {
+    // Optimistic update — state flips immediately so the tap feels snappy,
+    // then we persist. If the write fails the in-memory state already won.
+    let next;
+    setPrayedPoints((cur) => {
+      next = { ...cur };
+      if (next[idx]) delete next[idx];
+      else next[idx] = true;
+      return next;
+    });
+    try {
+      const raw = await AsyncStorage.getItem(PRAYED_POINTS_KEY);
+      const all = raw ? JSON.parse(raw) : {};
+      if (Object.keys(next).length) all[dayNum] = next;
+      else                          delete all[dayNum];
+      await AsyncStorage.setItem(PRAYED_POINTS_KEY, JSON.stringify(all));
+    } catch { /* state already updated */ }
+  };
+
+  const resetPrayerPoints = async () => {
+    setPrayedPoints({});
+    try {
+      const raw = await AsyncStorage.getItem(PRAYED_POINTS_KEY);
+      const all = raw ? JSON.parse(raw) : {};
+      delete all[dayNum];
+      await AsyncStorage.setItem(PRAYED_POINTS_KEY, JSON.stringify(all));
+    } catch { /* state already cleared */ }
+  };
 
   const toggleCompleted = async () => {
     // Block the first mark unless the user has spent the minimum dwell time.
@@ -182,14 +234,16 @@ export default function VictoryDayScreen({ route, navigation }) {
                   </View>
                 </View>
               )}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
-                activeOpacity={0.82}
-                style={[s.listenPill, { backgroundColor: tones.todayBg }]}
-                accessibilityLabel={t('vmp_listen', 'Listen to this prayer')}
-              >
-                <Text style={[s.listenPillTxt, { color: tones.todayFg }]}>🔊  Listen</Text>
-              </TouchableOpacity>
+              {ttsAvailable && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
+                  activeOpacity={0.82}
+                  style={[s.listenPill, { backgroundColor: tones.todayBg }]}
+                  accessibilityLabel={t('vmp_listen', 'Listen to this prayer')}
+                >
+                  <Text style={[s.listenPillTxt, { color: tones.todayFg }]}>🔊  Listen</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -205,11 +259,53 @@ export default function VictoryDayScreen({ route, navigation }) {
         )}
 
         {/* ── PRAYER POINTS ──────────────────────────────────────────────── */}
+        {/* Each point is tappable — the number badge becomes a green check
+            once prayed, and the text is muted + struck through. State is
+            per-day and persisted in AsyncStorage so a user can pray over
+            time and resume where they left off. */}
         {Array.isArray(day.prayer_points) && day.prayer_points.length > 0 && (
-          <Section title={t('vmp_section_prayer_points', 'Prayer Points')} tk={tk} tones={tones}>
+          <Section
+            title={t('vmp_section_prayer_points', 'Prayer Points')}
+            tk={tk}
+            tones={tones}
+            right={
+              <View style={s.prayedCounterRow}>
+                <View style={[s.prayedCounter, {
+                  backgroundColor: Object.keys(prayedPoints).length === day.prayer_points.length
+                    ? EMERALD[100]
+                    : tones.chipBg,
+                }]}>
+                  <Text style={[s.prayedCounterTxt, {
+                    color: Object.keys(prayedPoints).length === day.prayer_points.length
+                      ? EMERALD[700]
+                      : tones.chipFg,
+                  }]}>
+                    {Object.keys(prayedPoints).length} / {day.prayer_points.length}{' '}
+                    {t('vmp_prayed_label', 'prayed')}
+                  </Text>
+                </View>
+                {Object.keys(prayedPoints).length > 0 && (
+                  <TouchableOpacity onPress={resetPrayerPoints} activeOpacity={0.7}>
+                    <Text style={[s.prayedReset, { color: tk.textMuted }]}>
+                      {t('vmp_reset', 'Reset')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            }
+          >
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
               {day.prayer_points.map((p, i) => (
-                <PrayerRow key={i} index={i + 1} text={p} tk={tk} tones={tones} isDark={isDark} />
+                <PrayerRow
+                  key={i}
+                  index={i + 1}
+                  text={p}
+                  prayed={!!prayedPoints[i]}
+                  onToggle={() => togglePrayerPoint(i)}
+                  tk={tk}
+                  tones={tones}
+                  isDark={isDark}
+                />
               ))}
             </View>
           </Section>
@@ -260,13 +356,15 @@ export default function VictoryDayScreen({ route, navigation }) {
           >
             <Text style={s.actionTxtLight}>📖  Read</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
-            activeOpacity={0.85}
-            style={[s.actionBtn, { backgroundColor: BLUE[500] }]}
-          >
-            <Text style={s.actionTxtLight}>🎧  Listen</Text>
-          </TouchableOpacity>
+          {ttsAvailable && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('VictoryAudioPlayer', { day: dayNum })}
+              activeOpacity={0.85}
+              style={[s.actionBtn, { backgroundColor: BLUE[500] }]}
+            >
+              <Text style={s.actionTxtLight}>🎧  Listen</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryEditDay', { day: dayNum })}
             activeOpacity={0.85}
@@ -332,29 +430,58 @@ export default function VictoryDayScreen({ route, navigation }) {
 }
 
 // ── Re-usable bits ───────────────────────────────────────────────────────────
-const Section = ({ title, tk, tones, children }) => {
+const Section = ({ title, tk, tones, children, right }) => {
   const { fade, translateY } = useStaggerEntry(0);
   return (
     <Animated.View style={{ opacity: fade, transform: [{ translateY }], paddingHorizontal: 20, marginBottom: 20 }}>
-      <Text style={[s.sectionLabel, { color: tones.chipFg }]}>
-        {String(title).toUpperCase()}
-      </Text>
+      <View style={s.sectionHeadRow}>
+        <Text style={[s.sectionLabel, { color: tones.chipFg }]}>
+          {String(title).toUpperCase()}
+        </Text>
+        {right ? <View style={{ marginLeft: 'auto' }}>{right}</View> : null}
+      </View>
       {children}
     </Animated.View>
   );
 };
 
-const PrayerRow = ({ index, text, tk, tones, isDark }) => {
+// A tappable prayer point — the badge flips to a green check once prayed,
+// and the text takes on a struck-through muted treatment so the user can
+// see at a glance which points are still pending mid-prayer.
+const PrayerRow = ({ index, text, prayed, onToggle, tk, tones, isDark }) => {
   const { fade, translateY } = useStaggerEntry(Math.min(index, 8));
   return (
     <Animated.View style={[s.prayerRow, { opacity: fade, transform: [{ translateY }] }]}>
-      <View style={[s.prayerNum, { backgroundColor: tones.chipBg }]}>
-        <Text style={[s.prayerNumTxt, { color: tones.chipFg }]}>{index}</Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <RichVerseText text={text} isDark={isDark} lineHeight={s.prayerTxt?.lineHeight || 22}
-          style={[s.prayerTxt, { color: tk.textSec }]} />
-      </View>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: !!prayed }}
+        accessibilityLabel={`Prayer point ${index}, ${prayed ? 'prayed' : 'not prayed'}`}
+        style={[s.prayerNum, {
+          backgroundColor: prayed ? EMERALD[500] : tones.chipBg,
+        }]}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        {prayed
+          ? <ICONS.Check color="#fff" size={14} sw={2.6} />
+          : <Text style={[s.prayerNumTxt, { color: tones.chipFg }]}>{index}</Text>}
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.8}
+        style={{ flex: 1 }}
+      >
+        <RichVerseText
+          text={text}
+          isDark={isDark}
+          lineHeight={s.prayerTxt?.lineHeight || 22}
+          style={[s.prayerTxt, {
+            color: prayed ? tk.textMuted : tk.textSec,
+            textDecorationLine: prayed ? 'line-through' : 'none',
+          }]}
+        />
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -394,7 +521,10 @@ const s = StyleSheet.create({
   listenPillTxt:{ fontSize: 12, fontWeight: '900', letterSpacing: 0.3 },
 
   // Section
-  sectionLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 2.2, marginBottom: 10 },
+  sectionHeadRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 10,
+  },
+  sectionLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 2.2 },
   card:         { padding: 18, borderRadius: RADII.lg },
   body:         { fontSize: 14.5, lineHeight: 23, fontWeight: '500' },
 
@@ -403,6 +533,12 @@ const s = StyleSheet.create({
   prayerNum:    { width: 28, height: 28, borderRadius: 9, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
   prayerNumTxt: { fontSize: 12.5, fontWeight: '900' },
   prayerTxt:    { flex: 1, fontSize: 14.5, lineHeight: 22, fontWeight: '500' },
+
+  // Prayer-points progress chip + reset, sits to the right of the label
+  prayedCounterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  prayedCounter:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  prayedCounterTxt: { fontSize: 10.5, fontWeight: '900', letterSpacing: 0.6 },
+  prayedReset:      { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // Intercession highlight
   intercessionBox:   { padding: 18, borderRadius: RADII.lg },

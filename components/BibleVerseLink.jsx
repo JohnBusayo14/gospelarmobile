@@ -107,18 +107,81 @@ export default function BibleVerseLink({
 // Helper: parse inline text and extract verse references, returning an array
 // of {type:'text'|'verse', value} segments. Used for rich text rendering.
 //
-// Example:
-//   parseVerseRefs("See John 3:16 and Eph. 4:3-4 for reference.")
-//   → [{type:'text', value:'See '}, {type:'verse', value:'John 3:16'}, ...]
+// Examples:
+//   "See John 3:16 and Eph. 4:3-4"  → [text, verse:"John 3:16", text, verse:"Eph. 4:3-4"]
+//   "Read Genesis 1 carefully"      → [text, verse:"Genesis 1", text]
+//   "Matt. 28:16, 18-20; Acts 22:14"→ [verse:"Matt. 28:16", text, verse:"18-20"…  ]
+//
+// Book recognition is whitelisted (full names, common abbreviations, Roman-
+// numeral prefixes). The regex matches `<Book>[.] <chapter>[:verse[-end]]`,
+// so chapter-only refs ("Psalm 23") are picked up too.
 // ─────────────────────────────────────────────────────────────────────────────
-const VERSE_PATTERN = /\b((?:\d\s)?[A-Za-zÀ-ÿ]+\.?\s*\d+:\d+(?:[–\-]\d+)?)/g;
+
+// Single source of truth for what counts as a book. Order is preserved when
+// building the regex — longer tokens come first so "1 Corinthians" wins over
+// "1 Cor" and "Genesis" wins over "Gen".
+const BOOK_TOKENS = [
+  // ── Two-word / numbered first (longest first to win the alternation race) ──
+  '1 Corinthians', '2 Corinthians', 'I Corinthians', 'II Corinthians',
+  '1 Thessalonians', '2 Thessalonians', 'I Thessalonians', 'II Thessalonians',
+  '1 Chronicles', '2 Chronicles', 'I Chronicles', 'II Chronicles',
+  'Song of Solomon', 'Song of Songs',
+  '1 Samuel', '2 Samuel', 'I Samuel', 'II Samuel',
+  '1 Timothy', '2 Timothy', 'I Timothy', 'II Timothy',
+  '1 Kings', '2 Kings', 'I Kings', 'II Kings',
+  '1 Peter', '2 Peter', 'I Peter', 'II Peter',
+  '1 John', '2 John', '3 John', 'I John', 'II John', 'III John',
+  '1 Cor', '2 Cor', '1 Thess', '2 Thess', '1 Tim', '2 Tim',
+  '1 Sam', '2 Sam', '1 Kgs', '2 Kgs', '1 Chr', '2 Chr',
+  '1 Pet', '2 Pet', '1 Jn', '2 Jn', '3 Jn',
+
+  // ── Single-word full names ───────────────────────────────────────────────
+  'Deuteronomy', 'Ecclesiastes', 'Lamentations', 'Philippians', 'Philemon',
+  'Colossians', 'Galatians', 'Ephesians', 'Revelation', 'Zechariah',
+  'Zephaniah', 'Habakkuk', 'Nehemiah', 'Leviticus', 'Proverbs', 'Jeremiah',
+  'Ezekiel', 'Isaiah', 'Hebrews', 'Matthew', 'Obadiah', 'Romans', 'Genesis',
+  'Numbers', 'Joshua', 'Judges', 'Esther', 'Psalms', 'Daniel', 'Haggai',
+  'Malachi', 'Hosea', 'Micah', 'Nahum', 'James', 'Exodus', 'Psalm', 'Titus',
+  'Acts', 'Mark', 'Luke', 'John', 'Ruth', 'Ezra', 'Joel', 'Amos', 'Jonah',
+  'Jude', 'Job',
+
+  // ── Single-word abbreviations ────────────────────────────────────────────
+  'Philem', 'Phlm', 'Ephes', 'Deut', 'Eccl', 'Zech', 'Zeph', 'Matt', 'Prov',
+  'Song', 'Josh', 'Judg', 'Esth', 'Ezek', 'Gen', 'Exo', 'Lev', 'Num', 'Deu',
+  'Jos', 'Jdg', 'Rut', 'Ezr', 'Neh', 'Est', 'Psa', 'Pro', 'Ecc', 'Sos',
+  'Isa', 'Jer', 'Lam', 'Eze', 'Dan', 'Hos', 'Joe', 'Amo', 'Oba', 'Jon',
+  'Mic', 'Nah', 'Hab', 'Zep', 'Hag', 'Zec', 'Mal', 'Mat', 'Mar', 'Luk',
+  'Joh', 'Rom', 'Gal', 'Eph', 'Phil', 'Phl', 'Col', 'Tit', 'Heb', 'Jas',
+  'Jam', 'Rev', 'Mt', 'Mk', 'Lk', 'Jn', 'Ac', 'Ro', 'Ps',
+];
+
+function escapeRe(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Build one big alternation, escape each token, allow the optional period
+// (Eph. / Matt.) and an optional space. Then require a chapter number, with
+// an optional ":verse" (and optional "-end").
+const BOOK_ALT = BOOK_TOKENS
+  .slice()
+  .sort((a, b) => b.length - a.length)  // longest-first inside the alternation
+  .map(escapeRe)
+  .join('|');
+
+const VERSE_PATTERN = new RegExp(
+  // (?<![A-Za-z]) — don't match mid-word ("Romans" inside "Romansworld")
+  // Separator after the book is either a period (optionally followed by space)
+  // or one-or-more spaces, so we catch "Philem.1:8" as well as "Philem 1:8".
+  `(?<![A-Za-zÀ-ÿ])(${BOOK_ALT})(?:\\.\\s*|\\s+)(\\d+)(?::\\d+(?:\\s*[-–—]\\s*\\d+)?)?(?![A-Za-zÀ-ÿ])`,
+  'gi'
+);
 
 export function parseVerseRefs(text = '') {
   const segments = [];
   let lastIndex  = 0;
   let match;
 
-  VERSE_PATTERN.lastIndex = 0; // reset stateful regex
+  VERSE_PATTERN.lastIndex = 0;
 
   while ((match = VERSE_PATTERN.exec(text)) !== null) {
     const [full] = match;

@@ -30,6 +30,7 @@ import {
 import VictoryBackdrop from './VictoryBackdrop';
 import { getCategory } from './victoryCategoriesData';
 import { useCategoryPrayers } from './victoryHooks';
+import { RichVerseText } from '../../components/BibleVerseLink';
 
 export default function VictoryCategoryScreen({ route, navigation }) {
   const id = route?.params?.id;
@@ -160,6 +161,7 @@ export default function VictoryCategoryScreen({ route, navigation }) {
                   cat={cat}
                   tk={tk}
                   tones={tones}
+                  isDark={isDark}
                   ownable
                   onPrayed={() => update(p.id, { prayed_count: (p.prayed_count || 0) + 1 })}
                   onFavourite={() => update(p.id, { favourite: !p.favourite })}
@@ -182,6 +184,7 @@ export default function VictoryCategoryScreen({ route, navigation }) {
                 cat={cat}
                 tk={tk}
                 tones={tones}
+                isDark={isDark}
               />
             ))}
           </View>
@@ -199,7 +202,7 @@ const HeroStat = ({ label, value }) => (
   </View>
 );
 
-const PrayerCard = ({ p, index, cat, tk, tones, ownable, onPrayed, onFavourite, onDelete }) => {
+const PrayerCard = ({ p, index, cat, tk, tones, ownable, onPrayed, onFavourite, onDelete, isDark }) => {
   const { fade, translateY } = useStaggerEntry(Math.min(index, 8));
   return (
     <Animated.View style={{ opacity: fade, transform: [{ translateY }] }}>
@@ -215,11 +218,16 @@ const PrayerCard = ({ p, index, cat, tk, tones, ownable, onPrayed, onFavourite, 
           )}
         </View>
         {!!p.scripture && (
-          <View style={[s.versePill, { backgroundColor: cat.accentBg }]}>
-            <Text style={[s.versePillTxt, { color: cat.gradient[0] }]}>📖  {p.scripture}</Text>
+          <View style={[s.versePill, { backgroundColor: cat.accentBg, flexDirection: 'row', alignItems: 'center' }]}>
+            <Text style={[s.versePillTxt, { color: cat.gradient[0] }]}>📖  </Text>
+            <View style={{ flex: 1 }}>
+              <RichVerseText text={p.scripture} isDark={isDark} lineHeight={18}
+                style={[s.versePillTxt, { color: cat.gradient[0] }]} />
+            </View>
           </View>
         )}
-        <Text style={[s.cardBody, { color: tk.textSec }]}>{p.body}</Text>
+        <RichVerseText text={p.body} isDark={isDark} lineHeight={s.cardBody?.lineHeight || 22}
+          style={[s.cardBody, { color: tk.textSec }]} />
 
         <View style={s.cardFootRow}>
           {ownable ? (

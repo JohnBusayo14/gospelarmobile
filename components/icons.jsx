@@ -431,4 +431,38 @@ export const ICONS = {
       <Polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
     </Glyph>
   ),
+  // Gospeler ID — verification badge.
+  ShieldCheck: (p) => (
+    <Glyph {...p}>
+      <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <Polyline points="9 12 11 14 15 10" />
+    </Glyph>
+  ),
+  // Gospeler ID — QR placeholder / branding glyph.
+  QrCode: (p) => (
+    <Glyph {...p}>
+      <Rect x="3"  y="3"  width="7" height="7" />
+      <Rect x="14" y="3"  width="7" height="7" />
+      <Rect x="3"  y="14" width="7" height="7" />
+      <Line x1="14" y1="14" x2="14" y2="17" />
+      <Line x1="14" y1="20" x2="17" y2="20" />
+      <Line x1="17" y1="14" x2="17" y2="17" />
+      <Line x1="20" y1="17" x2="20" y2="20" />
+    </Glyph>
+  ),
+  // Gospeler ID — download action.
+  Download: (p) => (
+    <Glyph {...p}>
+      <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <Polyline points="7 10 12 15 17 10" />
+      <Line x1="12" y1="15" x2="12" y2="3" />
+    </Glyph>
+  ),
+  // Gospeler ID — camera icon for profile-picture picker.
+  Camera: (p) => (
+    <Glyph {...p}>
+      <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <Circle cx="12" cy="13" r="4" />
+    </Glyph>
+  ),
 };

@@ -353,6 +353,20 @@ export default function SettingsScreen({ navigation, route }) {
               noBorder/>
           </Card>
 
+          {/* ── IDENTITY ────────────────────────────────────────────────────
+              Single entry point into the Gospeler ID hub. The hub itself
+              handles the empty / has-card branch so this row stays the same
+              for both new and existing users — only the caption shifts. */}
+          <SectionHead title={t('identity', 'Identity').toUpperCase()} Icon={ICONS.ShieldCheck} tk={tk}/>
+          <Card tk={tk}>
+            <Row Icon={ICONS.QrCode}
+              label={t('gid_settings_row', 'Gospeler ID')}
+              sub={t('gid_settings_sub', 'Your digital Christian identity card')}
+              tk={tk}
+              onPress={() => navigation.navigate('GospelerId')}
+              noBorder/>
+          </Card>
+
           {/* ── LANGUAGE ─────────────────────────────────────────────────── */}
           <SectionHead title={t('language', 'Language').toUpperCase()} Icon={ICONS.Globe} tk={tk}/>
 
@@ -479,6 +493,18 @@ export default function SettingsScreen({ navigation, route }) {
                     .catch(() => {});
                 }} tk={tk} t={t}/>
             )}
+          </Card>
+
+          {/* GOSPELER ID — entry point for the digital Christian identity flow.
+              Sits above ACCOUNT because it's identity-first, not preferences. */}
+          <SectionHead title={t('gid_section', 'GOSPELER ID')} Icon={ICONS.ShieldCheck} tk={tk}/>
+          <Card tk={tk}>
+            <Row Icon={ICONS.ShieldCheck}
+              label={t('gid_settings_label', 'My Gospeler ID')}
+              sub={t('gid_settings_sub', 'Digital Christian identity, QR & verification')}
+              tk={tk}
+              onPress={() => navigation.navigate('GospelerId')}
+              noBorder/>
           </Card>
 
           {/* ACCOUNT */}

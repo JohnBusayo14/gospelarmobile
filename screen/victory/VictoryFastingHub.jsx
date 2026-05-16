@@ -14,7 +14,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  StatusBar, Animated,
+  StatusBar, Animated, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -82,6 +82,22 @@ export default function VictoryFastingHub({ navigation }) {
     await update(f.id, { completed: true });
     const newly = await recompute();
     if (newly.length) setCelebrate(BADGE_BY_ID[newly[0]]);
+  };
+
+  // Confirmed delete for items in the Past Fasts list. We require an explicit
+  // confirmation because the row vanishes immediately and can't be recovered
+  // (no soft-delete / trash). A long press wouldn't be discoverable enough,
+  // so the row shows a small trash button and this confirms before calling
+  // remove().
+  const confirmDeletePast = (f) => {
+    Alert.alert(
+      'Delete fast?',
+      `Remove "${f.title}" from your history? This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => remove(f.id) },
+      ],
+    );
   };
 
   return (
@@ -279,6 +295,7 @@ export default function VictoryFastingHub({ navigation }) {
                   key={f.id} fast={f} index={i}
                   tk={tk} tones={tones}
                   finished
+                  onDelete={() => confirmDeletePast(f)}
                 />
               ))}
             </View>
@@ -332,7 +349,7 @@ const TemplateTile = ({ template, index, tk, tones, onPress }) => {
   );
 };
 
-const FastRow = ({ fast, index, tk, tones, onCancel, finished }) => {
+const FastRow = ({ fast, index, tk, tones, onCancel, onDelete, finished }) => {
   const { fade, translateY } = useStaggerEntry(Math.min(index, 6));
   const start = new Date(fast.startISO);
   const end   = new Date(fast.endISO);
@@ -355,10 +372,23 @@ const FastRow = ({ fast, index, tk, tones, onCancel, finished }) => {
             </Text>
           </View>
           {finished ? (
-            <View style={[s.fastTag, { backgroundColor: EMERALD[100] }]}>
-              <Text style={[s.fastTagTxt, { color: EMERALD[600] }]}>
-                {fast.completed ? '✓ Done' : 'Ended'}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[s.fastTag, { backgroundColor: EMERALD[100] }]}>
+                <Text style={[s.fastTagTxt, { color: EMERALD[600] }]}>
+                  {fast.completed ? '✓ Done' : 'Ended'}
+                </Text>
+              </View>
+              {onDelete && (
+                <TouchableOpacity
+                  onPress={onDelete}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Delete this fast from history"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={s.fastDeleteBtn}
+                >
+                  <Text style={{ fontSize: 14 }}>🗑</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : onCancel ? (
             <TouchableOpacity onPress={onCancel} activeOpacity={0.78}>
@@ -408,4 +438,5 @@ const s = StyleSheet.create({
   fastMeta:      { fontSize: 11.5, fontWeight: '700', marginTop: 3 },
   fastTag:       { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   fastTagTxt:    { fontSize: 11, fontWeight: '900' },
+  fastDeleteBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 });

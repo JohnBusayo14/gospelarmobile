@@ -273,4 +273,101 @@ export const fetchBookEntry = async (slug, n, type = 'daily') =>
     return data;
   });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GOSPELER ID — per-user digital Christian identity
+// Email-keyed, matching the trust model used by /api/profile. Not cached:
+// the card is small, must reflect regenerations immediately, and the screen
+// always has network when reachable (Settings is gated behind login).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** GET /api/gospeler-id/:email → row, or null if 404. Throws on other errors. */
+export const fetchGospelerId = async (email) => {
+  try {
+    const { data } = await client.get(`/api/gospeler-id/${encodeURIComponent(email)}`);
+    return data;
+  } catch (err) {
+    if (err?.response?.status === 404) return null;
+    throw new Error(toError(err));
+  }
+};
+
+/** POST /api/gospeler-id/:email — generate a brand-new ID. 409 if one already exists. */
+export const createGospelerId = async (email, payload) => {
+  try {
+    const { data } = await client.post(
+      `/api/gospeler-id/${encodeURIComponent(email)}`,
+      payload,
+    );
+    return data;
+  } catch (err) { throw new Error(toError(err)); }
+};
+
+/**
+ * PUT /api/gospeler-id/:email — partial update.
+ * Server regenerates the code automatically if any material field changes
+ * (full_name / church_name / church_branch / membership_role). The response
+ * includes `regenerated: true|false` so the caller can show a toast.
+ */
+export const updateGospelerId = async (email, patch) => {
+  try {
+    const { data } = await client.put(
+      `/api/gospeler-id/${encodeURIComponent(email)}`,
+      patch,
+    );
+    return data;
+  } catch (err) { throw new Error(toError(err)); }
+};
+
+/** POST /api/gospeler-id/:email/regenerate — force a fresh code + QR token. */
+export const regenerateGospelerId = async (email, reason = 'user_requested') => {
+  try {
+    const { data } = await client.post(
+      `/api/gospeler-id/${encodeURIComponent(email)}/regenerate`,
+      { reason },
+    );
+    return data;
+  } catch (err) { throw new Error(toError(err)); }
+};
+
+/** GET /api/gospeler-id/:email/history — retired versions (most recent first). */
+export const fetchGospelerIdHistory = async (email) => {
+  try {
+    const { data } = await client.get(
+      `/api/gospeler-id/${encodeURIComponent(email)}/history`,
+    );
+    return data;
+  } catch (err) { throw new Error(toError(err)); }
+};
+
+/**
+ * GET /api/membership/options — canonical option lists (titles, statuses,
+ * countries, age brackets, regions+districts) shared between the mobile
+ * Gospeler ID form and the registration webapp. Cached because the lists
+ * change rarely (denomination's records taxonomy) and we want the form to
+ * render instantly offline.
+ */
+export const fetchMembershipOptions = async () =>
+  cacheFirst('membership:options', async () => {
+    const { data } = await client.get('/api/membership/options');
+    return data;
+  });
+
+/**
+ * GET /api/gospeler-id/verify/:token — public verification endpoint hit by
+ * the church kiosk / event scanner. `token` is the opaque QR payload, NOT
+ * the human-readable gospeler_code.
+ */
+export const verifyGospelerId = async (token, context = 'mobile_app') => {
+  try {
+    const { data } = await client.get(
+      `/api/gospeler-id/verify/${encodeURIComponent(token)}`,
+      { params: { context } },
+    );
+    return data;
+  } catch (err) {
+    if (err?.response?.status === 404) return { verified: false, reason: 'not_found' };
+    throw new Error(toError(err));
+  }
+};
+
 export default client;

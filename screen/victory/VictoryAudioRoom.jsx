@@ -35,6 +35,7 @@ import {
   useAudioSettings, useAchievementsHook, useUserRooms,
 } from './victoryHooks';
 import { BADGE_BY_ID } from './victoryAchievements';
+import { RichVerseText } from '../../components/BibleVerseLink';
 
 const { width: W } = Dimensions.get('window');
 
@@ -327,7 +328,11 @@ export default function VictoryAudioRoom({ route, navigation }) {
             <Text style={s.category}>{room.category.toUpperCase()}</Text>
             <Text style={s.title}>{room.title}</Text>
             {!!room.scripture && (
-              <Text style={s.scripture}>📖  {room.scripture}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <Text style={[s.scripture, { marginTop: 0 }]}>📖  </Text>
+                <RichVerseText text={room.scripture} isDark={isDark} lineHeight={18}
+                  style={[s.scripture, { marginTop: 0 }]} />
+              </View>
             )}
 
             {/* Speaking ring */}

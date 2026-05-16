@@ -16,16 +16,18 @@
 // `data.map(...)` and similar without a loading guard.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   fetchVictoryMeta, fetchVictoryDays, fetchVictoryVigils,
   fetchVictoryDay, fetchVictoryVigil,
+  localizeDay, localizeVigil,
 } from '../services/victory';
 import {
   VICTORY_META   as BUNDLED_META,
   VICTORY_DAYS   as BUNDLED_DAYS,
   VICTORY_VIGILS as BUNDLED_VIGILS,
 } from '../data/victoryMonth';
+import { useLanguage } from '../context/LanguageContext';
 
 // Optionally re-fetch on screen focus (navigation passed in). Cheap because
 // cacheFirst returns instantly when the cache is warm; the listener just gives
@@ -52,6 +54,7 @@ export const useVictoryMeta = (navigation) => {
 };
 
 export const useVictoryDays = (navigation) => {
+  const { lang } = useLanguage();
   const [days,    setDays]    = useState(BUNDLED_DAYS);
   const [loading, setLoading] = useState(true);
   const refetch = useCallback(async () => {
@@ -64,10 +67,16 @@ export const useVictoryDays = (navigation) => {
   }, []);
   useEffect(() => { refetch(); }, [refetch]);
   useFocusRefetch(navigation, refetch);
-  return { days, loading, refetch };
+  // Localization runs at render time so toggling languages doesn't re-fetch.
+  const localized = useMemo(
+    () => days.map((d) => localizeDay(d, lang)),
+    [days, lang],
+  );
+  return { days: localized, loading, refetch };
 };
 
 export const useVictoryVigils = (navigation) => {
+  const { lang } = useLanguage();
   const [vigils,  setVigils]  = useState(BUNDLED_VIGILS);
   const [loading, setLoading] = useState(true);
   const refetch = useCallback(async () => {
@@ -80,10 +89,15 @@ export const useVictoryVigils = (navigation) => {
   }, []);
   useEffect(() => { refetch(); }, [refetch]);
   useFocusRefetch(navigation, refetch);
-  return { vigils, loading, refetch };
+  const localized = useMemo(
+    () => vigils.map((v) => localizeVigil(v, lang)),
+    [vigils, lang],
+  );
+  return { vigils: localized, loading, refetch };
 };
 
 export const useVictoryDay = (n, navigation) => {
+  const { lang } = useLanguage();
   const idx = Math.max(1, Math.min(BUNDLED_DAYS.length, Number(n) || 1)) - 1;
   const [day, setDay] = useState(BUNDLED_DAYS[idx] || null);
   const [loading, setLoading] = useState(true);
@@ -97,10 +111,12 @@ export const useVictoryDay = (n, navigation) => {
   }, [n]);
   useEffect(() => { refetch(); }, [refetch]);
   useFocusRefetch(navigation, refetch);
-  return { day, loading, refetch };
+  const localized = useMemo(() => localizeDay(day, lang), [day, lang]);
+  return { day: localized, loading, refetch };
 };
 
 export const useVictoryVigil = (id, navigation) => {
+  const { lang } = useLanguage();
   const initial = BUNDLED_VIGILS.find((v) => v.id === id) || null;
   const [vigil, setVigil] = useState(initial);
   const [loading, setLoading] = useState(true);
@@ -114,5 +130,6 @@ export const useVictoryVigil = (id, navigation) => {
   }, [id]);
   useEffect(() => { refetch(); }, [refetch]);
   useFocusRefetch(navigation, refetch);
-  return { vigil, loading, refetch };
+  const localized = useMemo(() => localizeVigil(vigil, lang), [vigil, lang]);
+  return { vigil: localized, loading, refetch };
 };

@@ -33,6 +33,7 @@ import { getTokens, PALETTE } from '../theme/tokens';
 import { useScreenEntry } from '../hooks/useFluidAnim';
 import AppTabBar, { ICONS } from '../components/AppTabBar';
 import { fetchBook, fetchBookEntries, fetchBookEntry } from '../services/api';
+import { RichVerseText } from '../components/BibleVerseLink';
 
 const VIGIL_LABELS = {
   daily:          'DAY',
@@ -71,7 +72,7 @@ const DayChip = ({ entry, active, onPress, accent, tk }) => (
 );
 
 // ── PRAYER POINT (numbered list with the book's accent badge) ─────────────────
-const PrayerPoint = ({ index, text, accent, tk }) => (
+const PrayerPoint = ({ index, text, accent, tk, isDark }) => (
   <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
     <View style={{
       width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
@@ -79,7 +80,10 @@ const PrayerPoint = ({ index, text, accent, tk }) => (
     }}>
       <Text style={{ fontSize: 12, fontWeight: '900', color: accent }}>{index + 1}</Text>
     </View>
-    <Text style={{ flex: 1, fontSize: 14.5, lineHeight: 22, color: tk.textSec }}>{text}</Text>
+    <View style={{ flex: 1 }}>
+      <RichVerseText text={text} isDark={isDark} lineHeight={22}
+        style={{ fontSize: 14.5, color: tk.textSec }} />
+    </View>
   </View>
 );
 
@@ -256,9 +260,10 @@ export default function BookReaderScreen({ route, navigation }) {
                     backgroundColor: '#FEF3C7', borderColor: '#F59E0B40',
                   }}>
                     <ICONS.Book color="#92400E" size={16} sw={2} />
-                    <Text style={{ fontSize: 13, fontWeight: '700', flex: 1, color: '#92400E' }}>
-                      {content.scripture_text}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <RichVerseText text={content.scripture_text} isDark={isDark} lineHeight={18}
+                        style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} />
+                    </View>
                   </View>
                 )}
               </View>
@@ -321,9 +326,8 @@ export default function BookReaderScreen({ route, navigation }) {
             {!!content.inspirational_message && (
               <SectionCard Icon={ICONS.Book} title={t('book_message', 'Inspirational Message')}
                 color={accent} lightBg={accent + '18'} tk={tk} isDark={isDark} defaultOpen>
-                <Text style={{ fontSize: 14.5, lineHeight: 24, color: tk.textSec }}>
-                  {content.inspirational_message}
-                </Text>
+                <RichVerseText text={content.inspirational_message} isDark={isDark} lineHeight={24}
+                  style={{ fontSize: 14.5, color: tk.textSec }} />
               </SectionCard>
             )}
 
@@ -349,7 +353,7 @@ export default function BookReaderScreen({ route, navigation }) {
               <SectionCard Icon={ICONS.Prayer} title={t('book_let_us_pray', 'Let Us Pray')}
                 color={accent} lightBg={accent + '18'} tk={tk} isDark={isDark} defaultOpen>
                 {content.prayer_points.map((p, i) => (
-                  <PrayerPoint key={i} index={i} text={p} accent={accent} tk={tk} />
+                  <PrayerPoint key={i} index={i} text={p} accent={accent} tk={tk} isDark={isDark} />
                 ))}
               </SectionCard>
             )}
@@ -359,7 +363,7 @@ export default function BookReaderScreen({ route, navigation }) {
               <SectionCard Icon={ICONS.Highlight} title={t('book_discussion', 'Discussion Questions')}
                 color="#7C3AED" lightBg="#F5F3FF" tk={tk} isDark={isDark} defaultOpen={false}>
                 {content.discussion_questions.map((q, i) => (
-                  <PrayerPoint key={i} index={i} text={q} accent="#7C3AED" tk={tk} />
+                  <PrayerPoint key={i} index={i} text={q} accent="#7C3AED" tk={tk} isDark={isDark} />
                 ))}
               </SectionCard>
             )}
@@ -371,7 +375,10 @@ export default function BookReaderScreen({ route, navigation }) {
                 {content.declarations.map((d, i) => (
                   <View key={i} style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                     <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 14 }}>•</Text>
-                    <Text style={{ flex: 1, fontSize: 14.5, lineHeight: 22, color: tk.textSec, fontWeight: '600' }}>{d}</Text>
+                    <View style={{ flex: 1 }}>
+                      <RichVerseText text={d} isDark={isDark} lineHeight={22}
+                        style={{ fontSize: 14.5, color: tk.textSec, fontWeight: '600' }} />
+                    </View>
                   </View>
                 ))}
               </SectionCard>
@@ -381,9 +388,8 @@ export default function BookReaderScreen({ route, navigation }) {
             {!!content.special_intercession && (
               <SectionCard Icon={ICONS.Highlight} title={t('book_intercession', 'Special Intercession')}
                 color="#F59E0B" lightBg="#FEF3C7" tk={tk} isDark={isDark} defaultOpen={false}>
-                <Text style={{ fontSize: 14.5, lineHeight: 24, color: tk.textSec, fontStyle: 'italic' }}>
-                  {content.special_intercession}
-                </Text>
+                <RichVerseText text={content.special_intercession} isDark={isDark} lineHeight={24}
+                  style={{ fontSize: 14.5, color: tk.textSec, fontStyle: 'italic' }} />
               </SectionCard>
             )}
           </View>

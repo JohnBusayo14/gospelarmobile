@@ -306,7 +306,7 @@ const LessonRow = ({ item, index, tk, isDark }) => {
             <Animated.View style={[lr.barFill, { width: barWidth, backgroundColor: g.color }]} />
           </View>
           <Text style={[lr.meta, { color: tk.textMuted }]}>
-            {item.bestScore}/{item.totalQuestions} · {item.percent}%
+            {item.bestScore}/{item.maxPossibleScore || item.totalQuestions * 10} pts · {item.percent}%
           </Text>
         </View>
         <View style={[lr.gradePill, { backgroundColor: g.color + '22' }]}>

@@ -529,13 +529,16 @@ const es = StyleSheet.create({
 //      pulls the reference out, and calls onSuccess(reference).
 //   4. Caller calls /api/verify-payment with that reference to activate.
 // ─────────────────────────────────────────────────────────────────────────────
-const PaystackWebView = ({ email, plan, category, bookId, onSuccess, onCancel, t }) => {
+const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack', onSuccess, onCancel, t }) => {
   const [authUrl, setAuthUrl]       = useState(null);
   const [initError, setInitError]   = useState('');
   const [pageLoading, setPageLoading] = useState(true);
   const refSeenRef = useRef(null);   // de-dup: don't fire onSuccess twice
 
-  // Step 1 — ask backend to initialize the transaction.
+  // Step 1 — ask backend to initialize the transaction with the chosen
+  // provider. Each provider returns its own hosted-checkout authorization_url
+  // and a reference (Paystack ref / FW tx_ref / Stripe session id) that the
+  // backend will accept for verify-payment.
   useEffect(() => {
     let cancelled = false;
     setAuthUrl(null);
@@ -550,6 +553,7 @@ const PaystackWebView = ({ email, plan, category, bookId, onSuccess, onCancel, t
         plan:     plan?.id   || 'single',
         category: category?.id || 'adult',
         book_id:  bookId      || null,
+        provider,
       }),
     })
       .then(async (r) => {
@@ -564,16 +568,21 @@ const PaystackWebView = ({ email, plan, category, bookId, onSuccess, onCancel, t
       .catch((e) => { if (!cancelled) setInitError(e.message || 'Network error'); });
 
     return () => { cancelled = true; };
-  }, [email, plan?.id, category?.id, bookId]);
+  }, [email, plan?.id, category?.id, bookId, provider]);
 
   // Step 3 — intercept navigation back to our callback URL. Pulling the ref
   // out of the URL is more reliable than waiting for a postMessage that
   // might not fire if the user closes the WebView mid-redirect.
+  // Each provider sends a different query param back:
+  //   Paystack    → reference= / trxref=
+  //   Flutterwave → tx_ref= (transaction_id= also present for direct verify)
+  //   Stripe      → session_id= (always starts with cs_)
   const onNavChange = useCallback((navState) => {
     const url = navState.url || '';
-    // Successful payment redirect — extract reference from the query string.
     if (url.includes('/api/payments/callback')) {
-      const m = url.match(/(?:reference|trxref)=([^&#]+)/);
+      // Stripe cancellation comes back as ?cancelled=1
+      if (/[?&]cancelled=1\b/.test(url)) { onCancel(); return; }
+      const m = url.match(/(?:reference|trxref|tx_ref|session_id)=([^&#]+)/);
       const ref = m ? decodeURIComponent(m[1]) : null;
       if (ref && refSeenRef.current !== ref) {
         refSeenRef.current = ref;
@@ -581,8 +590,12 @@ const PaystackWebView = ({ email, plan, category, bookId, onSuccess, onCancel, t
       }
       return;
     }
-    // User tapped Cancel / Close on Paystack's checkout page.
-    if (url.includes('paystack.shop/cancelled') || url.includes('checkout.paystack.com/cancelled')) {
+    // User tapped Cancel / Close on a checkout page.
+    if (
+      url.includes('paystack.shop/cancelled') ||
+      url.includes('checkout.paystack.com/cancelled') ||
+      url.includes('flutterwave.com/v3/redirect?status=cancelled')
+    ) {
       onCancel();
     }
   }, [onSuccess, onCancel]);
@@ -628,6 +641,99 @@ const PaystackWebView = ({ email, plan, category, bookId, onSuccess, onCancel, t
         </View>
       )}
     </View>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Provider step — pick which payment provider to checkout with. Three cards:
+// Paystack and Flutterwave both charge in NGN (best for Nigerian users);
+// Stripe charges in USD (international cards). The selected provider is sent
+// to /api/payments/initialize, which branches to the right hosted-checkout URL.
+// ─────────────────────────────────────────────────────────────────────────────
+const PROVIDER_OPTIONS = [
+  {
+    id:        'paystack',
+    label:     'Paystack',
+    flag:      '🇳🇬',
+    accent:    '#0BA4DB',
+    tagline:   'Cards · Bank · USSD · QR',
+    blurb:     'Nigeria — pay in Naira. Most common option.',
+    currency:  'NGN',
+  },
+  {
+    id:        'flutterwave',
+    label:     'Flutterwave',
+    flag:      '🇳🇬',
+    accent:    '#F5A623',
+    tagline:   'Cards · Bank Transfer · Mobile Money',
+    blurb:     'Nigeria — pay in Naira via Flutterwave.',
+    currency:  'NGN',
+  },
+  {
+    id:        'stripe',
+    label:     'Stripe',
+    flag:      '🌍',
+    accent:    '#635BFF',
+    tagline:   'International cards · Apple Pay · Google Pay',
+    blurb:     'Outside Nigeria — pay in USD.',
+    currency:  'USD',
+  },
+];
+
+const ProviderStep = ({ plan, onProceed, tk, t, isDark }) => {
+  const planNaira = plan?.display
+    || (plan?.price ? `₦${Math.round(plan.price / 100).toLocaleString()}` : '');
+  return (
+    <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
+      <Text style={{ fontSize: 24, fontWeight: '900', letterSpacing: -0.4, color: tk.textPrimary, marginBottom: 8 }}>
+        {t('pay_choose_provider', 'Choose how to pay')}
+      </Text>
+      <Text style={{ fontSize: 14, lineHeight: 20, color: tk.textMuted, marginBottom: 22 }}>
+        {t('pay_choose_provider_sub', 'Pick the payment provider that works for you. Nigerian users usually pick Paystack or Flutterwave; international users should pick Stripe.')}
+      </Text>
+
+      {PROVIDER_OPTIONS.map((p) => (
+        <TouchableOpacity
+          key={p.id}
+          onPress={() => onProceed(p.id)}
+          activeOpacity={0.88}
+          style={{
+            marginBottom: 14, padding: 18,
+            borderRadius: 16, backgroundColor: tk.glassFill,
+            borderWidth: 1, borderColor: tk.glassEdge,
+            flexDirection: 'row', alignItems: 'center', gap: 14,
+          }}
+        >
+          <View style={{
+            width: 48, height: 48, borderRadius: 12,
+            backgroundColor: p.accent + '18',
+            justifyContent: 'center', alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 24 }}>{p.flag}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: tk.textPrimary }}>{p.label}</Text>
+              <View style={{
+                paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
+                backgroundColor: p.accent + '22',
+              }}>
+                <Text style={{ fontSize: 10, fontWeight: '900', color: p.accent, letterSpacing: 0.6 }}>{p.currency}</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: tk.textMuted, marginTop: 2 }}>{p.tagline}</Text>
+            <Text style={{ fontSize: 12, color: tk.textMuted, marginTop: 6 }}>{p.blurb}</Text>
+          </View>
+          <Text style={{ fontSize: 22, color: tk.textMuted }}>›</Text>
+        </TouchableOpacity>
+      ))}
+
+      {!!planNaira && (
+        <Text style={{ marginTop: 8, fontSize: 12, color: tk.textMuted, textAlign: 'center' }}>
+          {t('pay_amount_baseline', 'Base price (Naira): ')}{planNaira} · {t('pay_stripe_note', 'Stripe charges the USD-equivalent set by the admin.')}
+        </Text>
+      )}
+    </ScrollView>
   );
 };
 
@@ -857,13 +963,17 @@ export default function PaymentScreen({ navigation, route }) {
   const [email,    setEmail]    = useState('');
   const [plan,     setPlan]     = useState(bookPlan);
   const [category, setCategory] = useState(null);
+  const [provider, setProvider] = useState('paystack');
   const [failMsg,  setFailMsg]  = useState('');
 
   const handlePlanProceed = ({ plan: p, category: c }) => {
     setPlan(p); setCategory(c); setStep('email');
   };
 
-  const handleEmailProceed = (em) => { setEmail(em); setStep('webview'); };
+  // Email step → provider picker → WebView. Inserting the picker doesn't
+  // require any plan / category state changes; provider is its own concern.
+  const handleEmailProceed = (em) => { setEmail(em); setStep('provider'); };
+  const handleProviderProceed = (p) => { setProvider(p); setStep('webview'); };
 
   const handlePaymentSuccess = async (ref) => {
     setStep('verifying');
@@ -898,9 +1008,10 @@ export default function PaymentScreen({ navigation, route }) {
   //   webview → handleCancel (returns to email step inside the screen)
   //   failed  → null (the screen has its own Try Again button)
   const onBack =
-    step === 'plan'    ? () => navigation.navigate('Library') :
-    step === 'email'   ? (isBookFlow ? () => navigation.goBack() : () => setStep('plan')) :
-    step === 'webview' ? handleCancel          :
+    step === 'plan'     ? () => navigation.navigate('Library') :
+    step === 'email'    ? (isBookFlow ? () => navigation.goBack() : () => setStep('plan')) :
+    step === 'provider' ? () => setStep('email') :
+    step === 'webview'  ? handleCancel          :
     null;
 
   return (
@@ -918,6 +1029,7 @@ export default function PaymentScreen({ navigation, route }) {
           plan={plan}
           category={category}
           bookId={routeBookId}
+          provider={provider}
           onSuccess={handlePaymentSuccess}
           onCancel={handleCancel}
           t={t}
@@ -926,6 +1038,7 @@ export default function PaymentScreen({ navigation, route }) {
 
       {step === 'plan'      && <PlanStep      onProceed={handlePlanProceed} tk={tk} t={t} plans={plans} isDark={isDark} />}
       {step === 'email'     && <EmailStep     plan={plan} category={category} onProceed={handleEmailProceed} onBack={() => setStep('plan')} tk={tk} t={t} isDark={isDark} />}
+      {step === 'provider'  && <ProviderStep  plan={plan} onProceed={handleProviderProceed} tk={tk} t={t} isDark={isDark} />}
       {step === 'verifying' && <VerifyingStep tk={tk} t={t} />}
       {step === 'success'   && <SuccessStep   email={email} expiryDate={expiryDate} plan={plan} category={category} tk={tk} t={t} />}
       {step === 'failed'    && <FailedStep    failMsg={failMsg} onRetry={() => { setStep('email'); setFailMsg(''); }} tk={tk} t={t} />}

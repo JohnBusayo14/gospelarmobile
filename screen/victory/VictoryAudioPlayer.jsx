@@ -22,9 +22,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme }     from '../../context/ThemeContext';
+import { useLanguage }  from '../../context/LanguageContext';
 import { getTokens }    from '../../theme/tokens';
 import { useScreenEntry } from '../../hooks/useFluidAnim';
-import { useVictoryDay, useVictoryDays } from '../../hooks/useVictoryContent';
+import { useVictoryDay, useVictoryDays, useVictoryVigil } from '../../hooks/useVictoryContent';
 import {
   GlassCard, BackBar, Eyebrow, ProgressBar, GradientCTA,
 } from './VictoryUI';
@@ -175,20 +176,62 @@ function ReflectionPauseOverlay({ visible, remain, total, onSkip, accent = BLUE[
 }
 
 export default function VictoryAudioPlayer({ route, navigation }) {
-  // Pull the days list from the backend so TOTAL_DAYS is admin-driven; the
-  // hook returns the bundled fallback synchronously on first render, so the
-  // clamp below works immediately.
+  // The same player serves two content types: a Victory Month day (route
+  // params: { day }) and a group vigil (route params: { vigilId }). Mode is
+  // selected purely by which param is present. Both hooks are called
+  // unconditionally to respect the Rules of Hooks — the unused one just
+  // returns its bundled fallback and is ignored.
+  const vigilId = route?.params?.vigilId ?? null;
+  const isVigil = vigilId != null;
+
+  // Days list for TOTAL_DAYS clamping (cheap, cache-first).
   const { days: allDays } = useVictoryDays(navigation);
   const TOTAL_DAYS = allDays?.length || 30;
   const dayNum = Math.max(1, Math.min(TOTAL_DAYS, Number(route?.params?.day) || 1));
+
   const { isDark } = useTheme();
+  const { lang, t } = useLanguage();
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
-  // Full day body comes from the backend (admin-editable copy). Bundled
-  // fallback is provided by the hook on first render.
-  const { day: dayDb } = useVictoryDay(dayNum, navigation);
+  // Voice reading is English-only — see the gating in VictoryDayScreen /
+  // VictoryVigilScreen. This screen is the destination; if a user lands here
+  // with another language (deep link, back-stack, mid-session switch) we
+  // refuse to start playback and show a notice instead.
+  const ttsAvailable = lang === 'en';
+
+  // Both hooks always run; we just read from the one that matches the mode.
+  const { day:   dayDb   } = useVictoryDay(dayNum,   navigation);
+  const { vigil: vigilDb } = useVictoryVigil(vigilId, navigation);
+
   const day = dayDb || { date: '', focus: '', scripture: '', message: '', prayer_points: [], intercession: '' };
+  const vigil = vigilDb || { group: '', title: '', focus: '', scripture: '', message: '', discussion: [], prayer_points: [] };
+
+  // Normalised view used by the rest of the player. Day mode keeps the date
+  // line; vigil mode swaps in the group + title.
+  const content = isVigil
+    ? {
+        kind:          'vigil',
+        focus:         vigil.focus || vigil.title || '',
+        scripture:     vigil.scripture,
+        message:       vigil.message,
+        prayer_points: vigil.prayer_points || [],
+        discussion:    vigil.discussion    || [],
+        intercession:  null,
+        introBody:     `${vigil.group ? vigil.group + ' Vigil. ' : ''}${vigil.title ? vigil.title + '. ' : ''}${vigil.focus || ''}.`.trim(),
+        eyebrow:       `${(vigil.group || 'GROUP').toUpperCase()} VIGIL · AUDIO`,
+      }
+    : {
+        kind:          'day',
+        focus:         day.focus || '',
+        scripture:     day.scripture,
+        message:       day.message,
+        prayer_points: day.prayer_points || [],
+        discussion:    [],
+        intercession:  day.intercession,
+        introBody:     `${day.date}. Day ${dayNum} of ${TOTAL_DAYS}. ${day.focus}.`,
+        eyebrow:       `DAY ${dayNum} · AUDIO`,
+      };
 
   const { speak, stop, playing, supported, voice } = useTTS();
   const { settings, save: saveAudio }              = useAudioSettings();
@@ -215,18 +258,23 @@ export default function VictoryAudioPlayer({ route, navigation }) {
   }, [settings.voice, voiceCatalogue, voice]);
 
   // Build the script that the reader walks through. Each segment becomes a
-  // visual card with its own "now reading" indicator.
+  // visual card with its own "now reading" indicator. Vigils swap the
+  // "special intercession" closing for the "discussion questions" block,
+  // since vigils don't carry intercession and days don't carry discussion.
   const segments = useMemo(() => {
     const list = [];
-    list.push({ id: 'intro',     kind: 'intro',     title: 'Today', body: `${day.date}. Day ${dayNum} of ${TOTAL_DAYS}. ${day.focus}.` });
-    if (day.scripture)     list.push({ id: 'scripture',  kind: 'scripture', title: 'Scripture', body: day.scripture });
-    if (day.message)       list.push({ id: 'message',    kind: 'message',   title: 'Message',   body: day.message });
-    (day.prayer_points || []).forEach((p, i) =>
-      list.push({ id: `pt-${i}`,  kind: 'point', index: i + 1, title: `Prayer point ${i + 1}`, body: p })
+    list.push({ id: 'intro', kind: 'intro', title: isVigil ? 'Vigil' : 'Today', body: content.introBody });
+    if (content.scripture) list.push({ id: 'scripture', kind: 'scripture', title: 'Scripture', body: content.scripture });
+    if (content.message)   list.push({ id: 'message',   kind: 'message',   title: 'Message',   body: content.message });
+    (content.discussion || []).forEach((q, i) =>
+      list.push({ id: `disc-${i}`, kind: 'point', index: i + 1, title: `Question ${i + 1}`, body: q })
     );
-    if (day.intercession)  list.push({ id: 'inter',      kind: 'inter', title: 'Special intercession', body: day.intercession });
+    (content.prayer_points || []).forEach((p, i) =>
+      list.push({ id: `pt-${i}`,   kind: 'point', index: i + 1, title: `Prayer point ${i + 1}`, body: p })
+    );
+    if (content.intercession) list.push({ id: 'inter', kind: 'inter', title: 'Special intercession', body: content.intercession });
     return list;
-  }, [dayNum, day, TOTAL_DAYS]);
+  }, [isVigil, content]);
 
   const [segIdx, setSegIdx] = useState(0);
   const scrollRef = useRef(null);
@@ -396,6 +444,12 @@ export default function VictoryAudioPlayer({ route, navigation }) {
     stop();
   }, [endPause, stop]);
 
+  // Stop playback the instant the language is changed away from English —
+  // the listener can switch via the in-app picker while the player is open.
+  useEffect(() => {
+    if (!ttsAvailable) stopAll();
+  }, [ttsAvailable, stopAll]);
+
   // ── Interruption handling ─────────────────────────────────────────────────
   // 1. App moves to background → stop speech so it doesn't keep reading
   //    audibly behind the user's back, then resume nothing on return (user
@@ -433,6 +487,53 @@ export default function VictoryAudioPlayer({ route, navigation }) {
   const totalProgress = Math.round(((segIdx + (playing || pause.active ? 0.5 : 0)) / Math.max(1, segments.length)) * 100);
   const pausePct = pause.total ? Math.round(((pause.total - pause.remain) / pause.total) * 100) : 0;
 
+  // English-only guard. Listen buttons elsewhere already filter by language,
+  // but we still defend the destination — back-stacks, deep links, and mid-
+  // session language switches can land a non-English user here.
+  if (!ttsAvailable) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: tk.bg }} edges={['top']}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={tk.bg} />
+        <VictoryBackdrop isDark={isDark} intensity={0.85} />
+        <BackBar
+          onBack={() => navigation.goBack()}
+          eyebrow={content.eyebrow}
+          title={t('vmp_audio_unavailable_title', 'Voice reading')}
+          tones={tones}
+          tk={tk}
+        />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
+          <Text style={{ fontSize: 44, marginBottom: 14 }}>🔊</Text>
+          <Text style={{
+            fontSize: 18, fontWeight: '900', letterSpacing: -0.4,
+            color: tk.textPrimary, textAlign: 'center', marginBottom: 10,
+          }}>
+            {t('vmp_audio_unavailable_title', 'Voice reading is English-only')}
+          </Text>
+          <Text style={{
+            fontSize: 14, lineHeight: 22, fontWeight: '500',
+            color: tk.textSec, textAlign: 'center', marginBottom: 22,
+          }}>
+            {t('vmp_audio_unavailable_body',
+              'The device\'s text-to-speech engine doesn\'t support Yoruba, Igbo, or Hausa. Switch your language to English in Settings to use voice reading.')}
+          </Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: BLUE[600], paddingVertical: 12, paddingHorizontal: 22,
+              borderRadius: RADII.pill,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 0.3 }}>
+              ← {t('vmp_back', 'Back')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tk.bg }} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={tk.bg} />
@@ -442,8 +543,8 @@ export default function VictoryAudioPlayer({ route, navigation }) {
       <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY }] }}>
         <BackBar
           onBack={() => { stopAll(); navigation.goBack(); }}
-          eyebrow={`DAY ${dayNum} · AUDIO`}
-          title={day.focus?.slice(0, 32) || "Listen"}
+          eyebrow={content.eyebrow}
+          title={content.focus?.slice(0, 32) || 'Listen'}
           tones={tones}
           tk={tk}
         />
@@ -458,7 +559,7 @@ export default function VictoryAudioPlayer({ route, navigation }) {
             <Eyebrow color="rgba(255,255,255,0.78)">
               {pause.active ? 'REFLECTION PAUSE' : playing ? 'NOW READING' : 'READY TO PLAY'}
             </Eyebrow>
-            <Text style={s.playerTitle} numberOfLines={2}>{day.focus}</Text>
+            <Text style={s.playerTitle} numberOfLines={2}>{content.focus}</Text>
             <Text style={s.playerSub}>
               {pause.active
                 ? `Praying… ${pause.remain}s until next`

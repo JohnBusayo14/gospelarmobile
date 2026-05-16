@@ -59,6 +59,9 @@ import BookGuard                   from './components/BookGuard';
 // ── Settings & profile screens ────────────────────────────────────────────────
 import SettingsScreen       from './screen/SettingsScreen';
 import ProfileScreen        from './screen/ProfileScreen';
+import GospelerIdScreen     from './screen/GospelerIdScreen';
+import GospelerIdFormScreen from './screen/GospelerIdFormScreen';
+import GospelerIdCardScreen from './screen/GospelerIdCardScreen';
 import ProgressScreen       from './screen/ProgressScreen';
 import StatsScreen          from './screen/StatsScreen';
 import ChangePasswordScreen from './screen/ChangePasswordScreen';
@@ -358,6 +361,13 @@ function AppNavigator() {
           from route params so its in-screen links route back to the right
           book context. */}
       <Stack.Screen name="Settings" component={SettingsScreen} />
+
+      {/* Gospeler ID — per-user digital Christian identity. Not Subscription-
+          guarded: it's a profile feature reachable by any logged-in user,
+          including those on a non-SS book or no subscription. */}
+      <Stack.Screen name="GospelerId"     component={GospelerIdScreen} />
+      <Stack.Screen name="GospelerIdForm" component={GospelerIdFormScreen} />
+      <Stack.Screen name="GospelerIdCard" component={GospelerIdCardScreen} />
 
       {/* Profile & progress — guarded */}
       <Stack.Screen
