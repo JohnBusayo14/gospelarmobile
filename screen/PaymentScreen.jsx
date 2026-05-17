@@ -163,7 +163,7 @@ const PlanStep = ({ onProceed, tk, t, plans, isDark }) => {
               </Text>
             </View>
             <View style={[ps.heroBadge, { backgroundColor: BLUE_LIGHT }]}>
-              <Text style={{ fontSize: 24 }}>🕊️</Text>
+              <Text style={{ fontSize: 24 }}>✨</Text>
             </View>
           </View>
           <View style={[ps.heroDivider, { backgroundColor: tk.border }]} />
@@ -821,7 +821,7 @@ const SuccessStep = ({ email, expiryDate, plan, category, tk, t }) => {
           </View>
 
           <Text style={[suc.note, { color: tk.textMuted }]}>
-            {t('pay_success_note', 'The app will open automatically. Enjoy your studies! 🕊️')}
+            {t('pay_success_note', 'The app will open automatically. Enjoy your studies! ✨')}
           </Text>
         </View>
       </Animated.View>

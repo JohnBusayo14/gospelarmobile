@@ -225,7 +225,7 @@ export default function VictoryEditDay({ route, navigation }) {
               {/* List */}
               {customs.length === 0 ? (
                 <View style={s.emptyInline}>
-                  <Text style={{ fontSize: 26 }}>🕊️</Text>
+                  <Text style={{ fontSize: 26 }}>✨</Text>
                   <Text style={[s.emptyInlineTxt, { color: tk.textMuted }]}>
                     No custom prayer points yet. Add your own to extend today's prayer.
                   </Text>

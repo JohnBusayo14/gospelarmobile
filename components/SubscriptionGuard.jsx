@@ -515,7 +515,7 @@ const SubscribeCard = ({ onPay, onLogout, t, plans }) => {
       {/* Gradient header */}
       <LinearGradient colors={[BLUE, BLUE_DARK, '#040A1C']} style={oc.header}>
         <View style={oc.orb1} /><View style={oc.orb2} />
-        <View style={oc.logoCircle}><Text style={{ fontSize: 26 }}>🕊️</Text></View>
+        <View style={oc.logoCircle}><Text style={{ fontSize: 26 }}>✨</Text></View>
         <Text style={oc.headerTitle}>{t('guard_header_title', 'Gospelar Sunday School')}</Text>
         <Text style={oc.headerSub}>{t('guard_header_sub', 'Subscribe to unlock your content')}</Text>
 

@@ -19,7 +19,7 @@ import { useScreenEntry, usePressScale } from '../hooks/useFluidAnim';
 
 const API=API_BASE_URL;
 const BLUE='#1A56DB', BLUE_LIGHT='#EFF6FF';
-const AVATARS=['👤','😊','🙏','✝️','📖','🌟','🎵','🏆','🌍','💡','🦁','🕊️'];
+const AVATARS=['👤','😊','🙏','✝️','📖','🌟','🎵','🏆','🌍','💡','🦁','✨'];
 const buildLangOptions=(t)=>[
   {code:'en',label:t('set_lang_english','English'),flag:'🇬🇧'},
   {code:'ig',label:t('set_lang_igbo','Igbo'),flag:'🇳🇬'},

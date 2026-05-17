@@ -1471,7 +1471,7 @@ export const EN = {
   pay_secure_payment: 'Secure Payment',
   pay_select_age_category: 'SELECT YOUR AGE CATEGORY',
   pay_single_tagline: 'Access one age group',
-  pay_success_note: 'The app will open automatically. Enjoy your studies! 🕊️',
+  pay_success_note: 'The app will open automatically. Enjoy your studies! ✨',
   pay_success_sub: 'Your subscription is now active. Welcome to Gospelar Sunday School!',
   pay_success_title: 'Access Granted!',
   pay_tag_best_value: 'BEST VALUE',

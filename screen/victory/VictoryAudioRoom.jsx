@@ -7,7 +7,7 @@
 //   • Mic mute toggle with simulated voice-level meter when un-muted
 //   • Raise-hand queue that grows as the user and mock participants raise hands
 //   • Live prayer chat — mock amens stream in; the user can send a message
-//   • Floating reactions (🙏 ✋ 🕊️ 🔥 ❤️) — tap to send, others arrive on a drift
+//   • Floating reactions (🙏 ✋ ✨ 🔥 ❤️) — tap to send, others arrive on a drift
 //   • Ambient sound picker with "Playing softly" indicator
 //   • Confirmation prompt on leave; logs duration to the achievements engine
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const { width: W } = Dimensions.get('window');
 const PARTICIPANTS = [
   { name: 'Tola',     emoji: '🙏', accent: '#1A56DB' },
   { name: 'Bola',     emoji: '✝️', accent: '#4F46E5' },
-  { name: 'Grace',    emoji: '🕊️', accent: '#10B981' },
+  { name: 'Grace',    emoji: '✨', accent: '#10B981' },
   { name: 'Pst Sam',  emoji: '🎙️', accent: '#F59E0B' },
   { name: 'Daniel',   emoji: '🔥', accent: '#DC2626' },
   { name: 'Esther',   emoji: '🌿', accent: '#0F766E' },
@@ -66,7 +66,7 @@ const MOCK_LINES = [
   'I forgive everyone who has hurt me',
   'Praying for jobs for the unemployed',
   'Open doors that no man can shut',
-  'Amen and amen 🕊️',
+  'Amen and amen ✨',
   'My family is covered by the blood',
   'God is moving in this room ✨',
 ];
@@ -74,7 +74,7 @@ const MOCK_LINES = [
 const REACTIONS = [
   { id: 'pray',  emoji: '🙏', color: '#FBBF24' },
   { id: 'fire',  emoji: '🔥', color: '#F97316' },
-  { id: 'dove',  emoji: '🕊️', color: '#93C5FD' },
+  { id: 'dove',  emoji: '✨', color: '#FCD34D' },
   { id: 'love',  emoji: '❤️', color: '#FB7185' },
   { id: 'amen',  emoji: '✋', color: '#A78BFA' },
 ];

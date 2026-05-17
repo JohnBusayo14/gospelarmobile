@@ -21,7 +21,7 @@ export const BADGES = [
   { id: 'first-prayer',     name: 'First Steps',          desc: 'Mark your first day as prayed',     tier: 'bronze',   icon: '🌱', category: 'Start' },
   { id: 'first-note',       name: 'Open Heart',           desc: 'Write your first reflection',       tier: 'bronze',   icon: '✍️', category: 'Start' },
   { id: 'first-testimony',  name: 'Testimony Seed',       desc: 'Record your first testimony',       tier: 'bronze',   icon: '🌿', category: 'Start' },
-  { id: 'first-custom',     name: 'Voice of Prayer',      desc: 'Add your first custom prayer point', tier: 'bronze',  icon: '🕊️', category: 'Start' },
+  { id: 'first-custom',     name: 'Voice of Prayer',      desc: 'Add your first custom prayer point', tier: 'bronze',  icon: '✨', category: 'Start' },
 
   // — Streaks —
   { id: 'streak-3',         name: '3-Day Streak',         desc: '3 consecutive days prayed',         tier: 'silver',   icon: '⚡', category: 'Streaks' },

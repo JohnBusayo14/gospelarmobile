@@ -124,7 +124,7 @@ export const CATEGORIES = [
     id: 'personal',
     name: 'Personal Prayer',
     blurb: 'Your own walk with God',
-    emoji: '🕊️',
+    emoji: '✨',
     accent:    '#10B981',
     accentBg:  '#D1FAE5',
     gradient: ['#065F46', '#10B981'],
