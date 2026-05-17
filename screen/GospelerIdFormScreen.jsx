@@ -93,6 +93,8 @@ export default function GospelerIdFormScreen({ navigation, route }) {
   const [region, setRegion] = useState('');
   const [district, setDistrict] = useState('');
   const [assembly, setAssembly] = useState('');
+  const [emergencyName, setEmergencyName] = useState('');
+  const [emergencyPhone, setEmergencyPhone] = useState('');
   const [dob, setDob] = useState('');
   const [photoBase64, setPhotoBase64] = useState(null);
   const [pickingPhoto, setPickingPhoto] = useState(false);
@@ -139,6 +141,8 @@ export default function GospelerIdFormScreen({ navigation, route }) {
         setRegion(existing.region || '');
         setDistrict(existing.district || '');
         setAssembly(existing.assembly || existing.church_branch || '');
+        setEmergencyName(existing.emergency_contact_name || '');
+        setEmergencyPhone(existing.emergency_contact_phone || '');
         setDob(existing.date_of_birth ? String(existing.date_of_birth).slice(0, 10) : '');
         setPhotoBase64(existing.photo_base64 || null);
         setMembershipRole(existing.membership_role || 'member');
@@ -199,6 +203,10 @@ export default function GospelerIdFormScreen({ navigation, route }) {
       if (!region)          return t('gid_err_region', 'Region is required.');
       if (!district)        return t('gid_err_district', 'District is required.');
       if (!assembly.trim()) return t('gid_err_assembly', 'Assembly is required.');
+      if (!emergencyName.trim())
+        return t('gid_err_emergency_name', 'Emergency contact name is required.');
+      if (!emergencyPhone.trim() || emergencyPhone.replace(/\D/g, '').length < 7)
+        return t('gid_err_emergency_phone', 'A valid emergency contact phone is required.');
     }
     if (stepIdx === 2) {
       if (dob && !isValidIsoDate(dob))
@@ -206,7 +214,8 @@ export default function GospelerIdFormScreen({ navigation, route }) {
     }
     return '';
   }, [stepIdx, lastName, firstName, title, sex, status, ageBracket,
-      phone, city, country, region, district, assembly, dob, t]);
+      phone, city, country, region, district, assembly,
+      emergencyName, emergencyPhone, dob, t]);
 
   const goNext = () => {
     const msg = validateStep();
@@ -275,6 +284,8 @@ export default function GospelerIdFormScreen({ navigation, route }) {
       region:          region || null,
       district:        district || null,
       assembly:        assembly.trim() || null,
+      emergency_contact_name:  emergencyName.trim() || null,
+      emergency_contact_phone: emergencyPhone.trim() || null,
     };
 
     setSubmitting(true);
@@ -365,6 +376,8 @@ export default function GospelerIdFormScreen({ navigation, route }) {
               region={region} setRegion={setRegion}
               district={district} setDistrict={setDistrict}
               assembly={assembly} setAssembly={setAssembly}
+              emergencyName={emergencyName} setEmergencyName={setEmergencyName}
+              emergencyPhone={emergencyPhone} setEmergencyPhone={setEmergencyPhone}
               districts={districts} />
           )}
           {stepIdx === 2 && (
@@ -378,6 +391,7 @@ export default function GospelerIdFormScreen({ navigation, route }) {
               data={{
                 title, firstName, lastName, sex, status, ageBracket,
                 phone, email, city, country, region, district, assembly,
+                emergencyName, emergencyPhone,
                 dob, photoBase64,
               }} />
           )}
@@ -530,6 +544,7 @@ function ContactStep({
   tk, t, options, email,
   phone, setPhone, city, setCity, country, setCountry,
   region, setRegion, district, setDistrict, assembly, setAssembly,
+  emergencyName, setEmergencyName, emergencyPhone, setEmergencyPhone,
   districts,
 }) {
   return (
@@ -582,6 +597,28 @@ function ContactStep({
           placeholder={t('gid_fld_assembly_ph', 'Type your assembly name')}
           value={assembly} onChangeText={setAssembly}
           Icon={ICONS.BookStack} />
+      </FormCard>
+
+      <Section title={t('gid_sec_emergency', 'EMERGENCY CONTACT')} tk={tk} />
+      <Text style={{
+        paddingHorizontal: 20, fontSize: 12, color: tk.textMuted,
+        lineHeight: 17, marginBottom: 10,
+      }}>
+        {t('gid_emergency_intro',
+          'Required. Used by event organisers to reach someone on your behalf if needed.')}
+      </Text>
+      <FormCard tk={tk}>
+        <Field tk={tk} required
+          label={t('gid_fld_emergency_name', 'Emergency contact name')}
+          placeholder={t('gid_fld_emergency_name_ph', 'E.g. Mary Doe')}
+          value={emergencyName} onChangeText={setEmergencyName}
+          Icon={ICONS.User} />
+        <Field tk={tk} required noBorder
+          label={t('gid_fld_emergency_phone', 'Emergency contact phone')}
+          placeholder="+234 800 000 0000"
+          keyboardType="phone-pad"
+          value={emergencyPhone} onChangeText={setEmergencyPhone}
+          Icon={ICONS.Bell} />
       </FormCard>
     </View>
   );
@@ -726,6 +763,8 @@ function ReviewStep({ tk, t, data }) {
         <ReviewRow tk={tk} label="Region"       value={data.region || '—'} />
         <ReviewRow tk={tk} label="District"     value={data.district || '—'} />
         <ReviewRow tk={tk} label="Assembly"     value={data.assembly || '—'} />
+        <ReviewRow tk={tk} label="Emergency name"  value={data.emergencyName || '—'} />
+        <ReviewRow tk={tk} label="Emergency phone" value={data.emergencyPhone || '—'} />
         <ReviewRow tk={tk} label="Date of birth" value={data.dob || '—'} noBorder />
       </View>
       {!!placeBits && (

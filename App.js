@@ -32,6 +32,7 @@ import CombinedUnitsPage       from './screen/CombinedUnitsPage';
 import LessonPage              from './screen/LessonPage';
 import DevotionalReadingScreen from './screen/DevotionalReadingScreen';
 import SundaySchoolVoiceReading from './screen/SundaySchoolVoiceReading';
+import SundaySchoolAnthemScreen from './screen/SundaySchoolAnthemScreen';
 import NotesScreen             from './screen/NotesScreen';
 
 // ── Victory Month Prayer book ────────────────────────────────────────────────
@@ -387,6 +388,7 @@ function AppNavigator() {
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <Stack.Screen name="DeleteAccount"  component={DeleteAccountScreen} />
       <Stack.Screen name="About"          component={AboutScreen} />
+      <Stack.Screen name="SundaySchoolAnthem" component={SundaySchoolAnthemScreen} />
 
       {/* Teacher screens */}
       <Stack.Screen name="TeacherDashboard"   component={TeacherDashboard} />

@@ -74,7 +74,7 @@ const bn = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // QUARTER CARD — like Bamboo's wealth card
 // ─────────────────────────────────────────────────────────────────────────────
-const QuarterCard = ({ cat, quarterInfo, tk, onPress, t }) => {
+const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
   const catLabel = t(`cat_${cat.id}`, cat.label);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.9}
@@ -100,9 +100,15 @@ const QuarterCard = ({ cat, quarterInfo, tk, onPress, t }) => {
       </View>
       <View style={[qc.divider, { backgroundColor:tk.glassEdge }]} />
       <View style={qc.row}>
-        <Text style={[qc.bookLabel, { color:tk.textMuted }]}>
-          📜  {quarterInfo.book_full || t('cunits_book_philemon', 'Book of Philemon')}
-        </Text>
+        {/* Music-note button — opens the Sunday School anthem. Uses its own
+            TouchableOpacity so the tap doesn't also fire the card's onPress. */}
+        <TouchableOpacity
+          onPress={onAnthemPress}
+          activeOpacity={0.7}
+          accessibilityLabel={t('home_anthem_a11y', 'Open Sunday School anthem')}
+          style={[qc.anthemBtn, { backgroundColor: BLUE_LIGHT }]}>
+          <ICONS.Music color={BLUE} size={18} sw={2} />
+        </TouchableOpacity>
         <View style={[qc.startBtn, { backgroundColor:BLUE }]}>
           <Text style={qc.startBtnTxt}>{t('home_start', 'Start →')}</Text>
         </View>
@@ -120,7 +126,7 @@ const qc = StyleSheet.create({
   badgeSub:  { fontSize:11, fontWeight:'700' },
   divider:   { height:1, marginVertical:18 },
   themeSub:  { fontSize:11, fontWeight:'500', marginTop:3 },
-  bookLabel: { fontSize:13, fontWeight:'500' },
+  anthemBtn: { width:36, height:36, borderRadius:18, alignItems:'center', justifyContent:'center' },
   startBtn:  { borderRadius:20, paddingHorizontal:18, paddingVertical:9 },
   startBtnTxt:{ color:'#fff', fontSize:13, fontWeight:'700' },
 });
@@ -428,6 +434,7 @@ export default function Homescreen({ navigation }) {
             tk={tk}
             t={t}
             onPress={() => navigation.navigate(safeRoute, { category:cat })}
+            onAnthemPress={() => navigation.navigate('SundaySchoolAnthem')}
           />
         </View>
 

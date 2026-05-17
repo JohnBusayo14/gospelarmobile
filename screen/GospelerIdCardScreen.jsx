@@ -190,6 +190,14 @@ export default function GospelerIdCardScreen({ navigation }) {
             {!!id.assembly && (
               <DetailRow label={t('gid_assembly', 'Assembly')} value={id.assembly} tk={tk} />
             )}
+            {!!id.emergency_contact_name && (
+              <DetailRow label={t('gid_emergency_name', 'Emergency contact name')}
+                value={id.emergency_contact_name} tk={tk} />
+            )}
+            {!!id.emergency_contact_phone && (
+              <DetailRow label={t('gid_emergency_phone', 'Emergency contact phone')}
+                value={id.emergency_contact_phone} tk={tk} />
+            )}
             <DetailRow label={t('gid_dob', 'Date of birth')}        value={id.date_of_birth ? fmtDate(id.date_of_birth) : '—'} tk={tk} noBorder />
           </View>
 
