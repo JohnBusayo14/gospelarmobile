@@ -1,21 +1,22 @@
 // screens/OnboardingScreen.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// First-launch onboarding. Four swipeable slides introducing the app, then a
-// "Get Started" CTA that flips a persistent AsyncStorage flag and routes the
-// user to Login (or back to Splash if they're already signed in).
+// First-launch onboarding. Four swipeable image-led slides that auto-advance
+// every 4s, then a "Get Started" CTA that flips a persistent AsyncStorage
+// flag and routes the user to Login.
+//
+// Auto-play behaviour:
+//   • interval advances the page every AUTO_MS
+//   • last slide → loops back to first (so the carousel is endless until
+//     the user taps)
+//   • any manual interaction (swipe / dot tap / Next) pauses auto-play
+//     and resumes it after RESUME_MS of inactivity
 //
 // Routing wiring: SplashScreen reads `hasOnboarded` from AsyncStorage and
 // sends first-time users here before Login. Subsequent launches skip this
 // screen entirely.
-//
-// Visual language matches the rest of the app:
-//   • bottom-tab-style outline icons from components/icons (sw 2.25)
-//   • tinted icon badges via TintedIcon for the per-slide hero
-//   • dark blue gradient backdrop matching SplashScreen
-//   • dot pagination + skip button top-right
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, Animated, Image,
@@ -25,7 +26,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../context/LanguageContext';
 import { ICONS } from '../components/icons';
-import TintedIcon from '../components/TintedIcon';
 
 export const ONBOARDED_KEY = 'gospelar.onboarded.v1';
 
@@ -42,18 +42,20 @@ const DOT_ACTIVE   = '#FFFFFF';
 const CTA_BG       = '#FFFFFF';
 const CTA_FG       = '#0D1B5E';
 
-// Slide definitions. Each slide gets:
-//   - Icon (lucide-style outline from ICONS)
-//   - tone for the TintedIcon background  (primary | accent | success | warning)
-//   - title + body  (translation-aware via useLanguage's t())
-// Adding a new slide is just a new entry in this array — pagination, swipe,
-// and CTA copy all read from `SLIDES.length`.
+// Auto-play tuning. AUTO_MS is the cadence; RESUME_MS is how long we wait
+// after the user touches the carousel before resuming auto-advance.
+const AUTO_MS   = 4000;
+const RESUME_MS = 6000;
+
+// Slide definitions. Each slide picks a real image from assets/, plus
+// translation-aware title + body via useLanguage's t(). Adding a slide is
+// just a new entry — auto-play, swipe, dots, and CTA copy all derive from
+// SLIDES.length.
 function makeSlides(t) {
   return [
     {
       key:   'welcome',
-      Icon:  ICONS.Book,
-      tone:  'primary',
+      image: require('../assets/frontimage.jpg'),
       title: t('ob_welcome_title', 'Welcome to Gospelar'),
       body:  t(
         'ob_welcome_body',
@@ -62,8 +64,7 @@ function makeSlides(t) {
     },
     {
       key:   'lessons',
-      Icon:  ICONS.Lessons,
-      tone:  'accent',
+      image: require('../assets/adult.jpg'),
       title: t('ob_lessons_title', 'Sunday School, every week'),
       body:  t(
         'ob_lessons_body',
@@ -72,8 +73,7 @@ function makeSlides(t) {
     },
     {
       key:   'prayer',
-      Icon:  ICONS.Flame,
-      tone:  'warning',
+      image: require('../assets/frontimage2.jpg'),
       title: t('ob_prayer_title', 'Victory Month Prayer'),
       body:  t(
         'ob_prayer_body',
@@ -82,8 +82,7 @@ function makeSlides(t) {
     },
     {
       key:   'identity',
-      Icon:  ICONS.ShieldCheck,
-      tone:  'success',
+      image: require('../assets/teach.png'),
       title: t('ob_identity_title', 'Your Gospeler ID'),
       body:  t(
         'ob_identity_body',
@@ -99,6 +98,31 @@ export default function OnboardingScreen({ navigation }) {
   const scrollRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [index, setIndex] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const resumeTimerRef = useRef(null);
+
+  // Auto-advance loop. Re-runs whenever index or autoPlay flips so the
+  // setInterval always sees the latest index without stale-closure bugs.
+  useEffect(() => {
+    if (!autoPlay) return undefined;
+    const id = setInterval(() => {
+      const next = (index + 1) % SLIDES.length;
+      scrollRef.current?.scrollTo({ x: next * SCREEN_W, animated: true });
+    }, AUTO_MS);
+    return () => clearInterval(id);
+  }, [autoPlay, index, SLIDES.length]);
+
+  // Clear any pending resume timer on unmount.
+  useEffect(() => () => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+  }, []);
+
+  // Pause auto-play on touch, schedule a resume after RESUME_MS of idle.
+  function pauseAuto() {
+    setAutoPlay(false);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => setAutoPlay(true), RESUME_MS);
+  }
 
   function onScroll(ev) {
     const x = ev.nativeEvent.contentOffset.x;
@@ -108,6 +132,7 @@ export default function OnboardingScreen({ navigation }) {
   }
 
   function goToSlide(i) {
+    pauseAuto();
     scrollRef.current?.scrollTo({ x: i * SCREEN_W, animated: true });
   }
 
@@ -117,8 +142,12 @@ export default function OnboardingScreen({ navigation }) {
   }
 
   function onNext() {
-    if (index < SLIDES.length - 1) goToSlide(index + 1);
-    else finishOnboarding();
+    pauseAuto();
+    if (index < SLIDES.length - 1) {
+      scrollRef.current?.scrollTo({ x: (index + 1) * SCREEN_W, animated: true });
+    } else {
+      finishOnboarding();
+    }
   }
 
   return (
@@ -148,13 +177,15 @@ export default function OnboardingScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Swipeable slide deck. Pager-style ScrollView with snap-to-page. */}
+        {/* Swipeable slide deck. onScrollBeginDrag pauses auto-play
+            immediately so user gestures always feel responsive. */}
         <ScrollView
           ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={onScroll}
+          onScrollBeginDrag={pauseAuto}
           scrollEventThrottle={16}
           style={s.deck}
         >
@@ -165,7 +196,7 @@ export default function OnboardingScreen({ navigation }) {
 
         {/* Pagination dots — width animates on the active dot via a small
             scrollX interpolation per dot so the active one stretches into a
-            pill shape, matching common modern onboarding patterns. */}
+            pill shape. Tapping a dot jumps to that slide. */}
         <View style={s.dots}>
           {SLIDES.map((_, i) => {
             const inputRange = [
@@ -182,13 +213,19 @@ export default function OnboardingScreen({ navigation }) {
               extrapolate: 'clamp',
             });
             return (
-              <Animated.View
+              <TouchableOpacity
                 key={i}
-                style={[
-                  s.dot,
-                  { width: dotWidth, opacity: dotOpacity, backgroundColor: i === index ? DOT_ACTIVE : DOT_INACTIVE },
-                ]}
-              />
+                onPress={() => goToSlide(i)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+              >
+                <Animated.View
+                  style={[
+                    s.dot,
+                    { width: dotWidth, opacity: dotOpacity, backgroundColor: i === index ? DOT_ACTIVE : DOT_INACTIVE },
+                  ]}
+                />
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -229,23 +266,32 @@ export default function OnboardingScreen({ navigation }) {
   );
 }
 
-// Per-slide layout. Lives in this file because each slide's content is
-// trivial enough that splitting it would just be ceremony.
+// Per-slide layout. Image hero + title + body. The image card has a soft
+// gradient overlay from the brand BG_BOTTOM at the bottom so the title
+// underneath blends rather than colliding with the photo edge.
 function Slide({ slide }) {
-  const { Icon, tone, title, body } = slide;
+  const { image, title, body } = slide;
   return (
     <View style={[s.slide, { width: SCREEN_W }]}>
-      <View style={s.iconWrap}>
-        {/* Outer halo — soft glow under the tinted badge so it sits in space
-            rather than floating flat on the gradient. */}
-        <View style={s.iconHalo} />
-        <TintedIcon Icon={Icon} tone={tone} size="lg" sw={2.4} />
+      <View style={s.imageWrap}>
+        <Image source={image} style={s.image} resizeMode="cover" />
+        {/* Bottom-fade so the photo merges into the dark background. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', 'rgba(13,27,94,0.55)']}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
       <Text style={s.slideTitle} numberOfLines={2}>{title}</Text>
       <Text style={s.slideBody}>{body}</Text>
     </View>
   );
 }
+
+// Image card sizing — tuned to leave headroom for title + body + dots + CTA
+// on a typical 6.1" phone (~844pt). Aspect 4:3 keeps the photo readable.
+const IMAGE_W = SCREEN_W - 48;
+const IMAGE_H = Math.min(IMAGE_W * 0.78, SCREEN_H * 0.40);
 
 const s = StyleSheet.create({
   root: { flex: 1 },
@@ -266,21 +312,27 @@ const s = StyleSheet.create({
   deck: { flex: 1 },
 
   slide: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
   },
-  iconWrap: {
-    width: 132, height: 132,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 36,
+  imageWrap: {
+    width: IMAGE_W,
+    height: IMAGE_H,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 28,
+    // soft drop shadow so the image sits above the gradient backdrop
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 22,
+    elevation: 10,
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
-  iconHalo: {
-    position: 'absolute',
-    width: 132, height: 132, borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
+  image: { width: '100%', height: '100%' },
+
   slideTitle: {
     color: TEXT_LIGHT,
     fontSize: 26,
@@ -288,14 +340,14 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: 'center',
     lineHeight: 32,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   slideBody: {
     color: TEXT_MUTED,
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 21,
     maxWidth: 320,
   },
 
@@ -304,7 +356,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    marginVertical: 20,
+    marginVertical: 18,
   },
   dot: {
     height: 8,
