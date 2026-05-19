@@ -64,9 +64,17 @@ export default function SplashScreen({ navigation }) {
 
       try {
         const email = await AsyncStorage.getItem('userEmail');
-        // Signed-in users land on the Library launcher to pick which book to
-        // open. The Sunday-School flow still lives at HomeScreen, one tap deeper.
-        navigation.replace(email ? 'Library' : 'Login');
+        if (email) {
+          // Signed-in users land on the Library launcher to pick which book to
+          // open. The Sunday-School flow still lives at HomeScreen, one tap deeper.
+          navigation.replace('Library');
+        } else {
+          // First-launch onboarding gate — show the tour once, gated by an
+          // AsyncStorage flag set by OnboardingScreen on Get-Started / Skip.
+          // Returning installs hit Login directly.
+          const onboarded = await AsyncStorage.getItem('gospelar.onboarded.v1');
+          navigation.replace(onboarded ? 'Login' : 'Onboarding');
+        }
       } catch {
         navigation.replace('Login');
       }

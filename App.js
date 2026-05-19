@@ -78,6 +78,7 @@ import TeacherDashboard   from './screen/teacher/TeacherDashboard';
 import TeacherMarkSheet   from './screen/teacher/TeacherMarkSheet';
 import TeacherClassDetail from './screen/teacher/TeacherClassDetail';
 import SplashScreen from './screen/SplashScreen';
+import OnboardingScreen from './screen/OnboardingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -168,6 +169,10 @@ function AppNavigator() {
     >
       {/* Splash */}
       <Stack.Screen name="SplashScreen"  component={SplashScreen} />
+
+      {/* First-launch onboarding — splash sends new installs here before
+          Login; subsequent launches skip it via the persisted flag. */}
+      <Stack.Screen name="Onboarding"    component={OnboardingScreen} />
 
       {/* Auth — public, no guard */}
       <Stack.Screen name="Login"         component={LoginScreen} />
