@@ -1,14 +1,14 @@
-// screen/victory/VictoryVigilScreen.jsx
-// -----------------------------------------------------------------------------
+﻿// screen/victory/VictoryVigilScreen.jsx
+// ─────────────────────────────────────────────────────────────────────────────
 // A vigil guide detail screen. Each vigil has:
-//   � Focus + scripture + audience group
-//   � Inspirational message
-//   � Discussion / reflection questions (numbered)
-//   � Prayer points (numbered)
+//   • Focus + scripture + audience group
+//   • Inspirational message
+//   • Discussion / reflection questions (numbered)
+//   • Prayer points (numbered)
 //
 // Uses the group's accent palette throughout so the user instantly knows
 // whether they're in the family, youth, women, men or general guide.
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -36,7 +36,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
   const { t, lang } = useLanguage();
   // expo-speech only ships English voices on most devices, so Listen is hidden
   // when the user is on Yoruba / Igbo / Hausa. They'd otherwise hear English
-  // TTS reading translated text � garbled at best, embarrassing at worst.
+  // TTS reading translated text — garbled at best, embarrassing at worst.
   const ttsAvailable = lang === 'en';
   const tk     = useMemo(() => getTokens(isDark), [isDark]);
   const tones  = useMemo(() => victoryTones(isDark), [isDark]);
@@ -49,16 +49,16 @@ export default function VictoryVigilScreen({ route, navigation }) {
   const vigil  = vigilFromHook || vigils[0] || { group: 'General', focus: '', scripture: '', message: '', discussion: [], prayer_points: [] };
   const accent = groupAccent(vigil.group);
 
-  // -- Voice reading ---------------------------------------------------------
+  // ── Voice reading ─────────────────────────────────────────────────────────
   // Hand off to the shared audio player screen (same one used by the day
   // prayer page). It detects the `vigilId` param and switches to vigil mode
-  // � group/title/message/discussion/prayer-points become its segments.
+  // — group/title/message/discussion/prayer-points become its segments.
   const openAudioPlayer = () => {
     if (vigil?.id == null) return;
     navigation.navigate('VictoryAudioPlayer', { vigilId: vigil.id });
   };
 
-  // -- Mark prayer points ---------------------------------------------------
+  // ── Mark prayer points ───────────────────────────────────────────────────
   // Per-vigil persistence so each vigil has its own check-off state.
   const vigilKey = vigil?.id != null ? String(vigil.id) : (id != null ? String(id) : null);
   const [prayedPoints, setPrayedPoints] = useState({});
@@ -108,7 +108,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
   const shareVigil = async () => {
     try {
       await Share.share({
-        message: `${vigil.title} � ${vigil.group}\n${vigil.focus}\n${vigil.scripture}\n\n${vigil.message}`,
+        message: `${vigil.title} — ${vigil.group}\n${vigil.focus}\n${vigil.scripture}\n\n${vigil.message}`,
       });
     } catch { /* user cancelled */ }
   };
@@ -124,7 +124,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* -- TOP BAR ------------------------------------------------------- */}
+        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -146,11 +146,11 @@ export default function VictoryVigilScreen({ route, navigation }) {
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: accent.bg }]}
           >
-            <Text style={[s.shareIcon, { color: accent.deep }]}>?</Text>
+            <Text style={[s.shareIcon, { color: accent.deep }]}>↗</Text>
           </TouchableOpacity>
         </View>
 
-        {/* -- HERO --------------------------------------------------------- */}
+        {/* ── HERO ───────────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
           <View style={[s.hero, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <View style={[s.groupBadge, { backgroundColor: accent.bg }]}>
@@ -176,7 +176,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
                   accessibilityLabel={t('vmp_listen', 'Listen to this vigil')}
                 >
                   <Text style={[s.listenPillTxt, { color: accent.deep }]}>
-                    ??  {t('vmp_listen_short', 'Listen')}
+                    🔊  {t('vmp_listen_short', 'Listen')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -184,7 +184,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* -- MESSAGE ------------------------------------------------------ */}
+        {/* ── MESSAGE ────────────────────────────────────────────────────── */}
         {!!vigil.message && (
           <Section title="Inspirational Message" tk={tk} accentFg={accent.fg}>
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
@@ -193,7 +193,7 @@ export default function VictoryVigilScreen({ route, navigation }) {
           </Section>
         )}
 
-        {/* -- DISCUSSION --------------------------------------------------- */}
+        {/* ── DISCUSSION ─────────────────────────────────────────────────── */}
         {Array.isArray(vigil.discussion) && vigil.discussion.length > 0 && (
           <Section title="Reflection & Discussion" tk={tk} accentFg={accent.fg}>
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
@@ -212,8 +212,8 @@ export default function VictoryVigilScreen({ route, navigation }) {
           </Section>
         )}
 
-        {/* -- PRAYER POINTS ------------------------------------------------ */}
-        {/* Tap a point to mark it prayed � the badge flips to a green check
+        {/* ── PRAYER POINTS ──────────────────────────────────────────────── */}
+        {/* Tap a point to mark it prayed — the badge flips to a green check
             and the text gets a struck-through muted treatment so you can
             see what's left mid-vigil. State is per-vigil and persisted. */}
         {Array.isArray(vigil.prayer_points) && vigil.prayer_points.length > 0 && (
@@ -264,14 +264,14 @@ export default function VictoryVigilScreen({ route, navigation }) {
           </Section>
         )}
 
-        {/* -- CTA � BACK TO LIST ------------------------------------------- */}
+        {/* ── CTA — BACK TO LIST ─────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryVigilList')}
             activeOpacity={0.86}
             style={[s.cta, { backgroundColor: accent.fg, shadowColor: accent.fg }]}
           >
-            <Text style={s.ctaTxt}>? Browse all vigils</Text>
+            <Text style={s.ctaTxt}>← Browse all vigils</Text>
           </TouchableOpacity>
         </View>
       </Animated.ScrollView>

@@ -1,5 +1,5 @@
-// screens/DevotionalReadingScreen.jsx — Bamboo fintech redesign
-// White cards #F5F7FA · Blue primary #1A56DB · Big icons · Collapsible sections
+ï»¿// screens/DevotionalReadingScreen.jsx â€” Bamboo fintech redesign
+// White cards #F5F7FA Â· Blue primary #1A56DB Â· Big icons Â· Collapsible sections
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, StatusBar, Animated, Alert, Platform } from 'react-native';
@@ -22,23 +22,23 @@ const getDevotionalContent = (day, lang='en') => {
   if (!day) return { prayer:'', reflection:'', application:'' };
   const sc = day.scripture||'';
   if (lang==='yo') return {
-    prayer:      `Baba ?`run, bí mo ?e n ronú lórí ${sc} lónìí, ?í ojú ?kàn mi kí n lè rí ohun tí O f?´ k?´ mí. Ràn mí l?´w?´ kí n má ?e gb?´ ?`r?` R? nìkan, ?ùgb?´n kí n t?`lé e. Ní orúk? Jesu, Àmín.`,
-    reflection:  `Ìwé mím?´ òní — ${sc} — s?`r?` t?`síhàn sí àk?lé ?`k?´ ti ìfihàn ìgbésí ayé Krist?ni. Béèrè l?´w?´ ara r?: Ní àgbègbè wo ní ìgbésí ayé mi ni ?l?´run n pè mí láti fi òtít?´ yìí s?` lónìí?`,
-    application: `K? ìgbés?` kan pàtó tí iw? yóò gbé lónìí lórí ohun tí o ti kà. Pín r?` p?`lú ?l?gb?´ onígbàgb?´ kan tó lè ?e ?`r?` i??´.`,
+    prayer:      `Baba á»ŒÌ€run, bÃ­ mo á¹£e Å„ ronÃº lÃ³rÃ­ ${sc} lÃ³nÃ¬Ã­, á¹£Ã­ ojÃº á»kÃ n mi kÃ­ n lÃ¨ rÃ­ ohun tÃ­ O fáº¹Ì ká»Ì mÃ­. RÃ n mÃ­ lá»Ìwá»Ì kÃ­ n mÃ¡ á¹£e gbá»Ì á»ŒÌ€rá»Ì€ Ráº¹ nÃ¬kan, á¹£Ã¹gbá»Ìn kÃ­ n táº¹Ì€lÃ© e. NÃ­ orÃºká» Jesu, Ã€mÃ­n.`,
+    reflection:  `ÃŒwÃ© mÃ­má»Ì Ã²nÃ­ â€” ${sc} â€” sá»Ì€rá»Ì€ tá»Ì€sÃ­hÃ n sÃ­ Ã ká»lÃ© áº¹Ì€ká»Ì ti Ã¬fihÃ n Ã¬gbÃ©sÃ­ ayÃ© Kristáº¹ni. BÃ©Ã¨rÃ¨ lá»Ìwá»Ì ara ráº¹: NÃ­ Ã gbÃ¨gbÃ¨ wo nÃ­ Ã¬gbÃ©sÃ­ ayÃ© mi ni á»Œlá»Ìrun Å„ pÃ¨ mÃ­ lÃ¡ti fi Ã²tÃ­tá»Ì yÃ¬Ã­ sáº¹Ì€ lÃ³nÃ¬Ã­?`,
+    application: `Ká» Ã¬gbÃ©sáº¹Ì€ kan pÃ tÃ³ tÃ­ iwá» yÃ³Ã² gbÃ© lÃ³nÃ¬Ã­ lÃ³rÃ­ ohun tÃ­ o ti kÃ . PÃ­n ráº¹Ì€ páº¹Ì€lÃº áº¹láº¹gbáº¹Ì onÃ­gbÃ gbá»Ì kan tÃ³ lÃ¨ á¹£e á»Ì€rá»Ì€ iá¹£áº¹Ì.`,
   };
   if (lang==='ig') return {
-    prayer:      `Nna m n'elu igwe, ka m na-echeghachi ${sc} taa, meghee anya obi m ka m h? ihe ? ch?? ka m m?ta. Ka Okwu G? b? ?g?g? n'?kw? m. N'aha Jiz?s, Amen.`,
-    reflection:  `Akw?kw? Ns? nke taa — ${sc} — na-ekwu ozugbo maka isiokwu mm?ta. J?? onwe g?: N'ak?k? ole nke nd? m Chineke na-akp? m ka m tinye eziokwu a n'?r? taa?`,
-    application: `Dee omume otu a nke ? ga-eme taa dabere n'ihe ? g?r?. Kesaa ya na otu nwunye na ?g? nke ga-ejide g? aha.`,
+    prayer:      `Nna m n'elu igwe, ka m na-echeghachi ${sc} taa, meghee anya obi m ka m há»¥ ihe á»Š chá»á» ka m má»¥ta. Ka Okwu Gá»‹ bá»¥ á»gá»¥gá»¥ n'á»¥kwá»¥ m. N'aha Jizá»s, Amen.`,
+    reflection:  `Akwá»¥kwá» Nsá» nke taa â€” ${sc} â€” na-ekwu ozugbo maka isiokwu mmá»¥ta. Já»¥á» onwe gá»‹: N'aká»¥ká»¥ ole nke ndá»¥ m Chineke na-akpá» m ka m tinye eziokwu a n'á»rá»¥ taa?`,
+    application: `Dee omume otu a nke á»‹ ga-eme taa dabere n'ihe á»‹ gá»¥rá»¥. Kesaa ya na otu nwunye na á»gá» nke ga-ejide gá»‹ aha.`,
   };
   if (lang==='ha') return {
-    prayer:      `Ya Ubanmu na sama, yayin da nake tunani akan ${sc} yau, bu?e idanun zuciyata don in ga abin da Kake so in koya. Bari Maganarka ta zama fitila ga ?afafuna. Da sunan Yesu, Amin.`,
-    reflection:  `Nassin yau — ${sc} — yana magana kai tsaye game da taken darasi. Tambayi kanka: A wane yanki na rayuwata ne Allah yake kirana don aiwatar da wannan gaskiya yau?`,
-    application: `Rubuta wani takamaiman aiki ?aya da za ka yi yau. Raba shi da wani mai imani da zai iya ri?e ka da muhimmanci.`,
+    prayer:      `Ya Ubanmu na sama, yayin da nake tunani akan ${sc} yau, buÉ—e idanun zuciyata don in ga abin da Kake so in koya. Bari Maganarka ta zama fitila ga Æ™afafuna. Da sunan Yesu, Amin.`,
+    reflection:  `Nassin yau â€” ${sc} â€” yana magana kai tsaye game da taken darasi. Tambayi kanka: A wane yanki na rayuwata ne Allah yake kirana don aiwatar da wannan gaskiya yau?`,
+    application: `Rubuta wani takamaiman aiki É—aya da za ka yi yau. Raba shi da wani mai imani da zai iya riÆ™e ka da muhimmanci.`,
   };
   return {
     prayer:      `Heavenly Father, as I meditate on ${sc} today, open the eyes of my heart to see what You want me to learn. Let Your Word be a lamp to my feet and a light to my path. In Jesus' name, Amen.`,
-    reflection:  `Today's scripture — ${sc} — speaks directly to the lesson theme. Ask yourself: In what specific area of my life is God calling me to put this truth into practice today? Christian growth always finds expression in daily choices and relationships.`,
+    reflection:  `Today's scripture â€” ${sc} â€” speaks directly to the lesson theme. Ask yourself: In what specific area of my life is God calling me to put this truth into practice today? Christian growth always finds expression in daily choices and relationships.`,
     application: `Write down one specific action you will take today based on what you've read. Share it with a fellow believer who can hold you accountable. The power of God's Word is released when we obey it step by step, day by day.`,
   };
 };
@@ -69,7 +69,7 @@ const DayChip = ({day,index,active,onPress,tk}) => (
     style={{alignItems:'center',borderRadius:14,paddingHorizontal:14,paddingVertical:8,marginRight:8,borderWidth:1.5,minWidth:60,
       backgroundColor:active?BLUE:tk.surfaceEl,borderColor:active?BLUE:tk.glassEdge}}>
     <Text style={{fontSize:14,fontWeight:'900',letterSpacing:-0.3,color:active?'#fff':tk.textPrimary}}>{String(index+1).padStart(2,'0')}</Text>
-    {!!day?.day&&<Text style={{fontSize:9,fontWeight:'700',marginTop:2,color:active?'rgba(255,255,255,.75)':tk.textMuted}} numberOfLines={1}>{day.day.split('—')[0]?.trim()||''}</Text>}
+    {!!day?.day&&<Text style={{fontSize:9,fontWeight:'700',marginTop:2,color:active?'rgba(255,255,255,.75)':tk.textMuted}} numberOfLines={1}>{day.day.split('â€”')[0]?.trim()||''}</Text>}
   </TouchableOpacity>
 );
 
@@ -165,8 +165,8 @@ export default function DevotionalReadingScreen({route,navigation}) {
           {!!lessonTitle&&<Text style={{fontSize:11,marginTop:2,color:tk.textMuted}} numberOfLines={1}>{lessonTitle}</Text>}
         </View>
         <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
-          {/* Voice reading — navigates to a dedicated screen that reads the
-              devotional (Intro ? Prayer ? Reflection ? Application) with a
+          {/* Voice reading â€” navigates to a dedicated screen that reads the
+              devotional (Intro â†’ Prayer â†’ Reflection â†’ Application) with a
               floating mini-player. Mirrors the Victory book's audio-player
               pattern. The 2-minute reading-timer on that screen keeps
               ticking while audio plays so listeners still earn the point. */}
@@ -180,7 +180,7 @@ export default function DevotionalReadingScreen({route,navigation}) {
             activeOpacity={0.75}
             accessibilityLabel={t('dev_start_listening','Listen to devotional')}
             style={{width:40,height:40,borderRadius:20,justifyContent:'center',alignItems:'center',backgroundColor:BLUE_LIGHT}}>
-            <Text style={{fontSize:16,color:BLUE,fontWeight:'900'}}>?</Text>
+            <Text style={{fontSize:16,color:BLUE,fontWeight:'900'}}>â™ª</Text>
           </TouchableOpacity>
           {/* Quick-jump to the combined Progress dashboard so the user can
               verify their streak / point updated after the 2-min auto
@@ -282,24 +282,24 @@ export default function DevotionalReadingScreen({route,navigation}) {
           <View style={{paddingHorizontal:20,marginBottom:24,flexDirection:'row',alignItems:'center',gap:10}}>
             <TouchableOpacity onPress={()=>switchDay(dayIndex-1)} disabled={dayIndex===0} activeOpacity={0.8}
               style={{flex:1,borderRadius:14,paddingVertical:13,alignItems:'center',backgroundColor:dayIndex===0?tk.surfaceEl:BLUE}}>
-              <Text style={{fontSize:14,fontWeight:'800',color:dayIndex===0?tk.textMuted:'#fff'}}>{t('dev_previous', '‹ Previous')}</Text>
+              <Text style={{fontSize:14,fontWeight:'800',color:dayIndex===0?tk.textMuted:'#fff'}}>{t('dev_previous', 'â€¹ Previous')}</Text>
             </TouchableOpacity>
             <View style={{paddingHorizontal:16,paddingVertical:10,borderRadius:14,borderWidth:1,alignItems:'center',backgroundColor:tk.glassFill,borderColor:tk.glassEdge}}>
               <Text style={{fontSize:13,fontWeight:'700',color:tk.textPrimary}}>{dayIndex+1}/{allDays.length}</Text>
             </View>
             <TouchableOpacity onPress={()=>switchDay(dayIndex+1)} disabled={dayIndex===allDays.length-1} activeOpacity={0.8}
               style={{flex:1,borderRadius:14,paddingVertical:13,alignItems:'center',backgroundColor:dayIndex===allDays.length-1?tk.surfaceEl:BLUE}}>
-              <Text style={{fontSize:14,fontWeight:'800',color:dayIndex===allDays.length-1?tk.textMuted:'#fff'}}>{t('dev_next', 'Next ›')}</Text>
+              <Text style={{fontSize:14,fontWeight:'800',color:dayIndex===allDays.length-1?tk.textMuted:'#fff'}}>{t('dev_next', 'Next â€º')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         <View style={{alignItems:'center',marginTop:8,paddingHorizontal:20,paddingBottom:8}}>
-          <Text style={{fontSize:11,marginBottom:4,color:tk.textMuted}}>{t('login_footer', '© Gospelar Sunday School Department')}</Text>
+          <Text style={{fontSize:11,marginBottom:4,color:tk.textMuted}}>{t('login_footer', 'Â© Gospelar Sunday School Department')}</Text>
           <Text style={{fontSize:12,fontWeight:'700',color:BLUE}}>www.gospelar.com</Text>
         </View>
       </Animated.ScrollView>
-      {/* Settings tab removed — Settings lives on the Library home only. */}
+      {/* Settings tab removed â€” Settings lives on the Library home only. */}
       <AppTabBar activeTab={0} onTab={(i)=>{ if(i===0)navigation.navigate('HomeScreen'); if(i===1)navigation.navigate('SecondPage',{category:{id:'adult',route:'SecondPage'}}); if(i===2)navigation.navigate('Notes'); if(i===3)navigation.navigate('Progress'); }} tk={tk} tabs={[{key:'Home',label:t('tab_home','Home')},{key:'Lessons',label:t('tab_lessons','Lessons')},{key:'Notes',label:t('tab_notes','Notes')},{key:'Stats',label:t('tab_progress','Progress')}]}/>
     </SafeAreaView>
   );

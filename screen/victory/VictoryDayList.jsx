@@ -1,12 +1,12 @@
-// screen/victory/VictoryDayList.jsx
-// -----------------------------------------------------------------------------
+﻿// screen/victory/VictoryDayList.jsx
+// ─────────────────────────────────────────────────────────────────────────────
 // Browse all 30 days. Each row shows the day number, focus, date and scripture,
 // with a completion indicator pulled from AsyncStorage. Filter chips:
-//   All � Unread � Completed
+//   All · Unread · Completed
 //
 // Search field filters by focus and scripture. Visual language matches the
-// Victory Month book � glass surfaces, blue accents, no 1px borders.
-// -----------------------------------------------------------------------------
+// Victory Month book — glass surfaces, blue accents, no 1px borders.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
@@ -91,7 +91,7 @@ export default function VictoryDayList({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* -- TOP BAR ------------------------------------------------------- */}
+        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -111,7 +111,7 @@ export default function VictoryDayList({ navigation }) {
           <View style={[s.iconBtn, { opacity: 0 }]} />
         </View>
 
-        {/* -- PROGRESS HEADER ---------------------------------------------- */}
+        {/* ── PROGRESS HEADER ────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 18 }}>
           <View style={[s.progressCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <View>
@@ -132,27 +132,27 @@ export default function VictoryDayList({ navigation }) {
           </View>
         </View>
 
-        {/* -- SEARCH ------------------------------------------------------- */}
+        {/* ── SEARCH ─────────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
           <View style={[s.search, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
-            <Text style={[s.searchIcon, { color: tk.textMuted }]}>??</Text>
+            <Text style={[s.searchIcon, { color: tk.textMuted }]}>🔎</Text>
             <TextInput
               value={q}
               onChangeText={setQ}
-              placeholder={t('vmp_search_placeholder', 'Search by focus, scripture or date�')}
+              placeholder={t('vmp_search_placeholder', 'Search by focus, scripture or date…')}
               placeholderTextColor={tk.textMuted}
               style={[s.searchInput, { color: tk.textPrimary }]}
               returnKeyType="search"
             />
             {!!q && (
               <TouchableOpacity onPress={() => setQ('')}>
-                <Text style={[s.searchClear, { color: tk.textMuted }]}>�</Text>
+                <Text style={[s.searchClear, { color: tk.textMuted }]}>×</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* -- FILTER CHIPS ------------------------------------------------- */}
+        {/* ── FILTER CHIPS ───────────────────────────────────────────────── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -177,11 +177,11 @@ export default function VictoryDayList({ navigation }) {
           })}
         </ScrollView>
 
-        {/* -- DAY CARDS ---------------------------------------------------- */}
+        {/* ── DAY CARDS ──────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 20, gap: 10 }}>
           {visible.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
-              <Text style={[s.emptyEmoji]}>??</Text>
+              <Text style={[s.emptyEmoji]}>🔍</Text>
               <Text style={[s.emptyTxt, { color: tk.textPrimary }]}>
                 {t('vmp_no_results', 'No days match this view.')}
               </Text>

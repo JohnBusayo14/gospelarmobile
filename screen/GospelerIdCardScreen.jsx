@@ -1,20 +1,20 @@
-// screen/gospelerId/GospelerIdCardScreen.jsx
+﻿// screen/gospelerId/GospelerIdCardScreen.jsx
 // The signature surface of the Gospeler ID feature: a premium glassmorphic
 // digital membership card. Modelled on Apple Wallet / Revolut card aesthetics
 // while staying church-flavoured via worship-blue gradient + soft light orbs.
 //
 // What renders:
-//   � Hero card � gradient, decorative light blobs, photo or initials,
+//   • Hero card — gradient, decorative light blobs, photo or initials,
 //     full name, role badge, church + branch, verification chip.
-//   � QR � uses react-native-qrcode-svg. Payload is the opaque gospeler_ids.id
+//   • QR — uses react-native-qrcode-svg. Payload is the opaque gospeler_ids.id
 //     (NOT the human code) so scanning hits POST /api/gospeler-id/verify/:token.
-//   � Identity strip � code, version, issued date, country/state, DOB.
-//   � Actions � Share (native), Download (placeholder), and a quick link back
+//   • Identity strip — code, version, issued date, country/state, DOB.
+//   • Actions — Share (native), Download (placeholder), and a quick link back
 //     to the form for edits. Regenerate lives one tap deeper in the Hub.
 //
 // Share/Download in this slice: Share opens a native sheet with the verify-URL
 // + member summary as plain text (works without extra deps). Download is a
-// visible stub that pings the user to expect it in the next release � the
+// visible stub that pings the user to expect it in the next release — the
 // alternative (snapshotting the view to a PNG/PDF) needs react-native-view-shot
 // + expo-sharing which are deliberately out of scope for the first slice.
 
@@ -44,12 +44,12 @@ const ROLE_LABEL = {
 };
 
 const fmtDate = (iso) => {
-  if (!iso) return '�';
+  if (!iso) return '—';
   try {
     return new Date(iso).toLocaleDateString(undefined, {
       year: 'numeric', month: 'short', day: 'numeric',
     });
-  } catch { return '�'; }
+  } catch { return '—'; }
 };
 
 export default function GospelerIdCardScreen({ navigation }) {
@@ -91,11 +91,11 @@ export default function GospelerIdCardScreen({ navigation }) {
       // Prefer the structured webapp-aligned fields when present; fall back
       // to legacy church_name / branch for pre-migration rows.
       const placeLine = id.assembly
-        ? [id.assembly, id.district, id.region].filter(Boolean).join(' � ')
-        : [id.church_name, id.church_branch].filter(Boolean).join(' � ');
+        ? [id.assembly, id.district, id.region].filter(Boolean).join(' · ')
+        : [id.church_name, id.church_branch].filter(Boolean).join(' · ');
       await Share.share({
         message: [
-          `Gospeler ID � ${[id.title, id.full_name].filter(Boolean).join(' ')}`,
+          `Gospeler ID — ${[id.title, id.full_name].filter(Boolean).join(' ')}`,
           `Code: ${id.gospeler_code}`,
           placeLine ? `Church: ${placeLine}` : null,
           id.church_status ? `Status: ${id.church_status}` : null,
@@ -110,12 +110,12 @@ export default function GospelerIdCardScreen({ navigation }) {
     Alert.alert(
       t('gid_download_title', 'Download coming soon'),
       t('gid_download_msg',
-        'You�ll soon be able to save your Gospeler ID as a high-resolution image and PDF. For now, please use Share.'),
+        'You’ll soon be able to save your Gospeler ID as a high-resolution image and PDF. For now, please use Share.'),
       [{ text: t('btn_ok', 'OK') }],
     );
   };
 
-  // -- Render ----------------------------------------------------------------
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tk.bg }} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={tk.bg} />
@@ -176,8 +176,8 @@ export default function GospelerIdCardScreen({ navigation }) {
             {!!id.age_bracket && (
               <DetailRow label={t('gid_age_bracket', 'Age bracket')} value={id.age_bracket} tk={tk} />
             )}
-            <DetailRow label={t('gid_phone', 'Phone')}              value={id.phone || '�'} tk={tk} />
-            <DetailRow label={t('gid_country', 'Country')}          value={id.country || '�'} tk={tk} />
+            <DetailRow label={t('gid_phone', 'Phone')}              value={id.phone || '—'} tk={tk} />
+            <DetailRow label={t('gid_country', 'Country')}          value={id.country || '—'} tk={tk} />
             {!!id.city && (
               <DetailRow label={t('gid_city', 'City')} value={id.city} tk={tk} />
             )}
@@ -198,7 +198,7 @@ export default function GospelerIdCardScreen({ navigation }) {
               <DetailRow label={t('gid_emergency_phone', 'Emergency contact phone')}
                 value={id.emergency_contact_phone} tk={tk} />
             )}
-            <DetailRow label={t('gid_dob', 'Date of birth')}        value={id.date_of_birth ? fmtDate(id.date_of_birth) : '�'} tk={tk} noBorder />
+            <DetailRow label={t('gid_dob', 'Date of birth')}        value={id.date_of_birth ? fmtDate(id.date_of_birth) : '—'} tk={tk} noBorder />
           </View>
 
           {/* Actions */}
@@ -228,7 +228,7 @@ export default function GospelerIdCardScreen({ navigation }) {
   );
 }
 
-// --- The card artwork (gradient hero) -----------------------------------------
+// ─── The card artwork (gradient hero) ─────────────────────────────────────────
 // All the visual weight of the feature lives here. Two stacked decorative
 // orbs + a 3-stop gradient produce the "Ethereal" lit-from-within feel; the
 // real content sits on top in a column.
@@ -240,17 +240,17 @@ function CardArtwork({ id, verifyUrl, t }) {
   // to the bare name when no title is on file.
   const displayName = [id.title, id.full_name].filter(Boolean).join(' ');
   // Webapp-aligned Status (PASTOR, ELD, HOD, etc.). Renders alongside the
-  // friendly role label as a small monospaced code chip � feels official
+  // friendly role label as a small monospaced code chip — feels official
   // and matches how the registration webapp's badges look.
   const churchStatus = id.church_status || '';
-  // Church location string. Prefer the structured (assembly � district � region)
+  // Church location string. Prefer the structured (assembly · district · region)
   // shape when present; fall back to the older (church_name / church_branch)
   // pair for rows minted before the webapp-alignment migration.
   const placeLines = (() => {
     if (id.assembly || id.district || id.region) {
       return {
         primary: id.assembly || id.district || id.region,
-        secondary: [id.district, id.region].filter(Boolean).join(' � ') || null,
+        secondary: [id.district, id.region].filter(Boolean).join(' · ') || null,
       };
     }
     return {
@@ -361,7 +361,7 @@ function CardArtwork({ id, verifyUrl, t }) {
           </View>
         </View>
 
-        {/* Church location � prefers the structured assembly/district/region
+        {/* Church location — prefers the structured assembly/district/region
             block from the webapp-aligned form; falls back to legacy church
             name + branch for pre-migration rows. */}
         <View style={{
@@ -406,13 +406,13 @@ function CardArtwork({ id, verifyUrl, t }) {
               fontSize: 10, fontWeight: '700', letterSpacing: 0.5,
               color: 'rgba(255,255,255,0.7)', marginTop: 8,
             }}>
-              {t('gid_card_version_issued', 'v{v} � Issued {date}')
+              {t('gid_card_version_issued', 'v{v} · Issued {date}')
                 .replace('{v}', id.version)
                 .replace('{date}', fmtDate(id.issued_at))}
             </Text>
           </View>
 
-          {/* QR � white tile so the dark QR stays readable on the gradient. */}
+          {/* QR — white tile so the dark QR stays readable on the gradient. */}
           <View style={{
             backgroundColor: '#fff', padding: 8, borderRadius: 14,
             shadowColor: '#000', shadowOffset: { width: 0, height: 4 },

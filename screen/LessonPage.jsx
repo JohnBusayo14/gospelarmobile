@@ -1,4 +1,4 @@
-// screens/LessonPage.jsx
+﻿// screens/LessonPage.jsx
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
@@ -31,15 +31,15 @@ const BLUE_LIGHT = '#EFF6FF';
 const ACCENTS = [BLUE, BLUE_MID, '#1D4ED8', '#2563EB', '#1E40AF', '#3B82F6'];
 
 const READ_THEMES = {
-  light: { bg:'#FFFFFF', surface:'#F8F9FA', text:'#1A1A2E', textSec:'#4A5568', border:'#E2E8F0', icon:'??' },
-  sepia: { bg:'#FBF0E0', surface:'#F5E6CC', text:'#3D2B1F', textSec:'#6B4C3B', border:'#D4A574', icon:'??' },
-  dark:  { bg:'#0F1117', surface:'#1A1D27', text:'#F1F5F9', textSec:'#94A3B8', border:'#2A2D3A', icon:'??' },
+  light: { bg:'#FFFFFF', surface:'#F8F9FA', text:'#1A1A2E', textSec:'#4A5568', border:'#E2E8F0', icon:'☀️' },
+  sepia: { bg:'#FBF0E0', surface:'#F5E6CC', text:'#3D2B1F', textSec:'#6B4C3B', border:'#D4A574', icon:'📜' },
+  dark:  { bg:'#0F1117', surface:'#1A1D27', text:'#F1F5F9', textSec:'#94A3B8', border:'#2A2D3A', icon:'🌙' },
 };
 const FONT_SIZES = [14, 16, 18, 20, 22];
 
-// -----------------------------------------------------------------------------
-// READ MODE MODAL � preserved
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// READ MODE MODAL — preserved
+// ─────────────────────────────────────────────────────────────────────────────
 const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, onClose, t = (k,f)=>f }) => {
   const [partIndex,    setPartIndex]    = useState(initialIndex);
   const [fontSizeIdx,  setFontSizeIdx]  = useState(1);
@@ -101,7 +101,7 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
         <Animated.View pointerEvents={showControls?'auto':'none'}
           style={[rm.topBar, { backgroundColor:rt.bg, opacity:controlFade }]}>
           <TouchableOpacity onPress={onClose} style={[rm.iconBtn,{backgroundColor:rt.surface}]} activeOpacity={0.7}>
-            <Text style={{ fontSize:14, fontWeight:'700', color:rt.text }}>?</Text>
+            <Text style={{ fontSize:14, fontWeight:'700', color:rt.text }}>✕</Text>
           </TouchableOpacity>
           <View style={rm.topCenter}>
             <Text style={[rm.topTitle,{color:rt.text}]} numberOfLines={1}>{lessonTitle}</Text>
@@ -155,7 +155,7 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
           <View style={rm.fontRow}>
             <TouchableOpacity onPress={()=>{setFontSizeIdx(i=>Math.max(0,i-1));showCtrl();}}
               style={[rm.fontBtn,{backgroundColor:rt.surface,borderColor:rt.border}]} activeOpacity={0.75}>
-              <Text style={[rm.fontBtnText,{color:rt.textSec,fontSize:13}]}>A-</Text>
+              <Text style={[rm.fontBtnText,{color:rt.textSec,fontSize:13}]}>A−</Text>
             </TouchableOpacity>
             <View style={rm.fontDots}>
               {FONT_SIZES.map((_,i)=>(
@@ -170,14 +170,14 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
           <View style={rm.navRow}>
             <TouchableOpacity onPress={()=>goTo(partIndex-1)} disabled={partIndex===0}
               style={[rm.navBtn,{backgroundColor:partIndex===0?rt.border:accent}]} activeOpacity={0.8}>
-              <Text style={[rm.navBtnText,{color:partIndex===0?rt.textSec:'#fff'}]}>{t('lesson_prev', '� Prev')}</Text>
+              <Text style={[rm.navBtnText,{color:partIndex===0?rt.textSec:'#fff'}]}>{t('lesson_prev', '‹ Prev')}</Text>
             </TouchableOpacity>
             <View style={[rm.partPillCenter,{backgroundColor:rt.surface,borderColor:rt.border}]}>
               <Text style={[rm.partPillText,{color:accent}]}>{partIndex+1} / {total}</Text>
             </View>
             <TouchableOpacity onPress={()=>goTo(partIndex+1)} disabled={partIndex===total-1}
               style={[rm.navBtn,{backgroundColor:partIndex===total-1?rt.border:accent}]} activeOpacity={0.8}>
-              <Text style={[rm.navBtnText,{color:partIndex===total-1?rt.textSec:'#fff'}]}>{t('lesson_next', 'Next �')}</Text>
+              <Text style={[rm.navBtnText,{color:partIndex===total-1?rt.textSec:'#fff'}]}>{t('lesson_next', 'Next ›')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -220,9 +220,9 @@ const rm = StyleSheet.create({
   partPillText:  { fontSize:13, fontWeight:'800' },
 });
 
-// -----------------------------------------------------------------------------
-// CENTER MODAL � modern overlay for verse / hymns / background
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// CENTER MODAL — modern overlay for verse / hymns / background
+// ─────────────────────────────────────────────────────────────────────────────
 const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }) => {
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -253,7 +253,7 @@ const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }
             </View>
             <Text style={[cm.title, { color:tk.textPrimary }]}>{title}</Text>
             <TouchableOpacity onPress={onClose} style={[cm.closeBtn, { backgroundColor:tk.surfaceEl }]} activeOpacity={0.75}>
-              <Text style={[cm.closeX, { color:tk.textPrimary }]}>?</Text>
+              <Text style={[cm.closeX, { color:tk.textPrimary }]}>✕</Text>
             </TouchableOpacity>
           </View>
           {/* Body */}
@@ -285,9 +285,9 @@ const cm = StyleSheet.create({
   doneTxt:  { color:'#fff', fontSize:15, fontWeight:'800' },
 });
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // SECTION HEADER
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 const SectionHeader = ({ title, icon, tk }) => (
   <View style={sh.row}>
     {icon && <Text style={{ fontSize:20, marginRight:8 }}>{icon}</Text>}
@@ -299,9 +299,9 @@ const sh = StyleSheet.create({
   title: { fontSize:18, fontWeight:'800' },
 });
 
-// -----------------------------------------------------------------------------
-// LESSON HERO CARD � no top stripe border, left accent bar only
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// LESSON HERO CARD — no top stripe border, left accent bar only
+// ─────────────────────────────────────────────────────────────────────────────
 const LessonHeroCard = ({
   lesson, content, tk, isDark, onQuiz, quizDone,
   t = (k,f)=>f,
@@ -315,7 +315,7 @@ const LessonHeroCard = ({
             </View>
             {!!content.lesson_date && (
               <View style={[hc.datePill, { backgroundColor:BLUE_LIGHT }]}>
-                <Text style={{ fontSize:13 }}>??</Text>
+                <Text style={{ fontSize:13 }}>🗓</Text>
                 <Text style={[hc.dateText, { color:BLUE }]}>{content.lesson_date}</Text>
               </View>
             )}
@@ -326,20 +326,20 @@ const LessonHeroCard = ({
           <View style={hc.bottomRow}>
             {!!content.memoryVerse_bible_passage && (
               <View style={[hc.passagePill, { backgroundColor:BLUE_LIGHT }]}>
-                <Text style={{ fontSize:13 }}>??</Text>
+                <Text style={{ fontSize:13 }}>📜</Text>
                 <RichVerseText text={content.memoryVerse_bible_passage} isDark={isDark} lineHeight={18}
                   style={[hc.passageTxt, { color:BLUE }]} />
               </View>
             )}
             {quizDone ? (
               <View style={[hc.quizBtn, { backgroundColor:'#10B981' }]}>
-                <Text style={{ fontSize:14 }}>?</Text>
+                <Text style={{ fontSize:14 }}>✅</Text>
                 <Text style={hc.quizBtnTxt}>{t('btn_done', 'Done')}</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={onQuiz} activeOpacity={0.85}
                 style={[hc.quizBtn, { backgroundColor:BLUE }]}>
-                <Text style={{ fontSize:14 }}>?</Text>
+                <Text style={{ fontSize:14 }}>⚡</Text>
                 <Text style={hc.quizBtnTxt}>{t('lesson_quiz_short', 'Quiz')}</Text>
               </TouchableOpacity>
             )}
@@ -366,14 +366,14 @@ const hc = StyleSheet.create({
   quizBtnTxt: { color:'#fff', fontSize:13, fontWeight:'700' },
 });
 
-// -----------------------------------------------------------------------------
-// OVERVIEW CARD � Bamboo-style square card for horizontal scroll
+// ─────────────────────────────────────────────────────────────────────────────
+// OVERVIEW CARD — Bamboo-style square card for horizontal scroll
 // Inspired by Bamboo app: colored square icon, title, preview, and a circular
 // accent action button that uses the bottom-nav SVG icon language instead of
-// a "View ?" text label � keeps the card scannable + visually consistent
+// a "View →" text label — keeps the card scannable + visually consistent
 // with the rest of the app.
-// -----------------------------------------------------------------------------
-// Tightened from 178 ? 156 so four cards fit cleanly within a horizontal
+// ─────────────────────────────────────────────────────────────────────────────
+// Tightened from 178 → 156 so four cards fit cleanly within a horizontal
 // scroll on most phone widths without sacrificing legibility.
 const CARD_W = 156;
 
@@ -392,8 +392,8 @@ const OverviewCard = ({ Icon, icon, title, preview, onPress, tk, t = (_,f)=>f, a
     {!!preview && (
       <Text style={[oc.preview, { color:tk.textMuted }]} numberOfLines={2}>{preview}</Text>
     )}
-    {/* Circular accent action � replaces the old "View ?" text button. The
-        ArrowLeft glyph is rotated 180� to face right, keeping a single icon
+    {/* Circular accent action — replaces the old "View →" text button. The
+        ArrowLeft glyph is rotated 180° to face right, keeping a single icon
         definition in the shared ICONS registry. */}
     <View style={oc.actionRow}>
       <View
@@ -420,9 +420,9 @@ const oc = StyleSheet.create({
 });
 
 
-// -----------------------------------------------------------------------------
-// PART CARD � accordion with full dark-mode support, no top stripe
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// PART CARD — accordion with full dark-mode support, no top stripe
+// ─────────────────────────────────────────────────────────────────────────────
 const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f }) => {
   const accent   = ACCENTS[index % ACCENTS.length];
   const [open,     setOpen]     = useState(index === 0);
@@ -451,7 +451,7 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
                 </Text>
               </View>
               <Animated.View style={[pt.chevronBox, { backgroundColor:accent+'18', transform:[{rotate:spin}] }]}>
-                <Text style={[pt.chevron, { color:accent }]}>?</Text>
+                <Text style={[pt.chevron, { color:accent }]}>⌄</Text>
               </Animated.View>
             </TouchableOpacity>
             {open && (
@@ -470,7 +470,7 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
                 )}
                 <TouchableOpacity onPress={() => setReadMode(true)} activeOpacity={0.85}
                   style={[pt.readBtn, { backgroundColor:accent }]}>
-                  <Text style={{ fontSize:18 }}>??</Text>
+                  <Text style={{ fontSize:18 }}>📖</Text>
                   <Text style={pt.readBtnText}>{t('lesson_read_fullscreen', 'Read Full Screen')}</Text>
                 </TouchableOpacity>
               </View>
@@ -495,13 +495,13 @@ const pt = StyleSheet.create({
   readBtnText:{ color:'#fff', fontSize:14, fontWeight:'800' },
 });
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // QUESTION CARD
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 const QuestionCard = ({ question, index, tk }) => (
   <View style={[qc.card, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
     <View style={[qc.numBox, { backgroundColor:BLUE_LIGHT }]}>
-      <Text style={{ fontSize:18 }}>??</Text>
+      <Text style={{ fontSize:18 }}>💬</Text>
       <Text style={[qc.num, { color:BLUE }]}>{index+1}</Text>
     </View>
     <Text style={[qc.text, { color:tk.textPrimary }]}>
@@ -516,9 +516,9 @@ const qc = StyleSheet.create({
   text:     { flex:1, fontSize:14, lineHeight:22, fontWeight:'500', paddingVertical:16, paddingRight:14 },
 });
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN SCREEN
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 export default function LessonPage({ route, navigation }) {
   const { items, category } = route.params;
   const { isDark }  = useTheme();
@@ -550,7 +550,7 @@ export default function LessonPage({ route, navigation }) {
       .catch(() => {});
   }, [lesson?.id]);
 
-  // Fetch lesson content � runs on mount AND every time the screen is focused
+  // Fetch lesson content — runs on mount AND every time the screen is focused
   const fetchLesson = useCallback(async () => {
     if (!items?.id) return;
     setLoading(true);
@@ -570,17 +570,17 @@ export default function LessonPage({ route, navigation }) {
     return unsubscribe;
   }, [navigation, fetchLesson]);
 
-  // -- Auto reading check-in -----------------------------------------------
+  // ── Auto reading check-in ───────────────────────────────────────────────
   // Start a timer on mount; pause on background / foreground transitions.
-  // On unmount, if the user spent = 120 s actively on the page, fire a
+  // On unmount, if the user spent ≥ 120 s actively on the page, fire a
   // silent check-in. Server is idempotent for same-day re-fires, so the
   // user can come back and the streak does not double-count.
   //
-  // (The dwell timer used to also gate the Quiz button � users had to read
+  // (The dwell timer used to also gate the Quiz button — users had to read
   // for 2 minutes before "Start Quiz" unlocked. That gate was removed; the
   // quiz is now available immediately. The timer still runs only for the
   // silent check-in below.)
-  const MIN_READ_SECONDS = 120;   // 2 minutes � silent check-in threshold
+  const MIN_READ_SECONDS = 120;   // 2 minutes — silent check-in threshold
   const readingTimer = useReadingTimer({
     enabled:    !quizDone,
     minSeconds: MIN_READ_SECONDS,
@@ -598,7 +598,7 @@ export default function LessonPage({ route, navigation }) {
         });
       }).catch(() => {});
     };
-  }, []); // intentionally empty � fires only on unmount
+  }, []); // intentionally empty — fires only on unmount
 
   // Track recently visited
   useEffect(() => {
@@ -622,7 +622,7 @@ export default function LessonPage({ route, navigation }) {
   const accent    = BLUE;
 
   // 4-tab: 0=Home 1=Lessons 2=Notes 3=Stats
-  // Settings tab removed � it lives on the Library home only.
+  // Settings tab removed — it lives on the Library home only.
   const handleTab = (i) => {
     setActiveTab(i);
     if (i===0) navigation.navigate('HomeScreen');
@@ -650,19 +650,19 @@ export default function LessonPage({ route, navigation }) {
           } catch {}
         }}
       />
-      {/* HymnModal expects hymnRef + isDark � the previous prop names
+      {/* HymnModal expects hymnRef + isDark — the previous prop names
           (hymnsString / T) silently became undefined, so parseHymnRef
           returned [] and nothing ever rendered. */}
       <HymnModal visible={hymnVisible} onClose={()=>setHymnVisible(false)}
         hymnRef={c.suggested_hymns} isDark={isDark}/>
 
-      {/* -- CONTENT MODALS (center overlay) -- */}
+      {/* ── CONTENT MODALS (center overlay) ── */}
       <ContentModal visible={verseModal} onClose={()=>setVerseModal(false)}
-        title={t('lesson_memory_verse', 'Memory Verse')} icon="??" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_memory_verse', 'Memory Verse')} icon="📜" tk={tk} isDark={isDark} t={t}>
         <Text style={[s.modalVerse, { color:tk.textPrimary }]}>"{c.memory_verse}"</Text>
         {!!c.memoryVerse_bible_passage && (
           <View style={[s.modalPassage, { backgroundColor:BLUE_LIGHT, borderColor:BLUE+'30' }]}>
-            <Text style={{ fontSize:18 }}>??</Text>
+            <Text style={{ fontSize:18 }}>📖</Text>
             <View style={{ flex: 1 }}>
               <RichVerseText text={c.memoryVerse_bible_passage} isDark={isDark} lineHeight={20}
                 style={[s.modalPassageTxt, { color:BLUE }]} />
@@ -672,22 +672,22 @@ export default function LessonPage({ route, navigation }) {
       </ContentModal>
 
 <ContentModal visible={backgroundModal} onClose={()=>setBackgroundModal(false)}
-        title={t('lesson_background', 'Lesson Background')} icon="??" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_background', 'Lesson Background')} icon="🏛" tk={tk} isDark={isDark} t={t}>
         <RichVerseText text={c.lesson_background||''} isDark={isDark}
           style={[s.modalBodyTxt, { color:tk.textSec }]} lineHeight={24}/>
       </ContentModal>
 
       <ContentModal visible={conclusionModal} onClose={()=>setConclusionModal(false)}
-        title={t('lesson_conclusion', 'Lesson Conclusion')} icon="??" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_conclusion', 'Lesson Conclusion')} icon="🎯" tk={tk} isDark={isDark} t={t}>
         <RichVerseText text={c.lesson_conclusion||''} isDark={isDark}
           style={[s.modalBodyTxt, { color:tk.textSec }]} lineHeight={24}/>
       </ContentModal>
 
-      {/* -- TOP BAR -- */}
+      {/* ── TOP BAR ── */}
       <View style={[s.topbar, { backgroundColor:tk.pageBg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}
           style={[s.iconBtn, { backgroundColor:tk.surfaceEl }]}>
-          <Text style={{ fontSize:20, color:tk.textPrimary }}>?</Text>
+          <Text style={{ fontSize:20, color:tk.textPrimary }}>←</Text>
         </TouchableOpacity>
         <View style={s.topCenter}>
           <Text style={[s.pageTitle, { color:tk.textPrimary }]}>
@@ -701,15 +701,15 @@ export default function LessonPage({ route, navigation }) {
             prefillNumber: lessonNum,
           })}
           activeOpacity={0.75} style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
-          <Text style={{ fontSize:20 }}>??</Text>
+          <Text style={{ fontSize:20 }}>📝</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={s.loadingBox}>
-          <Text style={{ fontSize:44, marginBottom:16 }}>??</Text>
+          <Text style={{ fontSize:44, marginBottom:16 }}>📖</Text>
           <ActivityIndicator color={BLUE} size="large"/>
-          <Text style={[s.loadingTxt, { color:tk.textMuted }]}>{t('lesson_loading', 'Loading lesson�')}</Text>
+          <Text style={[s.loadingTxt, { color:tk.textMuted }]}>{t('lesson_loading', 'Loading lesson…')}</Text>
         </View>
       ) : (
         <Animated.ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom:110 }}
@@ -725,15 +725,15 @@ export default function LessonPage({ route, navigation }) {
             />
           </View>
 
-          {/* LESSON OVERVIEW � horizontal scroll of Bamboo-style cards */}
+          {/* LESSON OVERVIEW — horizontal scroll of Bamboo-style cards */}
           {(!!c.memory_verse || !!c.suggested_hymns || !!c.lesson_background || !!c.lesson_conclusion) && (
             <View style={s.overviewSection}>
-              <SectionHeader title={t('lesson_overview', 'Lesson Overview')} icon="??" tk={tk}/>
+              <SectionHeader title={t('lesson_overview', 'Lesson Overview')} icon="ℹ️" tk={tk}/>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}
                 contentContainerStyle={s.overviewScroll}>
                 {!!c.memory_verse && (
                   <OverviewCard Icon={ICONS.Quote} title={t('lesson_memory_verse', 'Memory Verse')}
-                    preview={`"${c.memory_verse.slice(0,60)}${c.memory_verse.length>60?'�':'"'}`}
+                    preview={`"${c.memory_verse.slice(0,60)}${c.memory_verse.length>60?'…':'"'}`}
                     accent="#1A56DB"
                     onPress={()=>setVerseModal(true)} tk={tk} t={t}/>
                 )}
@@ -745,13 +745,13 @@ export default function LessonPage({ route, navigation }) {
                 )}
                 {!!c.lesson_background && (
                   <OverviewCard Icon={ICONS.Landmark} title={t('lesson_background_short', 'Background')}
-                    preview={c.lesson_background.slice(0,70)+'�'}
+                    preview={c.lesson_background.slice(0,70)+'…'}
                     accent="#10B981"
                     onPress={()=>setBackgroundModal(true)} tk={tk} t={t}/>
                 )}
                 {!!c.lesson_conclusion && (
                   <OverviewCard Icon={ICONS.Target} title={t('lesson_conclusion_short', 'Conclusion')}
-                    preview={c.lesson_conclusion.slice(0,70)+'�'}
+                    preview={c.lesson_conclusion.slice(0,70)+'…'}
                     accent="#F97316"
                     onPress={()=>setConclusionModal(true)} tk={tk} t={t}/>
                 )}
@@ -759,10 +759,10 @@ export default function LessonPage({ route, navigation }) {
             </View>
           )}
 
-          {/* LESSON PARTS � full dark mode */}
+          {/* LESSON PARTS — full dark mode */}
           {Array.isArray(c.lesson_part) && c.lesson_part.length>0 && (
             <View style={s.section}>
-              <SectionHeader title={t('lesson_notes_on_lesson', 'Notes on the Lesson')} icon="??" tk={tk}/>
+              <SectionHeader title={t('lesson_notes_on_lesson', 'Notes on the Lesson')} icon="📝" tk={tk}/>
               {c.lesson_part.map((part, i) => (
                 <PartCard key={i} part={part} index={i} allParts={c.lesson_part}
                   lessonTitle={lesson?.title} tk={tk} isDark={isDark} t={t}/>
@@ -775,13 +775,13 @@ export default function LessonPage({ route, navigation }) {
             <View style={s.section}>
               <TouchableOpacity onPress={()=>setQuestionsOpen(v=>!v)} activeOpacity={0.75}
                 style={[s.collapseHeader, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
-                <Text style={{ fontSize:22 }}>??</Text>
+                <Text style={{ fontSize:22 }}>💬</Text>
                 <Text style={[s.collapseTitle, { color:tk.textPrimary }]}>{t('lesson_discussion_questions', 'Discussion Questions')}</Text>
                 <View style={[s.collapseBadge, { backgroundColor:BLUE_LIGHT }]}>
                   <Text style={[s.collapseBadgeTxt, { color:BLUE }]}>{c.questions.length}</Text>
                 </View>
                 <Text style={[s.collapseChevron, { color:tk.textMuted }]}>
-                  {questionsOpen ? '^' : '?'}
+                  {questionsOpen ? '⌃' : '⌄'}
                 </Text>
               </TouchableOpacity>
               {questionsOpen && (
@@ -796,11 +796,11 @@ export default function LessonPage({ route, navigation }) {
 
           {/* QUIZ CTA */}
           <View style={s.section}>
-            <SectionHeader title={t('lesson_test_yourself', 'Test Yourself')} icon="?" tk={tk}/>
+            <SectionHeader title={t('lesson_test_yourself', 'Test Yourself')} icon="⚡" tk={tk}/>
             <View style={[s.quizCard, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
                     <View style={s.quizBody}>
                     <View style={[s.quizIcon, { backgroundColor:BLUE_LIGHT }]}>
-                      <Text style={{ fontSize:36 }}>?</Text>
+                      <Text style={{ fontSize:36 }}>⚡</Text>
                     </View>
                     <View style={{ flex:1 }}>
                       <Text style={[s.quizTitle, { color:tk.textPrimary }]}>
@@ -813,14 +813,14 @@ export default function LessonPage({ route, navigation }) {
                   </View>
                   {quizDone ? (
                     <View style={[s.quizBtn, { backgroundColor:'#10B981' }]}>
-                      <Text style={{ fontSize:18 }}>?</Text>
+                      <Text style={{ fontSize:18 }}>✅</Text>
                       <Text style={s.quizBtnTxt}>{t('lesson_quiz_completed', 'Quiz Completed')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity onPress={()=>setQuizVisible(true)} activeOpacity={0.85}
                       style={[s.quizBtn, { backgroundColor:BLUE }]}>
-                      <Text style={{ fontSize:18 }}>?</Text>
-                      <Text style={s.quizBtnTxt}>{t('lesson_start_quiz', 'Start Quiz')} ?</Text>
+                      <Text style={{ fontSize:18 }}>⚡</Text>
+                      <Text style={s.quizBtnTxt}>{t('lesson_start_quiz', 'Start Quiz')} →</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -828,7 +828,7 @@ export default function LessonPage({ route, navigation }) {
 
           {/* FOOTER */}
           <View style={s.footer}>
-            <Text style={[s.footerTxt, { color:tk.textMuted }]}>{t('login_footer', '� Gospelar Sunday School Department')}</Text>
+            <Text style={[s.footerTxt, { color:tk.textMuted }]}>{t('login_footer', '© Gospelar Sunday School Department')}</Text>
             <Text style={[s.footerSite, { color:BLUE }]}>www.gospelar.com</Text>
           </View>
 
@@ -846,12 +846,12 @@ export default function LessonPage({ route, navigation }) {
           })}
           activeOpacity={0.88}
           style={[s.fab, { backgroundColor:BLUE }]}>
-          <Text style={s.fabIcon}>??</Text>
+          <Text style={s.fabIcon}>📖</Text>
           <Text style={s.fabLabel}>{t('lesson_daily_reading', 'Daily\nReading')}</Text>
         </TouchableOpacity>
       )}
 
-      {/* Settings tab removed � Settings lives on the Library home only. */}
+      {/* Settings tab removed — Settings lives on the Library home only. */}
       <AppTabBar activeTab={activeTab} onTab={handleTab} tk={tk} tabs={[{key:'Home',label:t('tab_home','Home')},{key:'Lessons',label:t('tab_lessons','Lessons')},{key:'Notes',label:t('tab_notes','Notes')},{key:'Stats',label:t('tab_progress','Progress')}]}/>
     </SafeAreaView>
   );
@@ -879,7 +879,7 @@ const s = StyleSheet.create({
   modalActionBtn:  { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, marginTop:20, borderRadius:14, paddingVertical:13 },
   modalActionTxt:  { color:'#fff', fontSize:15, fontWeight:'800' },
 
-  // Quiz card � no top stripe, left bar instead
+  // Quiz card — no top stripe, left bar instead
   quizCard:      { borderRadius:18, borderWidth:1, overflow:'hidden', shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:.05, shadowRadius:10, elevation:2 },
 
   quizBody:      { flexDirection:'row', alignItems:'center', gap:16, padding:18 },
