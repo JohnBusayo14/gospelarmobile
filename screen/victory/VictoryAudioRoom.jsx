@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme }    from '../../context/ThemeContext';
+import EmojiIcon from '../../components/EmojiIcon';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry } from '../../hooks/useFluidAnim';
 import {
@@ -339,7 +340,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
             <View style={{ alignItems: 'center', marginTop: 28 }}>
               <SpeakingRings active={joined} />
               <View style={s.speakerDisc}>
-                <Text style={s.speakerEmoji}>{activeSpeakerEmoji}</Text>
+                <EmojiIcon emoji={activeSpeakerEmoji} color="#FFFFFF" size={36} sw={2.25} />
               </View>
               <Text style={s.speakerName}>{activeSpeaker}</Text>
               <Text style={s.speakerLbl}>
@@ -426,7 +427,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
                           borderWidth: speaking ? 3 : 2,
                         },
                       ]}>
-                        <Text style={{ fontSize: 22 }}>{p.emoji}</Text>
+                        <EmojiIcon emoji={p.emoji} color="#374151" size={22} sw={2.25} />
                       </View>
                       <Text style={s.avatarName} numberOfLines={1}>{p.name}</Text>
                       {speaking && <Text style={s.avatarTag}>SPEAKING</Text>}
@@ -471,7 +472,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
                         { backgroundColor: active ? '#fff' : 'rgba(255,255,255,0.14)' },
                       ]}
                     >
-                      <Text style={{ fontSize: 14 }}>{tr.emoji}</Text>
+                      <EmojiIcon emoji={tr.emoji} color="#374151" size={14} sw={2.25} />
                       <Text style={[s.ambientTxt, { color: active ? BLUE[800] : '#fff' }]}>
                         {tr.name}
                       </Text>
@@ -493,7 +494,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
                       activeOpacity={0.75}
                       style={s.reactionBtn}
                     >
-                      <Text style={{ fontSize: 22 }}>{r.emoji}</Text>
+                      <EmojiIcon emoji={r.emoji} color="#374151" size={22} sw={2.25} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -732,7 +733,7 @@ const FloatingReaction = ({ flt }) => {
         ],
       }}
     >
-      <Text style={{ fontSize: 34 }}>{flt.emoji}</Text>
+      <EmojiIcon emoji={flt.emoji} color="#374151" size={34} sw={2.25} />
     </Animated.View>
   );
 };

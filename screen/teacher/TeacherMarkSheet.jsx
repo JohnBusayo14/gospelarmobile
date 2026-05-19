@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme }     from '../../context/ThemeContext';
 import { useLanguage }  from '../../context/LanguageContext';
 import AppTabBar        from '../../components/AppTabBar';
+import EmojiIcon        from '../../components/EmojiIcon';
 import {
   getAttendanceForLesson, setBulkAttendance,
   getMarksForLesson, addMark, removeMark, updateMark,
@@ -120,7 +121,7 @@ const StudentCard = ({ student, onTogglePresent, onAwardMark, onEditMark, marks,
             onPress={() => onAwardMark(student.student_email, mt)}
             activeOpacity={0.85}
             style={[sc.markBtn, { backgroundColor: isDark ? tk.surfaceEl : mt.bg, borderColor: mt.color + '30' }]}>
-            <Text style={{ fontSize:13 }}>{mt.icon}</Text>
+            <EmojiIcon emoji={mt.icon} color={mt.color} size={13} sw={2.25} />
             <Text style={[sc.markBtnTxt, { color: mt.color }]}>+{mt.points}</Text>
           </TouchableOpacity>
         ))}
@@ -150,7 +151,7 @@ const StudentCard = ({ student, onTogglePresent, onAwardMark, onEditMark, marks,
                       borderStyle:     markPending ? 'dashed' : 'solid',
                       borderWidth:     markPending ? 1.5 : 1,
                     }]}>
-                    <Text style={{ fontSize: 10 }}>{mt.icon}</Text>
+                    <EmojiIcon emoji={mt.icon} color={mt.color} size={10} sw={2.25} />
                     <Text style={[sc.awardPillTxt, { color: mt.color }]}>+{m.points}</Text>
                     {markPending && <Text style={sc.awardPillPending}>⏳</Text>}
                   </TouchableOpacity>
@@ -418,7 +419,7 @@ export default function TeacherMarkSheet({ route, navigation }) {
           <View style={[s.legend, { backgroundColor: tk.surface, borderColor: tk.border }]}>
             {MARK_TYPES.map(mt => (
               <View key={mt.key} style={s.legendItem}>
-                <Text style={{ fontSize:14 }}>{mt.icon}</Text>
+                <EmojiIcon emoji={mt.icon} color={mt.color} size={14} sw={2.25} />
                 <Text style={[s.legendTxt, { color: mt.color }]}>{mt.label}</Text>
                 <Text style={[s.legendPts, { color: tk.textMuted }]}>+{mt.points}</Text>
               </View>

@@ -27,6 +27,7 @@ import {
   BLUE, INDIGO, EMERALD, AMBER, RADII, AMBIENT_SHADOW, victoryTones,
 } from './victoryTheme';
 import VictoryBackdrop from './VictoryBackdrop';
+import EmojiIcon from '../../components/EmojiIcon';
 import {
   BADGES, BADGE_BY_ID, TIER_COLOURS, recomputeAchievements,
 } from './victoryAchievements';
@@ -214,7 +215,7 @@ const Badge = ({ badge, unlockedAt, index, tones, tk }) => {
             },
           ]}
         >
-          <Text style={s.badgeEmoji}>{badge.icon}</Text>
+          <EmojiIcon emoji={badge.icon} color={colours.text} size={28} sw={2.25} />
         </View>
         <Text
           numberOfLines={1}

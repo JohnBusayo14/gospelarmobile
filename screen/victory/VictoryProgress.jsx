@@ -22,6 +22,7 @@ import { useLanguage }  from '../../context/LanguageContext';
 import { getTokens }    from '../../theme/tokens';
 import { useScreenEntry } from '../../hooks/useFluidAnim';
 import { ICONS } from '../../components/AppTabBar';
+import EmojiIcon from '../../components/EmojiIcon';
 import { todayDayIndex } from '../../data/victoryMonth';
 import { useVictoryDays } from '../../hooks/useVictoryContent';
 import { BLUE, EMERALD, AMBER, INDIGO, RADII, AMBIENT_SHADOW, victoryTones } from './victoryTheme';
@@ -230,7 +231,7 @@ export default function VictoryProgress({ navigation }) {
           <Text style={[s.sectionLabel, { color: tones.chipFg }]}>{t('vmp_progress_recent', 'RECENT')}</Text>
           {recent.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
-              <Text style={s.emptyEmoji}>🌱</Text>
+              <View style={s.emptyEmoji}><ICONS.Sprout color={tk.textMuted} size={32} sw={2.25} /></View>
               <Text style={[s.emptyTitle, { color: tk.textPrimary }]}>{t('vmp_progress_empty_title', 'No prayers yet')}</Text>
               <Text style={[s.emptyBody, { color: tk.textMuted }]}>
                 {t('vmp_progress_empty_body', 'Mark your first day as prayed to start your journey.')}
@@ -281,7 +282,7 @@ export default function VictoryProgress({ navigation }) {
 const StatCard = ({ label, value, unit, accent, accentBg, tones, tk, symbol }) => (
   <View style={[s.statCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
     <View style={[s.statIcon, { backgroundColor: accentBg }]}>
-      <Text style={[s.statIconTxt, { color: accent }]}>{symbol}</Text>
+      <EmojiIcon emoji={symbol} color={accent} size={22} sw={2.25} />
     </View>
     <View style={{ flex: 1 }}>
       <Text style={[s.statLbl, { color: tk.textMuted }]}>{label}</Text>

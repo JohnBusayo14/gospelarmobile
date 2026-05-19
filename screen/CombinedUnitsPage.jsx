@@ -21,6 +21,7 @@ import { fetchUnits, fetchLessonsByUnit } from '../services/api';
 import { API_BASE_URL } from '../context/SubscriptionContext';
 import AppTabBar from '../components/AppTabBar';
 import { ICONS } from '../components/icons';
+import EmojiIcon from '../components/EmojiIcon';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
 import { useScreenEntry } from '../hooks/useFluidAnim';
@@ -82,7 +83,7 @@ const CategoryInfoCard = ({ cat, catMeta, quarterInfo, tk, onPress, t }) => (
         )}
       </View>
       <View style={[ci.badge, { backgroundColor: BLUE_LIGHT }]}>
-        <Text style={{ fontSize: 28 }}>{catMeta.icon}</Text>
+        <EmojiIcon emoji={catMeta.icon} color={catMeta.color} size={28} sw={2.25} />
         <Text style={[ci.badgeNum, { color: BLUE }]}>{quarterInfo.lesson_count || 13}</Text>
         <Text style={[ci.badgeSub, { color: BLUE }]}>{t ? t('lessons', 'Lessons') : 'Lessons'}</Text>
       </View>

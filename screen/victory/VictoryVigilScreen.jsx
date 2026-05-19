@@ -172,11 +172,12 @@ export default function VictoryVigilScreen({ route, navigation }) {
                 <TouchableOpacity
                   onPress={openAudioPlayer}
                   activeOpacity={0.82}
-                  style={[s.listenPill, { backgroundColor: accent.bg }]}
+                  style={[s.listenPill, { backgroundColor: accent.bg, flexDirection:'row', alignItems:'center', gap:6 }]}
                   accessibilityLabel={t('vmp_listen', 'Listen to this vigil')}
                 >
+                  <ICONS.Music color={accent.deep} size={14} sw={2.25} />
                   <Text style={[s.listenPillTxt, { color: accent.deep }]}>
-                    🔊  {t('vmp_listen_short', 'Listen')}
+                    {t('vmp_listen_short', 'Listen')}
                   </Text>
                 </TouchableOpacity>
               )}

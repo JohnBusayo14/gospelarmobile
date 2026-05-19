@@ -114,7 +114,7 @@ export default function VictoryReadingMode({ route, navigation }) {
     if (day.intercession) {
       list.push({
         kind:    'inter',
-        eyebrow: t('vmp_reading_intercession_eyebrow', '★ SPECIAL INTERCESSION'),
+        eyebrow: t('vmp_reading_intercession_eyebrow', 'SPECIAL INTERCESSION'),
         title:   '',
         body:    day.intercession,
       });
@@ -191,7 +191,7 @@ export default function VictoryReadingMode({ route, navigation }) {
           style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           accessibilityLabel={t('vmp_close_reading', 'Close reading mode')}
         >
-          <Text style={[s.closeTxt, { color: tones.chipFg }]}>✕</Text>
+          <ICONS.X color={tones.chipFg} size={18} sw={2.25} />
         </TouchableOpacity>
         <View style={[s.posPill, { backgroundColor: tones.chipBg }]}>
           <Text style={[s.posPillTxt, { color: tones.chipFg }]}>
@@ -305,7 +305,7 @@ export default function VictoryReadingMode({ route, navigation }) {
           >
             <Text style={[s.markTxt, (!completed && !ready) && { color: tones.chipFg }]}>
               {completed
-                ? t('vmp_prayed_check', '✓ Prayed')
+                ? t('vmp_prayed_check', 'Prayed')
                 : ready
                   ? t('vmp_mark_prayed', 'Mark as prayed')
                   : `${fmtMMSS(remaining)}`}

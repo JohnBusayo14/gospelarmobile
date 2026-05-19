@@ -468,4 +468,95 @@ export const ICONS = {
       <Circle cx="12" cy="13" r="4" />
     </Glyph>
   ),
+
+  // ── Domain icons added so we can replace lingering emoji in screens ──────
+  // Lucide-shape paths so the visual language stays consistent with the rest.
+  Flame: (p) => (
+    <Glyph {...p}>
+      <Path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </Glyph>
+  ),
+  Sprout: (p) => (
+    <Glyph {...p}>
+      <Path d="M7 20h10" />
+      <Path d="M10 20c5.5-2.5.8-6.4 3-10" />
+      <Path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" />
+      <Path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" />
+    </Glyph>
+  ),
+  Mic: (p) => (
+    <Glyph {...p}>
+      <Path d="M12 19v3" />
+      <Path d="M12 19a7 7 0 0 0 7-7H5a7 7 0 0 0 7 7z" />
+      <Rect x="9" y="2" width="6" height="13" rx="3" />
+    </Glyph>
+  ),
+  Sword: (p) => (
+    <Glyph {...p}>
+      <Polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
+      <Line x1="13" y1="19" x2="19" y2="13" />
+      <Line x1="16" y1="16" x2="20" y2="20" />
+      <Line x1="19" y1="21" x2="21" y2="19" />
+    </Glyph>
+  ),
+  Cloud: (p) => (
+    <Glyph {...p}>
+      <Path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" />
+    </Glyph>
+  ),
+  CloudRain: (p) => (
+    <Glyph {...p}>
+      <Path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24" />
+      <Line x1="16" y1="14" x2="16" y2="20" />
+      <Line x1="8"  y1="14" x2="8"  y2="20" />
+      <Line x1="12" y1="16" x2="12" y2="22" />
+    </Glyph>
+  ),
 };
+
+// Friendly alias map — every emoji used in the app maps to the closest
+// outline icon above. Used by EmptyState / data tables / notification rows
+// so the codebase doesn't have to import each glyph name individually.
+// Approximate matches are intentional — better one consistent outline set
+// than a sea of mixed-fidelity emoji glyphs.
+export const EMOJI_ICON = {
+  // weather + time-of-day
+  '☀️': ICONS.Sun, '🌅': ICONS.Sun, '🌇': ICONS.Sun, '🌞': ICONS.Sun,
+  '🌙': ICONS.Moon, '🌗': ICONS.Moon, '🌌': ICONS.Moon, '🌑': ICONS.Moon,
+  '⛅': ICONS.Cloud, '☁️': ICONS.Cloud,
+  '🌧️': ICONS.CloudRain, '🌊': ICONS.CloudRain,
+  // fire + energy
+  '🔥': ICONS.Flame, '🕯️': ICONS.Flame, '⚡': ICONS.Zap,
+  // plants
+  '🌱': ICONS.Sprout, '🌿': ICONS.Sprout, '🍃': ICONS.Sprout, '🌾': ICONS.Sprout,
+  // achievements + stars
+  '⭐': ICONS.Star, '🌟': ICONS.Star, '✨': ICONS.Star, '★': ICONS.Star,
+  '🏆': ICONS.Trophy, '👑': ICONS.Crown, '🎉': ICONS.Star, '🥇': ICONS.Trophy,
+  // identity / community
+  '👤': ICONS.User, '👥': ICONS.Users, '🤝': ICONS.Users, '🗣️': ICONS.Quote,
+  // place + buildings
+  '⛪': ICONS.Landmark, '🏛': ICONS.Landmark, '🏠': ICONS.Home, '🏡': ICONS.Home,
+  '🌍': ICONS.Globe, '🌐': ICONS.Globe,
+  // media
+  '🎙️': ICONS.Mic, '🎵': ICONS.Music, '🎶': ICONS.Music, '🎹': ICONS.Music,
+  '🎻': ICONS.Music, '🔊': ICONS.Music, '🔇': ICONS.X,
+  // tools / actions
+  '⚔️': ICONS.Sword, '🩹': ICONS.Heart, '⏳': ICONS.Hourglass, '⌛': ICONS.Hourglass,
+  '✍️': ICONS.Edit, '📝': ICONS.Edit, '📖': ICONS.Book, '📚': ICONS.BookStack,
+  '🗓': ICONS.Calendar, '📅': ICONS.Calendar, '📊': ICONS.Stats,
+  '📍': ICONS.Target, '🎯': ICONS.Target, '📜': ICONS.Quote, 'ℹ️': ICONS.Info,
+  '🔒': ICONS.Lock, '🔓': ICONS.Unlock, '🔔': ICONS.Bell, '⬇️': ICONS.Download,
+  '🌀': ICONS.RefreshCw, '⏰': ICONS.Clock,
+  // state
+  '✓': ICONS.Check, '✅': ICONS.CheckCircle, '✕': ICONS.X, '✗': ICONS.X,
+  '⚠': ICONS.AlertTriangle, '⚠️': ICONS.AlertTriangle, '💬': ICONS.Quote,
+  '✉️': ICONS.Mail, '📩': ICONS.Mail,
+};
+
+// Helper: given a string that might be an emoji, return the matching
+// ICONS component (or null). Use in data-driven renders where the raw
+// value lives on a config object.
+export function iconForEmoji(emoji) {
+  if (!emoji) return null;
+  return EMOJI_ICON[emoji] || null;
+}

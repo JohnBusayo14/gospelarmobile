@@ -292,23 +292,29 @@ export default function RegisterScreen({ navigation }) {
                     error={errors.churchCode}
                   />
                   {/* Live confirmation row — shows what we matched */}
-                  {!!churchCode.trim() && (
-                    <View style={{
-                      marginTop: -8, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 8,
-                      borderRadius: 10, borderWidth: 1,
-                      backgroundColor: churchName ? '#10B98114' : '#EF444414',
-                      borderColor:     churchName ? '#10B98140' : '#EF444440',
-                    }}>
-                      <Text style={{
-                        fontSize: 12, fontWeight: '700',
-                        color: churchName ? '#10B981' : '#EF4444',
+                  {!!churchCode.trim() && (() => {
+                    const tint = churchName ? '#10B981' : '#EF4444';
+                    const StatusIcon = churchChecking
+                      ? ICONS.Hourglass
+                      : churchName
+                        ? ICONS.Check
+                        : ICONS.X;
+                    return (
+                      <View style={{
+                        marginTop: -8, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 8,
+                        borderRadius: 10, borderWidth: 1, flexDirection:'row', alignItems:'center', gap:8,
+                        backgroundColor: churchName ? '#10B98114' : '#EF444414',
+                        borderColor:     churchName ? '#10B98140' : '#EF444440',
                       }}>
-                        {churchChecking ? '⌛  Checking…'
-                          : churchName    ? `✓  Linked to ${churchName}`
-                          :                 '✗  Unknown church code — ask your church admin'}
-                      </Text>
-                    </View>
-                  )}
+                        <StatusIcon color={tint} size={14} sw={2.25} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: tint, flex:1 }}>
+                          {churchChecking ? 'Checking…'
+                            : churchName    ? `Linked to ${churchName}`
+                            :                 'Unknown church code — ask your church admin'}
+                        </Text>
+                      </View>
+                    );
+                  })()}
                 </>
               )}
               <InputField

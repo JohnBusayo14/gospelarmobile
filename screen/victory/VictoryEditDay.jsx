@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme }     from '../../context/ThemeContext';
+import EmojiIcon from '../../components/EmojiIcon';
 import { getTokens }    from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
 import { useVictoryDay, useVictoryDays } from '../../hooks/useVictoryContent';
@@ -155,7 +156,7 @@ export default function VictoryEditDay({ route, navigation }) {
                     backgroundColor: active ? BLUE[600] : tones.chipBg,
                   }]}
                 >
-                  <Text style={{ fontSize: 14 }}>{t.emoji}</Text>
+                  <EmojiIcon emoji={t.emoji} color="#374151" size={14} sw={2.25} />
                   <Text style={[s.tabLbl, { color: active ? '#fff' : tones.chipFg }]}>
                     {t.label}
                   </Text>

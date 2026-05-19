@@ -136,9 +136,10 @@ export default function VictoryVigilList({ navigation }) {
                   {v.focus}
                 </Text>
                 {!!v.scripture && (
-                  <View style={[s.scripturePill, { backgroundColor: tones.versePillBg }]}>
+                  <View style={[s.scripturePill, { backgroundColor: tones.versePillBg, flexDirection:'row', alignItems:'center', gap:6 }]}>
+                    <ICONS.Book color={tones.versePillFg} size={12} sw={2.25} />
                     <Text style={[s.scripturePillTxt, { color: tones.versePillFg }]} numberOfLines={1}>
-                      📖  {v.scripture}
+                      {v.scripture}
                     </Text>
                   </View>
                 )}

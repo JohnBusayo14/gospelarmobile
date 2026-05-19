@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme }    from '../../context/ThemeContext';
+import EmojiIcon from '../../components/EmojiIcon';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
@@ -335,7 +336,7 @@ const TemplateTile = ({ template, index, tk, tones, onPress }) => {
     <Animated.View style={{ opacity: fade, transform: [{ translateY }], width: '48%' }}>
       <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
         <GlassCard tones={tones} padding={16}>
-          <Text style={{ fontSize: 28, marginBottom: 6 }}>{template.emoji}</Text>
+          <EmojiIcon emoji={template.emoji} color="#374151" size={28} sw={2.25} />
           <Text style={[s.tplName, { color: tk.textPrimary }]}>{template.name}</Text>
           <Text style={[s.tplHours, { color: tones.chipFg }]}>
             {template.hours > 0 ? `${template.hours}h` : 'Flexible'}

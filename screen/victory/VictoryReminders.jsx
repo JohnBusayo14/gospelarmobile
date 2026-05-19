@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme }    from '../../context/ThemeContext';
+import EmojiIcon from '../../components/EmojiIcon';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
@@ -151,7 +152,7 @@ export default function VictoryReminders({ navigation }) {
                 activeOpacity={0.85}
                 style={[s.preset, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}
               >
-                <Text style={{ fontSize: 26 }}>{p.emoji}</Text>
+                <EmojiIcon emoji={p.emoji} color="#374151" size={26} sw={2.25} />
                 <Text style={[s.presetTime, { color: tones.chipFg }]}>{p.time}</Text>
                 <Text style={[s.presetLbl, { color: tk.textPrimary }]} numberOfLines={1}>{p.label}</Text>
               </TouchableOpacity>

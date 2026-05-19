@@ -534,7 +534,7 @@ const ToolkitSheet = ({ visible, onClose, onPick, tk, tones, t = (k, f) => f }) 
             >
               <View style={[sheet.row, { backgroundColor: tones.pageBg, borderColor: tones.glassEdge }]}>
                 <View style={[sheet.rowIcon, { backgroundColor: tones.chipBg }]}>
-                  <Text style={{ fontSize: 20 }}>{it.emoji}</Text>
+                  <EmojiIcon emoji={it.emoji} color="#374151" size={20} sw={2.25} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[sheet.rowLabel, { color: tk.textPrimary }]} numberOfLines={1}>

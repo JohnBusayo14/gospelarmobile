@@ -18,6 +18,7 @@ import { useTheme }    from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTokens }   from '../../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../../hooks/useFluidAnim';
+import EmojiIcon from '../../components/EmojiIcon';
 import {
   GlassCard, BackBar, Eyebrow, SectionHead,
 } from './VictoryUI';
@@ -132,7 +133,7 @@ const Tile = ({ cat, index, userCount, onPress }) => {
         >
           <View style={[s.tileOrb, { top: -22, right: -16 }]} />
           <View style={[s.tileOrb, { bottom: -28, left: -20, opacity: 0.35 }]} />
-          <Text style={s.tileEmoji}>{cat.emoji}</Text>
+          <View style={s.tileEmoji}><EmojiIcon emoji={cat.emoji} color="#FFFFFF" size={32} sw={2.25} /></View>
           <Text style={s.tileName}>{cat.name}</Text>
           <Text style={s.tileBlurb}>{cat.blurb}</Text>
           <View style={s.tileFoot}>

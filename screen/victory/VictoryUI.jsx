@@ -22,6 +22,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { BLUE, INDIGO, EMERALD, AMBER, RADII, AMBIENT_SHADOW, victoryTones } from './victoryTheme';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const { width: W } = Dimensions.get('window');
 
@@ -86,7 +87,7 @@ export const GradientCTA = ({
           paddingHorizontal: 22,
         }}
       >
-        {!!icon && <Text style={{ fontSize: 16 }}>{icon}</Text>}
+        {!!icon && <EmojiIcon emoji={icon} color="#FFFFFF" size={16} sw={2.25} />}
         <Text style={[{ color: '#fff', fontSize: 14.5, fontWeight: '900', letterSpacing: 0.3 }, textStyle]}>
           {label}
         </Text>
@@ -231,7 +232,7 @@ export const BackBar = ({ onBack, eyebrow, title, right, tones, tk }) => (
 // ── EmptyState ─────────────────────────────────────────────────────────────
 export const EmptyState = ({ emoji = '🌱', title, body, action, onAction, tones, tk }) => (
   <GlassCard tones={tones} padding={26} style={{ alignItems: 'center', gap: 8 }}>
-    <Text style={{ fontSize: 38, marginBottom: 4 }}>{emoji}</Text>
+    <EmojiIcon emoji={emoji} color={tk.textMuted} size={38} sw={2.25} />
     <Text style={{ fontSize: 16, fontWeight: '900', color: tk.textPrimary, textAlign: 'center' }}>
       {title}
     </Text>
@@ -295,7 +296,9 @@ export const CelebrateOverlay = ({ visible, badge, onDone }) => {
             borderRadius: 28, alignItems: 'center', maxWidth: W - 60,
           }}
         >
-          <Text style={{ fontSize: 56, marginBottom: 10 }}>{badge.icon || '🎉'}</Text>
+          <View style={{ marginBottom: 10 }}>
+            <EmojiIcon emoji={badge.icon || '🎉'} color="#FFFFFF" size={56} sw={2.25} />
+          </View>
           <Text style={{ fontSize: 11, fontWeight: '900', letterSpacing: 2.5, color: 'rgba(255,255,255,0.85)' }}>
             ACHIEVEMENT UNLOCKED
           </Text>

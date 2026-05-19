@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
+import EmojiIcon from '../../components/EmojiIcon';
 import { getTokens } from '../../theme/tokens';
 import { useScreenEntry } from '../../hooks/useFluidAnim';
 import {
@@ -303,7 +304,7 @@ export default function VictoryCreateRoom({ navigation }) {
                       { backgroundColor: active ? tones.chipFg : tones.chipBg },
                     ]}
                   >
-                    <Text style={{ fontSize: 14 }}>{tr.emoji}</Text>
+                    <EmojiIcon emoji={tr.emoji} color="#374151" size={14} sw={2.25} />
                     <Text style={[
                       s.ambientTxt,
                       { color: active ? '#fff' : tones.chipFg },

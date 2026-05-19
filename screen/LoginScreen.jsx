@@ -295,8 +295,9 @@ export default function LoginScreen({ navigation }) {
 
               {/* Form-level error banner */}
               {!!errors.form && (
-                <View style={s.formError}>
-                  <Text style={s.formErrorTxt}>⚠  {errors.form}</Text>
+                <View style={[s.formError, { flexDirection:'row', alignItems:'center', gap:8 }]}>
+                  <ICONS.AlertTriangle color="#EF4444" size={16} sw={2.25} />
+                  <Text style={s.formErrorTxt}>{errors.form}</Text>
                 </View>
               )}
 

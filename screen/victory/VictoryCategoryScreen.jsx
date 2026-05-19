@@ -28,6 +28,7 @@ import {
   BLUE, INDIGO, EMERALD, AMBER, ROSE, RADII, AMBIENT_SHADOW, victoryTones,
 } from './victoryTheme';
 import VictoryBackdrop from './VictoryBackdrop';
+import EmojiIcon from '../../components/EmojiIcon';
 import { getCategory } from './victoryCategoriesData';
 import { useCategoryPrayers } from './victoryHooks';
 import { RichVerseText } from '../../components/BibleVerseLink';
@@ -84,7 +85,7 @@ export default function VictoryCategoryScreen({ route, navigation }) {
           >
             <View style={[s.orb, { top: -22, right: -16 }]} />
             <View style={[s.orb, { bottom: -28, left: -20, opacity: 0.4 }]} />
-            <Text style={s.heroEmoji}>{cat.emoji}</Text>
+            <View style={s.heroEmoji}><EmojiIcon emoji={cat.emoji} color="#FFFFFF" size={42} sw={2.25} /></View>
             <Text style={s.heroEyebrow}>{cat.name.toUpperCase()}</Text>
             <Text style={s.heroTitle}>{cat.blurb}</Text>
             <View style={s.heroStats}>
