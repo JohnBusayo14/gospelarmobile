@@ -16,6 +16,7 @@ import { useTheme }       from '../context/ThemeContext';
 import { useLanguage }    from '../context/LanguageContext';
 import { getTokens }      from '../theme/tokens';
 import { useScreenEntry } from '../hooks/useFluidAnim';
+import { ICONS }          from '../components/icons';
 
 const ACCENT = '#2563EB';
 
@@ -32,7 +33,7 @@ const SectionLabel = ({ children, color }) => (
 
 // Reusable contact row — icon + label + value, optional press handler that
 // opens the link/mail. Used for both website and email.
-const ContactRow = ({ icon, label, value, onPress, tk, noBorder }) => (
+const ContactRow = ({ Icon, icon, label, value, onPress, tk, noBorder }) => (
   <TouchableOpacity
     onPress={onPress}
     activeOpacity={onPress ? 0.7 : 1}
@@ -47,7 +48,9 @@ const ContactRow = ({ icon, label, value, onPress, tk, noBorder }) => (
       backgroundColor: ACCENT + '15',
       justifyContent: 'center', alignItems: 'center',
     }}>
-      <Text style={{ fontSize: 18 }}>{icon}</Text>
+      {Icon
+        ? <Icon color={ACCENT} size={18} sw={2.25} />
+        : <Text style={{ fontSize: 18 }}>{icon}</Text>}
     </View>
     <View style={{ flex: 1, marginLeft: 12 }}>
       <Text style={{ fontSize: 11, fontWeight: '800', color: tk.textMuted, letterSpacing: 0.5 }}>{label}</Text>
@@ -170,14 +173,14 @@ export default function AboutScreen({ navigation }) {
                 <SectionLabel color={tk.textMuted}>{t('about_contact', 'Contact')}</SectionLabel>
               </View>
               <ContactRow
-                icon="🌐"
+                Icon={ICONS.Globe}
                 label={t('about_website', 'WEBSITE')}
                 value="www.gospelar.com"
                 tk={tk}
                 onPress={() => Linking.openURL('https://www.gospelar.com')}
               />
               <ContactRow
-                icon="✉️"
+                Icon={ICONS.Mail}
                 label={t('about_email', 'EMAIL')}
                 value="askgospelars@gmail.com"
                 tk={tk}

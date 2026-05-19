@@ -18,13 +18,14 @@ import { useTheme }       from '../context/ThemeContext';
 import { useLanguage }    from '../context/LanguageContext';
 import { getTokens } from '../theme/tokens';
 import { usePressScale } from '../hooks/useFluidAnim';
+import { ICONS }      from '../components/icons';
 
 const { width } = Dimensions.get('window');
 const API    = API_BASE_URL;
 const ACCENT = '#2563EB';
 
 // ── InputField ────────────────────────────────────────────────────────────────
-const InputField = ({ icon, label, placeholder, value, onChangeText, secure,
+const InputField = ({ Icon, icon, label, placeholder, value, onChangeText, secure,
   keyboardType, autoCapitalize, tk, error, rightElement }) => {
   const [focused, setFocused] = useState(false);
   return (
@@ -34,7 +35,9 @@ const InputField = ({ icon, label, placeholder, value, onChangeText, secure,
         inf.wrap,
         { backgroundColor: tk.surface, borderColor: error ? '#EF4444' : focused ? ACCENT : tk.border },
       ]}>
-        <Text style={inf.icon}>{icon}</Text>
+        {Icon
+          ? <View style={inf.iconBox}><Icon color={tk.textMuted} size={18} sw={2.25} /></View>
+          : <Text style={inf.icon}>{icon}</Text>}
         <TextInput
           style={[inf.input, { color: tk.textPrimary }]}
           placeholder={placeholder}
@@ -57,8 +60,9 @@ const InputField = ({ icon, label, placeholder, value, onChangeText, secure,
 const inf = StyleSheet.create({
   label: { fontSize:12, fontWeight:'700', letterSpacing:0.5, marginBottom:8 },
   wrap:  { flexDirection:'row', alignItems:'center', borderRadius:14, borderWidth:1.5, paddingHorizontal:14, paddingVertical:13 },
-  icon:  { fontSize:17, marginRight:10 },
-  input: { flex:1, fontSize:15, fontWeight:'500', padding:0 },
+  icon:    { fontSize:17, marginRight:10 },
+  iconBox: { marginRight:10, alignItems:'center', justifyContent:'center' },
+  input:   { flex:1, fontSize:15, fontWeight:'500', padding:0 },
   error: { fontSize:12, color:'#EF4444', marginTop:5, marginLeft:4, fontWeight:'600' },
 });
 
@@ -260,7 +264,7 @@ export default function RegisterScreen({ navigation }) {
               </View>
 
               <InputField
-                icon="👤"
+                Icon={ICONS.User}
                 label={t('register_name_label', 'Full Name')}
                 placeholder={t('register_name_placeholder', 'Your full name')}
                 value={fullName}
@@ -275,7 +279,7 @@ export default function RegisterScreen({ navigation }) {
               {role === 'teacher' && (
                 <>
                   <InputField
-                    icon="⛪"
+                    Icon={ICONS.Landmark}
                     label={t('register_church_code_label', 'Church Invite Code')}
                     placeholder="e.g. CRX42PHM"
                     value={churchCode}
@@ -308,7 +312,7 @@ export default function RegisterScreen({ navigation }) {
                 </>
               )}
               <InputField
-                icon="✉️"
+                Icon={ICONS.Mail}
                 label={t('register_email_label', 'Email Address')}
                 placeholder={t('register_email_placeholder', 'you@example.com')}
                 value={email}
@@ -318,7 +322,7 @@ export default function RegisterScreen({ navigation }) {
                 error={errors.email}
               />
               <InputField
-                icon="🔒"
+                Icon={ICONS.Lock}
                 label={t('register_password_label', 'Password')}
                 placeholder={t('register_password_placeholder', 'Min. 6 characters')}
                 value={password}
@@ -328,14 +332,16 @@ export default function RegisterScreen({ navigation }) {
                 error={errors.password}
                 rightElement={
                   <TouchableOpacity onPress={() => setShowPass(v=>!v)} activeOpacity={0.7} style={{ padding:4 }}>
-                    <Text style={{ fontSize:16 }}>{showPass ? '🙈' : '👁️'}</Text>
+                    {showPass
+                      ? <ICONS.EyeOff color={tk.textMuted} size={18} sw={2.25} />
+                      : <ICONS.Eye    color={tk.textMuted} size={18} sw={2.25} />}
                   </TouchableOpacity>
                 }
               />
               <StrengthBar password={password} t={t} />
 
               <InputField
-                icon="✅"
+                Icon={ICONS.CheckCircle}
                 label={t('register_confirm_label', 'Confirm Password')}
                 placeholder={t('register_confirm_placeholder', 'Re-enter password')}
                 value={confirm}

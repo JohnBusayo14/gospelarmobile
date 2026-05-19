@@ -521,9 +521,9 @@ export default function SettingsScreen({ navigation, route }) {
           </Card>
 
           {/* ABOUT */}
-          <SectionHead title={t('about', 'About').toUpperCase()} icon="ℹ️" tk={tk}/>
+          <SectionHead title={t('about', 'About').toUpperCase()} Icon={ICONS.Info} tk={tk}/>
           <Card tk={tk}>
-            <Row icon="ℹ️" label={t('about_app', 'About App')} sub={t('set_version', 'Version 1.0.0 · Gospelar')}
+            <Row Icon={ICONS.Info} label={t('about_app', 'About App')} sub={t('set_version', 'Version 1.0.0 · Gospelar')}
               tk={tk} onPress={() => navigation.navigate('About')}/>
             <Row Icon={ICONS.Globe} label={t('website', 'Website')} sub="www.gospelar.com" tk={tk} noBorder/>
           </Card>

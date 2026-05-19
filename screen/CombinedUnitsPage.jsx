@@ -20,6 +20,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { fetchUnits, fetchLessonsByUnit } from '../services/api';
 import { API_BASE_URL } from '../context/SubscriptionContext';
 import AppTabBar from '../components/AppTabBar';
+import { ICONS } from '../components/icons';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
 import { useScreenEntry } from '../hooks/useFluidAnim';
@@ -302,14 +303,14 @@ const ub = StyleSheet.create({
 const StatRow = ({ catMeta, unitCount, tk, quarterInfo, t }) => (
   <View style={st.row}>
     {[
-      { icon: '📚', label: t('cunits_stat_units', 'Units'),   val: unitCount || '—' },
-      { icon: '📖', label: t('lessons', 'Lessons'), val: quarterInfo?.lesson_count || 13 },
-      { icon: '🗓',  label: t('cunits_stat_quarter', 'Quarter'), val: quarterInfo?.quarter || 'Q4 2026' },
-    ].map(item => (
-      <View key={item.label} style={[st.pill, { backgroundColor: tk.glassFill, borderColor: tk.glassEdge }]}>
-        <Text style={{ fontSize: 22, marginBottom: 4 }}>{item.icon}</Text>
-        <Text style={[st.val, { color: tk.textPrimary }]}>{item.val}</Text>
-        <Text style={[st.label, { color: tk.textMuted }]}>{item.label}</Text>
+      { Icon: ICONS.BookStack, label: t('cunits_stat_units', 'Units'),   val: unitCount || '—' },
+      { Icon: ICONS.Book,      label: t('lessons', 'Lessons'),           val: quarterInfo?.lesson_count || 13 },
+      { Icon: ICONS.Calendar,  label: t('cunits_stat_quarter', 'Quarter'), val: quarterInfo?.quarter || 'Q4 2026' },
+    ].map(({ Icon, label, val }) => (
+      <View key={label} style={[st.pill, { backgroundColor: tk.glassFill, borderColor: tk.glassEdge }]}>
+        <View style={{ marginBottom: 6 }}><Icon color={tk.textPrimary} size={20} sw={2.25} /></View>
+        <Text style={[st.val, { color: tk.textPrimary }]}>{val}</Text>
+        <Text style={[st.label, { color: tk.textMuted }]}>{label}</Text>
       </View>
     ))}
   </View>

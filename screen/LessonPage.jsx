@@ -288,9 +288,14 @@ const cm = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION HEADER
 // ─────────────────────────────────────────────────────────────────────────────
-const SectionHeader = ({ title, icon, tk }) => (
+// Section header. `Icon` (component from ICONS) preferred — gives us the
+// app's bold outline icon style used in the bottom tab bar. `icon` (emoji
+// string) kept as fallback for any caller not yet migrated.
+const SectionHeader = ({ title, Icon, icon, tk }) => (
   <View style={sh.row}>
-    {icon && <Text style={{ fontSize:20, marginRight:8 }}>{icon}</Text>}
+    {Icon
+      ? <View style={{ marginRight:8 }}><Icon color={tk.textPrimary} size={20} sw={2.25} /></View>
+      : icon ? <Text style={{ fontSize:20, marginRight:8 }}>{icon}</Text> : null}
     <Text style={[sh.title, { color:tk.textPrimary }]}>{title}</Text>
   </View>
 );
@@ -658,7 +663,7 @@ export default function LessonPage({ route, navigation }) {
 
       {/* ── CONTENT MODALS (center overlay) ── */}
       <ContentModal visible={verseModal} onClose={()=>setVerseModal(false)}
-        title={t('lesson_memory_verse', 'Memory Verse')} icon="📜" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_memory_verse', 'Memory Verse')} Icon={ICONS.Quote} tk={tk} isDark={isDark} t={t}>
         <Text style={[s.modalVerse, { color:tk.textPrimary }]}>"{c.memory_verse}"</Text>
         {!!c.memoryVerse_bible_passage && (
           <View style={[s.modalPassage, { backgroundColor:BLUE_LIGHT, borderColor:BLUE+'30' }]}>
@@ -672,13 +677,13 @@ export default function LessonPage({ route, navigation }) {
       </ContentModal>
 
 <ContentModal visible={backgroundModal} onClose={()=>setBackgroundModal(false)}
-        title={t('lesson_background', 'Lesson Background')} icon="🏛" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_background', 'Lesson Background')} Icon={ICONS.Landmark} tk={tk} isDark={isDark} t={t}>
         <RichVerseText text={c.lesson_background||''} isDark={isDark}
           style={[s.modalBodyTxt, { color:tk.textSec }]} lineHeight={24}/>
       </ContentModal>
 
       <ContentModal visible={conclusionModal} onClose={()=>setConclusionModal(false)}
-        title={t('lesson_conclusion', 'Lesson Conclusion')} icon="🎯" tk={tk} isDark={isDark} t={t}>
+        title={t('lesson_conclusion', 'Lesson Conclusion')} Icon={ICONS.Target} tk={tk} isDark={isDark} t={t}>
         <RichVerseText text={c.lesson_conclusion||''} isDark={isDark}
           style={[s.modalBodyTxt, { color:tk.textSec }]} lineHeight={24}/>
       </ContentModal>
@@ -728,7 +733,7 @@ export default function LessonPage({ route, navigation }) {
           {/* LESSON OVERVIEW — horizontal scroll of Bamboo-style cards */}
           {(!!c.memory_verse || !!c.suggested_hymns || !!c.lesson_background || !!c.lesson_conclusion) && (
             <View style={s.overviewSection}>
-              <SectionHeader title={t('lesson_overview', 'Lesson Overview')} icon="ℹ️" tk={tk}/>
+              <SectionHeader title={t('lesson_overview', 'Lesson Overview')} Icon={ICONS.Info} tk={tk}/>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}
                 contentContainerStyle={s.overviewScroll}>
                 {!!c.memory_verse && (
@@ -762,7 +767,7 @@ export default function LessonPage({ route, navigation }) {
           {/* LESSON PARTS — full dark mode */}
           {Array.isArray(c.lesson_part) && c.lesson_part.length>0 && (
             <View style={s.section}>
-              <SectionHeader title={t('lesson_notes_on_lesson', 'Notes on the Lesson')} icon="📝" tk={tk}/>
+              <SectionHeader title={t('lesson_notes_on_lesson', 'Notes on the Lesson')} Icon={ICONS.Edit} tk={tk}/>
               {c.lesson_part.map((part, i) => (
                 <PartCard key={i} part={part} index={i} allParts={c.lesson_part}
                   lessonTitle={lesson?.title} tk={tk} isDark={isDark} t={t}/>
@@ -796,7 +801,7 @@ export default function LessonPage({ route, navigation }) {
 
           {/* QUIZ CTA */}
           <View style={s.section}>
-            <SectionHeader title={t('lesson_test_yourself', 'Test Yourself')} icon="⚡" tk={tk}/>
+            <SectionHeader title={t('lesson_test_yourself', 'Test Yourself')} Icon={ICONS.Zap} tk={tk}/>
             <View style={[s.quizCard, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
                     <View style={s.quizBody}>
                     <View style={[s.quizIcon, { backgroundColor:BLUE_LIGHT }]}>

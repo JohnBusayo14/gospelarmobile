@@ -256,7 +256,7 @@ export default function ProfileScreen({navigation}) {
             <SectionHead title={t('offline_section','Offline Content').toUpperCase()} Icon={ICONS.Inbox} tk={tk}/>
             <View style={{marginHorizontal:20,borderRadius:18,borderWidth:1,overflow:'hidden',backgroundColor:tk.glassFill,borderColor:tk.glassEdge}}>
               <Row
-                icon="⬇️"
+                Icon={ICONS.Download}
                 label={downloading
                   ? t('offline_downloading','Downloading…')
                   : t('offline_download','Download for Offline')}

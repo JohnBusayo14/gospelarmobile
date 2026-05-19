@@ -22,6 +22,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { useLanguage }     from '../context/LanguageContext';
 import { getTokens } from '../theme/tokens';
 import { usePressScale } from '../hooks/useFluidAnim';
+import { ICONS }      from '../components/icons';
 
 const { width, height } = Dimensions.get('window');
 const API = API_BASE_URL;
@@ -30,7 +31,7 @@ const ACCENT = '#2563EB';
 
 // ── InputField ────────────────────────────────────────────────────────────────
 const InputField = ({
-  icon, placeholder, value, onChangeText, secureTextEntry,
+  Icon, icon, placeholder, value, onChangeText, secureTextEntry,
   keyboardType, autoCapitalize, tk, error, onToggleSecure, isSecure,
 }) => {
   const [focused, setFocused] = useState(false);
@@ -56,7 +57,9 @@ const InputField = ({
         inf.wrap,
         { backgroundColor: tk.surface, borderColor },
       ]}>
-        <Text style={inf.icon}>{icon}</Text>
+        {Icon
+          ? <View style={inf.iconBox}><Icon color={tk.textMuted} size={18} sw={2.25} /></View>
+          : <Text style={inf.icon}>{icon}</Text>}
         <TextInput
           style={[inf.input, { color: tk.textPrimary }]}
           placeholder={placeholder}
@@ -72,7 +75,9 @@ const InputField = ({
         />
         {isSecure !== undefined && (
           <TouchableOpacity onPress={onToggleSecure} activeOpacity={0.7} style={{ padding: 4 }}>
-            <Text style={{ fontSize: 16 }}>{isSecure ? '🙈' : '👁️'}</Text>
+            {isSecure
+              ? <ICONS.EyeOff color={tk.textMuted} size={18} sw={2.25} />
+              : <ICONS.Eye    color={tk.textMuted} size={18} sw={2.25} />}
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -89,8 +94,9 @@ const inf = StyleSheet.create({
     borderRadius: 14, borderWidth: 1.5,
     paddingHorizontal: 14, paddingVertical: 12,
   },
-  icon:  { fontSize: 18, marginRight: 10 },
-  input: { flex: 1, fontSize: 15, fontWeight: '500', padding: 0 },
+  icon:    { fontSize: 18, marginRight: 10 },
+  iconBox: { marginRight: 10, alignItems: 'center', justifyContent: 'center' },
+  input:   { flex: 1, fontSize: 15, fontWeight: '500', padding: 0 },
   error: { fontSize: 12, color: '#EF4444', marginTop: 5, marginLeft: 4, fontWeight: '600' },
 });
 
@@ -295,7 +301,7 @@ export default function LoginScreen({ navigation }) {
               )}
 
               <InputField
-                icon="✉️"
+                Icon={ICONS.Mail}
                 placeholder={t('login_email_placeholder', 'Email address')}
                 value={email}
                 onChangeText={v => {
@@ -308,7 +314,7 @@ export default function LoginScreen({ navigation }) {
               />
 
               <InputField
-                icon="🔒"
+                Icon={ICONS.Lock}
                 placeholder={t('login_password_placeholder', 'Password')}
                 value={password}
                 onChangeText={v => {

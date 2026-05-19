@@ -572,15 +572,15 @@ export default function ProgressScreen({ navigation }) {
               {/* TAB PILLS */}
               <View style={[s.tabPills, { backgroundColor: tk.glassFill }]}>
                 {[
-                  { k: 'quizzes',     icon: '📊', label: t('progress_tab_quizzes',     'Quizzes') },
-                  { k: 'reading',     icon: '🌅', label: t('progress_tab_reading',     'Reading') },
-                  { k: 'leaderboard', icon: '🏆', label: t('progress_leaderboard',     'Leaders') },
-                ].map(({ k, icon, label }) => {
+                  { k: 'quizzes',     Icon: ICONS.Stats,  label: t('progress_tab_quizzes',     'Quizzes') },
+                  { k: 'reading',     Icon: ICONS.Sun,    label: t('progress_tab_reading',     'Reading') },
+                  { k: 'leaderboard', Icon: ICONS.Trophy, label: t('progress_leaderboard',     'Leaders') },
+                ].map(({ k, Icon, label }) => {
                   const active = tab === k;
                   return (
                     <TouchableOpacity key={k} onPress={() => setTab(k)} activeOpacity={0.85}
                       style={[s.tabPill, { backgroundColor: active ? PRIMARY : 'transparent' }]}>
-                      <Text style={{ fontSize: 14 }}>{icon}</Text>
+                      <Icon color={active ? ON_PRIMARY : tk.textSec} size={14} sw={2.25} />
                       <Text style={[s.tabPillTxt, {
                         color: active ? ON_PRIMARY : tk.textSec,
                       }]}>{label}</Text>
