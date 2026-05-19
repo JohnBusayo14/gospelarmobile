@@ -85,7 +85,7 @@ export default function DeleteAccountScreen({ navigation }) {
           <View style={{ padding:20 }}>
             {/* Warning card */}
             <View style={s.warnCard}>
-              <ICONS.AlertTriangle color="#F59E0B" size={28} sw={2} />
+              <ICONS.AlertTriangle color="#F59E0B" size={28} sw={2.25} />
               <Text style={s.warnTitle}>{t('delacc_irreversible', 'This action is irreversible')}</Text>
               <Text style={s.warnBody}>
                 {t('delacc_remove_intro', 'Deleting your account will permanently remove:')}{'\n\n'}
@@ -102,7 +102,7 @@ export default function DeleteAccountScreen({ navigation }) {
             </Text>
             <View style={[s.inputWrap, { backgroundColor: tk.surface, borderColor: error ? '#EF4444' : focused ? '#EF4444' : tk.border }]}>
               <View style={{ marginRight:10 }}>
-                <ICONS.Lock color={tk.textMuted} size={17} sw={2} />
+                <ICONS.Lock color={tk.textMuted} size={17} sw={2.25} />
               </View>
               <TextInput
                 style={[s.input, { color: tk.textPrimary }]}

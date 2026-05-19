@@ -1,11 +1,11 @@
-﻿// screen/victory/VictoryVigilList.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Browse all group vigil guides — Family (×3), Youth, Women, Men, General.
+// screen/victory/VictoryVigilList.jsx
+// -----------------------------------------------------------------------------
+// Browse all group vigil guides � Family (�3), Youth, Women, Men, General.
 //
 // Filter chips by audience group. Each card uses the group-specific accent
 // palette (groupAccent in victoryTheme.js) so families, youth and men feel
 // visually distinct without abandoning the blue spine of the book.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -48,14 +48,14 @@ export default function VictoryVigilList({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
+        {/* -- TOP BAR ------------------------------------------------------- */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.eyebrow, { color: tones.chipFg }]}>
@@ -68,7 +68,7 @@ export default function VictoryVigilList({ navigation }) {
           <View style={[s.iconBtn, { opacity: 0 }]} />
         </View>
 
-        {/* ── INTRO ──────────────────────────────────────────────────────── */}
+        {/* -- INTRO -------------------------------------------------------- */}
         <View style={s.introWrap}>
           <View style={[s.introCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <Text style={[s.introEyebrow, { color: tones.chipFg }]}>
@@ -80,13 +80,13 @@ export default function VictoryVigilList({ navigation }) {
             <Text style={[s.introBody, { color: tk.textSec }]}>
               {t(
                 'vmp_vigils_intro_body',
-                "Seven dedicated vigil guides equip every group — families, youth, women, men — to gather, reflect on scripture, discuss application, and intercede in unison through Victory Month.",
+                "Seven dedicated vigil guides equip every group � families, youth, women, men � to gather, reflect on scripture, discuss application, and intercede in unison through Victory Month.",
               )}
             </Text>
           </View>
         </View>
 
-        {/* ── GROUP FILTER ───────────────────────────────────────────────── */}
+        {/* -- GROUP FILTER ------------------------------------------------- */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -116,7 +116,7 @@ export default function VictoryVigilList({ navigation }) {
           })}
         </ScrollView>
 
-        {/* ── VIGIL CARDS ────────────────────────────────────────────────── */}
+        {/* -- VIGIL CARDS -------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20, gap: 12 }}>
           {visible.map((v) => {
             const accent = groupAccent(v.group);
@@ -138,12 +138,12 @@ export default function VictoryVigilList({ navigation }) {
                 {!!v.scripture && (
                   <View style={[s.scripturePill, { backgroundColor: tones.versePillBg }]}>
                     <Text style={[s.scripturePillTxt, { color: tones.versePillFg }]} numberOfLines={1}>
-                      📖  {v.scripture}
+                      ??  {v.scripture}
                     </Text>
                   </View>
                 )}
                 <View style={s.metaRow}>
-                  <ICONS.Calendar color={tk.textMuted} size={12} sw={2} />
+                  <ICONS.Calendar color={tk.textMuted} size={12} sw={2.25} />
                   <Text style={[s.metaTxt, { color: tk.textMuted }]}>{v.date}</Text>
                 </View>
                 <View style={s.statsRow}>

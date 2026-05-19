@@ -1,14 +1,14 @@
-﻿// screen/victory/VictoryProgress.jsx
-// ─────────────────────────────────────────────────────────────────────────────
+// screen/victory/VictoryProgress.jsx
+// -----------------------------------------------------------------------------
 // Personal progress dashboard for the Victory Month book.
 //
 // Shows:
-//   • Big completion ring + stats
-//   • Current streak / longest streak
-//   • Heatmap (5 rows × 6 days) for at-a-glance pattern
-//   • Recently prayed list (last 5 completed days)
-//   • Reset button (with a confirm dialog)
-// ─────────────────────────────────────────────────────────────────────────────
+//   � Big completion ring + stats
+//   � Current streak / longest streak
+//   � Heatmap (5 rows � 6 days) for at-a-glance pattern
+//   � Recently prayed list (last 5 completed days)
+//   � Reset button (with a confirm dialog)
+// -----------------------------------------------------------------------------
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -53,7 +53,7 @@ export default function VictoryProgress({ navigation }) {
     return unsub;
   }, [navigation, refresh]);
 
-  // ── Derived stats ───────────────────────────────────────────────────────
+  // -- Derived stats -------------------------------------------------------
   const doneCount = useMemo(
     () => Object.values(completed).filter(Boolean).length,
     [completed],
@@ -102,7 +102,7 @@ export default function VictoryProgress({ navigation }) {
     );
   };
 
-  // Heatmap layout: 5 rows × 6 days = 30 days total
+  // Heatmap layout: 5 rows � 6 days = 30 days total
   const heatmap = useMemo(() => {
     const rows = [];
     for (let r = 0; r < 5; r++) {
@@ -127,14 +127,14 @@ export default function VictoryProgress({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
+        {/* -- TOP BAR ------------------------------------------------------- */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.eyebrow, { color: tones.chipFg }]}>{t('vmp_caps', 'VICTORY MONTH')}</Text>
@@ -145,11 +145,11 @@ export default function VictoryProgress({ navigation }) {
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <Text style={[s.iconBtnTxt, { color: tones.chipFg }]}>↺</Text>
+            <Text style={[s.iconBtnTxt, { color: tones.chipFg }]}>?</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── HERO RING ──────────────────────────────────────────────────── */}
+        {/* -- HERO RING ---------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <View style={[s.hero, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <View style={[s.ringOuter, { backgroundColor: tones.chipBg }]}>
@@ -163,12 +163,12 @@ export default function VictoryProgress({ navigation }) {
               {doneCount}<Text style={{ color: tk.textMuted, fontSize: 19 }}> / {TOTAL_DAYS} {t('vmp_progress_days', 'days')}</Text>
             </Text>
             <Text style={[s.heroSub, { color: tk.textSec }]}>
-              {t('vmp_progress_motivation', 'Keep going — every prayer plants a seed.')}
+              {t('vmp_progress_motivation', 'Keep going � every prayer plants a seed.')}
             </Text>
           </View>
         </View>
 
-        {/* ── STREAK CARDS ───────────────────────────────────────────────── */}
+        {/* -- STREAK CARDS ------------------------------------------------- */}
         <View style={s.statsRow}>
           <StatCard
             label={t('vmp_progress_current_streak', 'Current streak')}
@@ -178,7 +178,7 @@ export default function VictoryProgress({ navigation }) {
             accentBg="#FEF3C7"
             tones={tones}
             tk={tk}
-            symbol="⚡"
+            symbol="?"
           />
           <StatCard
             label={t('vmp_progress_longest_streak', 'Longest streak')}
@@ -188,11 +188,11 @@ export default function VictoryProgress({ navigation }) {
             accentBg="#D1FAE5"
             tones={tones}
             tk={tk}
-            symbol="🏆"
+            symbol="??"
           />
         </View>
 
-        {/* ── HEATMAP ────────────────────────────────────────────────────── */}
+        {/* -- HEATMAP ------------------------------------------------------ */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={[s.sectionLabel, { color: tones.chipFg }]}>{t('vmp_progress_overview', 'OVERVIEW')}</Text>
           <View style={[s.heatmapCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
@@ -225,12 +225,12 @@ export default function VictoryProgress({ navigation }) {
           </View>
         </View>
 
-        {/* ── RECENT ─────────────────────────────────────────────────────── */}
+        {/* -- RECENT ------------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={[s.sectionLabel, { color: tones.chipFg }]}>{t('vmp_progress_recent', 'RECENT')}</Text>
           {recent.length === 0 ? (
             <View style={[s.emptyCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
-              <Text style={s.emptyEmoji}>🌱</Text>
+              <Text style={s.emptyEmoji}>??</Text>
               <Text style={[s.emptyTitle, { color: tk.textPrimary }]}>{t('vmp_progress_empty_title', 'No prayers yet')}</Text>
               <Text style={[s.emptyBody, { color: tk.textMuted }]}>
                 {t('vmp_progress_empty_body', 'Mark your first day as prayed to start your journey.')}
@@ -250,27 +250,27 @@ export default function VictoryProgress({ navigation }) {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.recentTitle, { color: tk.textPrimary }]} numberOfLines={1}>
-                      {t('vmp_progress_day_focus', 'Day {n} · {focus}').replace('{n}', String(d.day)).replace('{focus}', d.focus)}
+                      {t('vmp_progress_day_focus', 'Day {n} � {focus}').replace('{n}', String(d.day)).replace('{focus}', d.focus)}
                     </Text>
                     <Text style={[s.recentMeta, { color: tk.textMuted }]} numberOfLines={1}>
                       {d.date}
                     </Text>
                   </View>
-                  <Text style={[s.recentChev, { color: tk.textMuted }]}>›</Text>
+                  <Text style={[s.recentChev, { color: tk.textMuted }]}>�</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
-        {/* ── CTA ────────────────────────────────────────────────────────── */}
+        {/* -- CTA ---------------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20 }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryDayList')}
             activeOpacity={0.86}
             style={[s.cta, { backgroundColor: BLUE[600], shadowColor: tones.ctaShadow }]}
           >
-            <Text style={s.ctaTxt}>{t('vmp_progress_continue', 'Continue praying  →')}</Text>
+            <Text style={s.ctaTxt}>{t('vmp_progress_continue', 'Continue praying  ?')}</Text>
           </TouchableOpacity>
         </View>
       </Animated.ScrollView>

@@ -1,5 +1,5 @@
-﻿// screen/victory/VictoryAbout.jsx
-// ─────────────────────────────────────────────────────────────────────────────
+// screen/victory/VictoryAbout.jsx
+// -----------------------------------------------------------------------------
 // Introduction / theme briefing for the Victory Month book.
 //
 // Lifts the "Introduction" + "Foreword" sections from the source PDF into
@@ -7,7 +7,7 @@
 // the 7 "dos and don'ts" of Victory Month prayer, and the General Overseer's
 // pastoral note. Designed to be read once at the start of the fast and
 // referenced as needed throughout.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 import React, { useMemo } from 'react';
 import {
@@ -27,7 +27,7 @@ const DOS = [
   'Join other brethren in the church daily for the corporate prayers (Heb 10:25).',
   'Do justice to the prayer points by praying them exhaustively.',
   'Take enough time to pray on your own at a seclusive time and place (Matt 6:6).',
-  'Do the fast to the best of your ability — not below or beyond your ability. The blessings of fasting are far more than the pains (Matt 17:20).',
+  'Do the fast to the best of your ability � not below or beyond your ability. The blessings of fasting are far more than the pains (Matt 17:20).',
   'Be sensitive when praying. Allow God to speak to you while you are speaking to Him (Hab 2:1).',
   'Do whatever you can do to bless less-privileged and elderly people with what you reserve while fasting.',
   '"Much prayer brings much power; little prayer brings little power; no prayer brings no power."',
@@ -66,14 +66,14 @@ export default function VictoryAbout({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
+        {/* -- TOP BAR ------------------------------------------------------- */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.eyebrow, { color: tones.chipFg }]}>
@@ -86,7 +86,7 @@ export default function VictoryAbout({ navigation }) {
           <View style={[s.iconBtn, { opacity: 0 }]} />
         </View>
 
-        {/* ── HERO ───────────────────────────────────────────────────────── */}
+        {/* -- HERO --------------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20, marginBottom: 22 }}>
           <View style={[s.hero, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <Text style={[s.heroYear, { color: tones.chipFg }]}>
@@ -95,7 +95,7 @@ export default function VictoryAbout({ navigation }) {
             <Text style={[s.heroTitle, { color: tk.textPrimary }]}>{meta.theme}</Text>
             <View style={[s.heroPill, { backgroundColor: tones.versePillBg }]}>
               <Text style={[s.heroPillTxt, { color: tones.versePillFg }]}>
-                📅  {meta.window}
+                ??  {meta.window}
               </Text>
             </View>
             <Text style={[s.heroBody, { color: tk.textSec }]}>
@@ -104,29 +104,29 @@ export default function VictoryAbout({ navigation }) {
           </View>
         </View>
 
-        {/* ── STATS ──────────────────────────────────────────────────────── */}
+        {/* -- STATS -------------------------------------------------------- */}
         <View style={s.statsWrap}>
           <Stat label={t('vmp_about_stat_days', 'Days of prayer')}   value={totalDays}    accent={BLUE[600]}    bg={tones.glassFill} tk={tk} />
           <Stat label={t('vmp_about_stat_vigils', 'Group vigils')}   value={totalVigils}  accent={INDIGO[600]}  bg={tones.glassFill} tk={tk} />
           <Stat label={t('vmp_about_stat_pages', 'Pages')}           value={meta.pages}   accent={EMERALD[500]} bg={tones.glassFill} tk={tk} />
         </View>
 
-        {/* ── INTRO MESSAGE ──────────────────────────────────────────────── */}
+        {/* -- INTRO MESSAGE ------------------------------------------------ */}
         <Section title={t('vmp_about_foreword', 'Foreword')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             <Text style={[s.body, { color: tk.textSec }]}>
-              {t('vmp_about_foreword_p1', 'Revival is the best and greatest thing that can happen to the world — especially the Church. It is a divine manifestation with commensurate reception by humans. Under a true revival atmosphere, God\'s needs are met by human beings and human needs are also met by God.')}
+              {t('vmp_about_foreword_p1', 'Revival is the best and greatest thing that can happen to the world � especially the Church. It is a divine manifestation with commensurate reception by humans. Under a true revival atmosphere, God\'s needs are met by human beings and human needs are also met by God.')}
             </Text>
             <Text style={[s.body, { color: tk.textSec, marginTop: 12 }]}>
-              {t('vmp_about_foreword_p2', 'We expect that as our hearts unite in prayer, expectation and consecration, God will position us for deeper encounters with His power and greater demonstrations of His glory. True revival is not merely an event — it is a heart awakened, a faith strengthened, and a church stirred to action.')}
+              {t('vmp_about_foreword_p2', 'We expect that as our hearts unite in prayer, expectation and consecration, God will position us for deeper encounters with His power and greater demonstrations of His glory. True revival is not merely an event � it is a heart awakened, a faith strengthened, and a church stirred to action.')}
             </Text>
             <Text style={[s.attribution, { color: tones.chipFg }]}>
-              {t('vmp_about_attribution', '— Pastor (Dr.) Elijah Oludele Abina, General Overseer, GOFAMINT')}
+              {t('vmp_about_attribution', '� Pastor (Dr.) Elijah Oludele Abina, General Overseer, GOFAMINT')}
             </Text>
           </View>
         </Section>
 
-        {/* ── DOS ────────────────────────────────────────────────────────── */}
+        {/* -- DOS ---------------------------------------------------------- */}
         <Section title={t('vmp_about_guidelines', 'Guidelines for Prayer & Fasting')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             {DOS.map((d, i) => (
@@ -135,7 +135,7 @@ export default function VictoryAbout({ navigation }) {
           </View>
         </Section>
 
-        {/* ── COMMITTEE ──────────────────────────────────────────────────── */}
+        {/* -- COMMITTEE ---------------------------------------------------- */}
         <Section title={t('vmp_about_committee', 'Victory Month Committee')} tk={tk} tones={tones}>
           <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
             {COMMITTEE.map((p, i) => (
@@ -149,14 +149,14 @@ export default function VictoryAbout({ navigation }) {
           </View>
         </Section>
 
-        {/* ── CTAS ──────────────────────────────────────────────────────── */}
+        {/* -- CTAS -------------------------------------------------------- */}
         <View style={{ paddingHorizontal: 20, marginTop: 4, gap: 10 }}>
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryDayList')}
             activeOpacity={0.86}
             style={[s.cta, { backgroundColor: BLUE[600], shadowColor: tones.ctaShadow }]}
           >
-            <Text style={s.ctaTxt}>{t('vmp_about_cta_start', 'Start with Day 1  →')}</Text>
+            <Text style={s.ctaTxt}>{t('vmp_about_cta_start', 'Start with Day 1  ?')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('VictoryVigilList')}

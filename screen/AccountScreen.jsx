@@ -87,7 +87,7 @@ function DetailRow({ iconPath, label, value, valueColor, isLast, tk }) {
   return (
     <View style={[dr.row, !isLast && { borderBottomWidth:1, borderBottomColor:tk.border }]}>
       <View style={[dr.iconBox, { backgroundColor: BLUE_LIGHT }]}>
-        <Icon d={iconPath} color={BLUE} size={14} sw={1.8} />
+        <Icon d={iconPath} color={BLUE} size={14} sw={2.25} />
       </View>
       <Text style={[dr.label, { color: tk.textMuted }]}>{label}</Text>
       <Text style={[dr.value, { color: valueColor || tk.textPrimary }]} numberOfLines={1}>
@@ -109,13 +109,13 @@ function ActionBtn({ gradient, iconPath, label, sub, onPress, shadowColor }) {
       style={[ab.wrap, { shadowColor }]}>
       <LinearGradient colors={gradient} start={{x:0,y:0}} end={{x:1,y:0}} style={ab.grad}>
         <View style={ab.iconBox}>
-          <Icon d={iconPath} color="#fff" size={18} sw={2} />
+          <Icon d={iconPath} color="#fff" size={18} sw={2.25} />
         </View>
         <View style={{ flex:1 }}>
           <Text style={ab.label}>{label}</Text>
           {sub && <Text style={ab.sub}>{sub}</Text>}
         </View>
-        <Icon d="M9 18l6-6-6-6" color="rgba(255,255,255,0.65)" size={16} sw={2.2} />
+        <Icon d="M9 18l6-6-6-6" color="rgba(255,255,255,0.65)" size={16} sw={2.25} />
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -195,7 +195,7 @@ export default function AccountScreen({ navigation }) {
         <TouchableOpacity onPress={handleRefresh} activeOpacity={0.75} style={s.iconBtn} disabled={refreshing}>
           {refreshing
             ? <ActivityIndicator color="#fff" size="small" />
-            : <Icon d={IC.refresh} color="#fff" size={17} sw={2} />}
+            : <Icon d={IC.refresh} color="#fff" size={17} sw={2.25} />}
         </TouchableOpacity>
       </View>
 
@@ -210,7 +210,7 @@ export default function AccountScreen({ navigation }) {
           {/* Shield avatar */}
           <View style={s.avatarRing}>
             <View style={s.avatarInner}>
-              <Icon d={IC.shield} color="#fff" size={34} sw={1.6} />
+              <Icon d={IC.shield} color="#fff" size={34} sw={2.25} />
             </View>
           </View>
 
@@ -218,7 +218,7 @@ export default function AccountScreen({ navigation }) {
 
           {/* Category pill */}
           <View style={[s.catPill, { backgroundColor:catMeta.color+'28', borderColor:catMeta.color+'60' }]}>
-            <Icon d={isAll ? IC.users : IC.tag} color={catMeta.color} size={12} sw={1.8} />
+            <Icon d={isAll ? IC.users : IC.tag} color={catMeta.color} size={12} sw={2.25} />
             <Text style={[s.catPillLabel, { color:'#fff' }]}>{catMeta.label}</Text>
             <View style={s.catPillDivider}/>
             <Text style={[s.catPillAge, { color:'rgba(255,255,255,0.65)' }]}>{catMeta.ageRange}</Text>
@@ -245,7 +245,7 @@ export default function AccountScreen({ navigation }) {
           <SectionHeader title={t('your_plan', 'Your Plan')} tk={tk} />
           <View style={[s.planCard, { backgroundColor:catMeta.color+'0e', borderColor:catMeta.color+'28' }]}>
             <View style={[s.planIconBox, { backgroundColor:catMeta.color+'22' }]}>
-              <Icon d={isAll ? IC.users : IC.tag} color={catMeta.color} size={22} sw={1.8} />
+              <Icon d={isAll ? IC.users : IC.tag} color={catMeta.color} size={22} sw={2.25} />
             </View>
             <View style={{ flex:1 }}>
               <Text style={[s.planName, { color:catMeta.color }]}>{catMeta.label}</Text>
@@ -261,7 +261,7 @@ export default function AccountScreen({ navigation }) {
               borderColor:     isAll ? '#10B98140' : BLUE+'30',
             }]}>
               <Icon d={isAll ? IC.check : IC.star}
-                color={isAll ? '#10B981' : BLUE} size={11} sw={2.2} />
+                color={isAll ? '#10B981' : BLUE} size={11} sw={2.25} />
               <Text style={[s.badgeTxt, { color:isAll ? '#10B981' : BLUE }]}>
                 {isAll ? t('account_badge_all_access', 'All Access') : t('account_badge_500_plan', '₦500 Plan')}
               </Text>
@@ -313,7 +313,7 @@ export default function AccountScreen({ navigation }) {
         {/* ── Sign out ── */}
         <TouchableOpacity onPress={handleLogout} activeOpacity={0.8}
           style={[s.logoutBtn, { backgroundColor:tk.surface, borderColor:tk.border }]}>
-          <Icon d={IC.logout} color="#EF4444" size={17} sw={2} />
+          <Icon d={IC.logout} color="#EF4444" size={17} sw={2.25} />
           <Text style={s.logoutTxt}>{t('account_signout_device', 'Sign Out of This Device')}</Text>
         </TouchableOpacity>
 

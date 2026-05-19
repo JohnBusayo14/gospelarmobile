@@ -334,7 +334,7 @@ export default function GospelerIdFormScreen({ navigation, route }) {
             width: 40, height: 40, borderRadius: 20, justifyContent: 'center',
             alignItems: 'center', backgroundColor: tk.surfaceEl,
           }}>
-          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: tk.textPrimary }}>
           {mode === 'edit'
@@ -414,7 +414,7 @@ export default function GospelerIdFormScreen({ navigation, route }) {
               }}
               activeOpacity={0.78}
             >
-              <ICONS.ArrowLeft color={tk.textPrimary} size={16} sw={2} />
+              <ICONS.ArrowLeft color={tk.textPrimary} size={16} sw={2.25} />
               <Text style={{ fontSize: 13, fontWeight: '800', color: tk.textPrimary }}>
                 {t('btn_back', 'Back')}
               </Text>
@@ -656,7 +656,7 @@ function PhotoStep({ tk, t, photoBase64, pickingPhoto, onPickPhoto, dob, setDob 
             <ActivityIndicator color={BLUE} size="large" />
           ) : (
             <>
-              <ICONS.Camera color={BLUE} size={40} sw={1.9} />
+              <ICONS.Camera color={BLUE} size={40} sw={2.25} />
               <Text style={{
                 fontSize: 11, fontWeight: '800', letterSpacing: 0.5,
                 color: BLUE, marginTop: 8,
@@ -726,7 +726,7 @@ function ReviewStep({ tk, t, data }) {
                 style={{ width: '100%', height: '100%' }}
                 resizeMode="cover" />
             ) : (
-              <ICONS.User color="#fff" size={28} sw={1.9} />
+              <ICONS.User color="#fff" size={28} sw={2.25} />
             )}
           </View>
           <View style={{ flex: 1 }}>
@@ -815,7 +815,7 @@ function Field({
       opacity: disabled ? 0.6 : 1,
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-        {Icon ? <Icon color={BLUE} size={14} sw={2} /> : null}
+        {Icon ? <Icon color={BLUE} size={14} sw={2.25} /> : null}
         <Text style={{
           marginLeft: Icon ? 6 : 0,
           fontSize: 11, fontWeight: '800', color: tk.textSec, letterSpacing: 0.3,
@@ -883,7 +883,7 @@ function PickerRow({
             }} numberOfLines={1}>
               {value || placeholder || 'Select…'}
             </Text>
-            <ICONS.ChevronDown color={tk.textMuted} size={16} sw={2} />
+            <ICONS.ChevronDown color={tk.textMuted} size={16} sw={2.25} />
           </View>
           {!!sub && (
             <Text style={{ fontSize: 11, color: tk.textMuted, marginTop: 4 }}>

@@ -223,7 +223,7 @@ function TodayPanel({ stats, onCheckIn, busy, tk, isDark }) {
             width: 56, height: 56, borderRadius: 16, backgroundColor: BLUE_LIGHT,
             alignItems:'center', justifyContent:'center',
           }}>
-            <ICONS.CheckCircle color="#10B981" size={26} sw={2} />
+            <ICONS.CheckCircle color="#10B981" size={26} sw={2.25} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ ...type.h3, color: tk.textPrimary }}>Today's reading complete</Text>
@@ -596,7 +596,7 @@ export default function StatsScreen({ navigation }) {
       <View style={s.topbar}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} style={s.iconBtn}
           accessibilityLabel="Back">
-          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
         </TouchableOpacity>
         <Text style={[type.h2, { color: tk.textPrimary }]}>{t('stats_title', 'Reading')}</Text>
         {/* Settings icon removed — Settings is reached from the Library

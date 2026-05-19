@@ -19,7 +19,10 @@ import React from 'react';
 import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
 
 // Standard wrapper for every icon — gives identical defaults + stroke rules.
-const Glyph = ({ children, color, size = 22, sw = 1.8, fill = 'none' }) => (
+// Default stroke bumped to 2.25 across the app — gives icons a "bold outline"
+// presence. Callers can still override via the `sw` prop where a finer line
+// is wanted (none today; kept as an escape hatch).
+const Glyph = ({ children, color, size = 22, sw = 2.25, fill = 'none' }) => (
   <Svg
     width={size}
     height={size}

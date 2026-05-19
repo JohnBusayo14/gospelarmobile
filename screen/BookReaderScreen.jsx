@@ -102,13 +102,13 @@ const SectionCard = ({ Icon, title, color, lightBg, children, tk, isDark, defaul
           width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
           backgroundColor: isDark ? color + '22' : lightBg,
         }}>
-          {Icon && <Icon color={color} size={22} sw={2} />}
+          {Icon && <Icon color={color} size={22} sw={2.25} />}
         </View>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '900', letterSpacing: -0.2, color: tk.textPrimary }}>
           {title}
         </Text>
         <View style={{ width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: tk.surfaceEl, transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-          <ICONS.ChevronDown color={tk.textMuted} size={16} sw={2.2} />
+          <ICONS.ChevronDown color={tk.textMuted} size={16} sw={2.25} />
         </View>
       </TouchableOpacity>
       {open && (
@@ -216,7 +216,7 @@ export default function BookReaderScreen({ route, navigation }) {
         <View style={s.topbar}>
           <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}>
-            <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={[s.topTitle, { color: tk.textPrimary }]} numberOfLines={1}>{title}</Text>
@@ -227,7 +227,7 @@ export default function BookReaderScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('Progress')} activeOpacity={0.75}
             accessibilityLabel="Progress"
             style={[s.iconBtn, { backgroundColor: accent + '18' }]}>
-            <ICONS.Stats color={accent} size={20} sw={2} />
+            <ICONS.Stats color={accent} size={20} sw={2.25} />
           </TouchableOpacity>
         </View>
 
@@ -241,7 +241,7 @@ export default function BookReaderScreen({ route, navigation }) {
                     width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center',
                     backgroundColor: accent + '18',
                   }}>
-                    <ICONS.Sun color={accent} size={28} sw={2} />
+                    <ICONS.Sun color={accent} size={28} sw={2.25} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.heroEyebrow, { color: tk.textMuted }]}>
@@ -259,7 +259,7 @@ export default function BookReaderScreen({ route, navigation }) {
                     borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8,
                     backgroundColor: '#FEF3C7', borderColor: '#F59E0B40',
                   }}>
-                    <ICONS.Book color="#92400E" size={16} sw={2} />
+                    <ICONS.Book color="#92400E" size={16} sw={2.25} />
                     <View style={{ flex: 1 }}>
                       <RichVerseText text={content.scripture_text} isDark={isDark} lineHeight={18}
                         style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }} />

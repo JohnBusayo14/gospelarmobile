@@ -398,7 +398,7 @@ export default function LibraryScreen({ navigation }) {
             accessibilityLabel="Settings"
             style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}
           >
-            <ICONS.Settings color={tk.textPrimary} size={18} sw={1.9} />
+            <ICONS.Settings color={tk.textPrimary} size={18} sw={2.25} />
           </TouchableOpacity>
         </View>
 

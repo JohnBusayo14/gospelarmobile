@@ -246,8 +246,8 @@ const TodayCard = ({ stats, onOpen, tk, isDark, t }) => {
       <View style={td.row}>
         <View style={[td.iconBox, { backgroundColor: checked ? '#D1FAE5' : '#EFF6FF' }]}>
           {checked
-            ? <ICONS.CheckCircle color="#10B981" size={24} sw={2.2} />
-            : <ICONS.Book        color={PRIMARY}  size={22} sw={2.2} />}
+            ? <ICONS.CheckCircle color="#10B981" size={24} sw={2.25} />
+            : <ICONS.Book        color={PRIMARY}  size={22} sw={2.25} />}
         </View>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={{ fontSize: 14, fontWeight: '900', color: tk.textPrimary }}>

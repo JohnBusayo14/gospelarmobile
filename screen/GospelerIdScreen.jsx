@@ -1,9 +1,9 @@
-﻿// screen/gospelerId/GospelerIdHubScreen.jsx
+// screen/gospelerId/GospelerIdHubScreen.jsx
 // Entry point for the "My Gospeler ID" flow surfaced from Settings.
 //
 // Two states:
-//   1. No ID yet  → big CTA encouraging the user to create one + benefits list.
-//   2. Has ID     → glass preview card with current code, version, role badge,
+//   1. No ID yet  ? big CTA encouraging the user to create one + benefits list.
+//   2. Has ID     ? glass preview card with current code, version, role badge,
 //                   plus action rows (View card, Edit, Regenerate, History).
 //
 // Network behaviour: fetches on mount + on focus so the screen always reflects
@@ -103,7 +103,7 @@ export default function GospelerIdHubScreen({ navigation }) {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // -- Render ----------------------------------------------------------------
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tk.bg }} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={tk.bg} />
@@ -118,7 +118,7 @@ export default function GospelerIdHubScreen({ navigation }) {
             width: 40, height: 40, borderRadius: 20, justifyContent: 'center',
             alignItems: 'center', backgroundColor: tk.surfaceEl,
           }}>
-          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
         </TouchableOpacity>
         <Text style={{ fontSize: 17, fontWeight: '800', color: tk.textPrimary }}>
           {t('gid_title', 'Gospeler ID')}
@@ -160,7 +160,7 @@ export default function GospelerIdHubScreen({ navigation }) {
   );
 }
 
-// ─── Empty state — user has not generated an ID yet ───────────────────────────
+// --- Empty state � user has not generated an ID yet ---------------------------
 function EmptyView({ tk, t, email, onCreate }) {
   const benefits = [
     {
@@ -173,13 +173,13 @@ function EmptyView({ tk, t, email, onCreate }) {
       Icon: ICONS.QrCode,
       label: t('gid_benefit_qr_title', 'Personal QR code'),
       sub: t('gid_benefit_qr_sub',
-        'Scan in for attendance, retreats, and event check-ins — no paper, no queues.'),
+        'Scan in for attendance, retreats, and event check-ins � no paper, no queues.'),
     },
     {
       Icon: ICONS.Crown,
       label: t('gid_benefit_role_title', 'Role and ministry badges'),
       sub: t('gid_benefit_role_sub',
-        'Member, Worker, Pastor, Youth — your role travels with your ID.'),
+        'Member, Worker, Pastor, Youth � your role travels with your ID.'),
     },
     {
       Icon: ICONS.RefreshCw,
@@ -201,7 +201,7 @@ function EmptyView({ tk, t, email, onCreate }) {
           shadowOpacity: 0.25, shadowRadius: 24, elevation: 8,
         }}
       >
-        {/* Soft light orb — purely decorative */}
+        {/* Soft light orb � purely decorative */}
         <View style={{
           position: 'absolute', top: -30, right: -30, width: 140, height: 140,
           borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.12)',
@@ -211,7 +211,7 @@ function EmptyView({ tk, t, email, onCreate }) {
           backgroundColor: 'rgba(255,255,255,0.18)',
           justifyContent: 'center', alignItems: 'center', marginBottom: 16,
         }}>
-          <ICONS.ShieldCheck color="#fff" size={28} sw={2} />
+          <ICONS.ShieldCheck color="#fff" size={28} sw={2.25} />
         </View>
         <Text style={{
           fontSize: 9, fontWeight: '900', letterSpacing: 2.5,
@@ -240,7 +240,7 @@ function EmptyView({ tk, t, email, onCreate }) {
           fontSize: 10, fontWeight: '900', letterSpacing: 2.5,
           color: tk.textMuted, marginBottom: 12,
         }}>
-          {t('gid_whats_inside', 'WHAT’S INSIDE')}
+          {t('gid_whats_inside', 'WHAT�S INSIDE')}
         </Text>
       </View>
 
@@ -263,7 +263,7 @@ function EmptyView({ tk, t, email, onCreate }) {
               backgroundColor: BLUE_LIGHT,
               justifyContent: 'center', alignItems: 'center',
             }}>
-              <b.Icon color={BLUE} size={20} sw={1.9} />
+              <b.Icon color={BLUE} size={20} sw={2.25} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontSize: 14, fontWeight: '800', color: tk.textPrimary, marginBottom: 3 }}>
@@ -305,7 +305,7 @@ function EmptyView({ tk, t, email, onCreate }) {
   );
 }
 
-// ─── Has-ID state — preview tile + action rows ────────────────────────────────
+// --- Has-ID state � preview tile + action rows --------------------------------
 function HasIdView({ id, tk, t, regenerating, onView, onEdit, onRegenerate }) {
   const initials = (id.full_name || 'G').trim().split(/\s+/).slice(0, 2)
     .map((s) => s[0]?.toUpperCase() || '').join('') || 'G';
@@ -313,7 +313,7 @@ function HasIdView({ id, tk, t, regenerating, onView, onEdit, onRegenerate }) {
 
   return (
     <View>
-      {/* Glass preview card — tap to open full ID */}
+      {/* Glass preview card � tap to open full ID */}
       <TouchableOpacity onPress={onView} activeOpacity={0.92}>
         <LinearGradient
           colors={[BLUE_DEEP, BLUE, '#60A5FA']}
@@ -394,7 +394,7 @@ function HasIdView({ id, tk, t, regenerating, onView, onEdit, onRegenerate }) {
               paddingHorizontal: 10, paddingVertical: 5,
               borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5,
             }}>
-              <ICONS.Crown color="#fff" size={12} sw={2} />
+              <ICONS.Crown color="#fff" size={12} sw={2.25} />
               <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>
                 {roleLabel.toUpperCase()}
               </Text>
@@ -450,7 +450,7 @@ function HasIdView({ id, tk, t, regenerating, onView, onEdit, onRegenerate }) {
         <ActionRow Icon={ICONS.RefreshCw}
           label={t('gid_regen', 'Regenerate ID')}
           sub={t('gid_regen_sub',
-            'Mint a new code and QR — the current version is archived')}
+            'Mint a new code and QR � the current version is archived')}
           tk={tk} onPress={onRegenerate}
           right={regenerating ? <ActivityIndicator color={BLUE} size="small" /> : null}
           danger
@@ -460,7 +460,7 @@ function HasIdView({ id, tk, t, regenerating, onView, onEdit, onRegenerate }) {
   );
 }
 
-// ─── Small building blocks ────────────────────────────────────────────────────
+// --- Small building blocks ----------------------------------------------------
 function MetaPill({ tk, label, value, tone = 'neutral' }) {
   const toneColor =
     tone === 'green' ? '#059669' :
@@ -478,7 +478,7 @@ function MetaPill({ tk, label, value, tone = 'neutral' }) {
         {String(label || '').toUpperCase()}
       </Text>
       <Text style={{ fontSize: 13, fontWeight: '900', color: toneColor }} numberOfLines={1}>
-        {value || '—'}
+        {value || '�'}
       </Text>
     </View>
   );
@@ -500,7 +500,7 @@ function ActionRow({ Icon, label, sub, onPress, tk, right, danger, noBorder }) {
         justifyContent: 'center', alignItems: 'center',
         backgroundColor: danger ? '#FEE2E2' : BLUE_LIGHT,
       }}>
-        <Icon color={tint} size={20} sw={1.9} />
+        <Icon color={tint} size={20} sw={2.25} />
       </View>
       <View style={{ flex: 1, marginLeft: 14 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: danger ? '#DC2626' : tk.textPrimary }}>
@@ -512,7 +512,7 @@ function ActionRow({ Icon, label, sub, onPress, tk, right, danger, noBorder }) {
           </Text>
         )}
       </View>
-      {right || <ICONS.ChevronRight color={tk.textMuted} size={18} sw={1.9} />}
+      {right || <ICONS.ChevronRight color={tk.textMuted} size={18} sw={2.25} />}
     </TouchableOpacity>
   );
 }

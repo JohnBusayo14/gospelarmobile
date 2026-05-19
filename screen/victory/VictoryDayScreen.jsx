@@ -1,19 +1,19 @@
-﻿// screen/victory/VictoryDayScreen.jsx
-// ─────────────────────────────────────────────────────────────────────────────
+// screen/victory/VictoryDayScreen.jsx
+// -----------------------------------------------------------------------------
 // Detail view for a single day of the Victory Month bulletin.
 //
 // Information architecture:
-//   • Sticky top bar (back · day-of-30 · mark-as-prayed)
-//   • Hero (date · focus · scripture pill)
-//   • Inspirational message card
-//   • Prayer points (numbered, staggered entrance)
-//   • Special intercession (highlighted callout)
-//   • Prev / Mark / Next nav row at the bottom
+//   � Sticky top bar (back � day-of-30 � mark-as-prayed)
+//   � Hero (date � focus � scripture pill)
+//   � Inspirational message card
+//   � Prayer points (numbered, staggered entrance)
+//   � Special intercession (highlighted callout)
+//   � Prev / Mark / Next nav row at the bottom
 //
 // Adheres to DESIGN.md: surfaces are tonal, radii are generous, depth comes
 // from ambient shadow rather than borders. Blue is the primary, indigo the
 // secondary accent.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -36,7 +36,7 @@ import { RichVerseText } from '../../components/BibleVerseLink';
 const STORAGE_KEY = 'vmp_completed_days';
 // Per-prayer-point check-off state, shaped as { [dayNum]: { [idx]: true } }.
 // Kept separate from STORAGE_KEY so the day-completion gate doesn't depend on
-// every individual point being ticked — some users mark the whole day prayed
+// every individual point being ticked � some users mark the whole day prayed
 // without ticking each point, and we want both flows to work.
 const PRAYED_POINTS_KEY = 'vmp_prayed_points';
 // User must dwell on a day's content for at least this many seconds before
@@ -48,14 +48,14 @@ export default function VictoryDayScreen({ route, navigation }) {
   const { isDark } = useTheme();
   const { t, lang } = useLanguage();
   // Voice reading uses expo-speech, which doesn't ship Yoruba / Igbo / Hausa
-  // voices on most devices — feeding non-English text to it produces garbled
+  // voices on most devices � feeding non-English text to it produces garbled
   // mispronounced English. Hide Listen everywhere unless the user is in 'en'.
   const ttsAvailable = lang === 'en';
   const tk    = useMemo(() => getTokens(isDark), [isDark]);
   const tones = useMemo(() => victoryTones(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
 
-  // Pull the full day list (cheap — cache-first) so we know the total day
+  // Pull the full day list (cheap � cache-first) so we know the total day
   // count for clamping and next/prev navigation. Then fetch the requested
   // day in full.
   const { days } = useVictoryDays(navigation);
@@ -82,7 +82,7 @@ export default function VictoryDayScreen({ route, navigation }) {
       .catch(() => setCompleted(false));
   }, [dayNum]);
 
-  // Per-prayer-point check-off — { [idx]: true } for the currently-viewed
+  // Per-prayer-point check-off � { [idx]: true } for the currently-viewed
   // day. Tapping a point's number badge toggles its prayed state and
   // persists to AsyncStorage so the marks survive app restarts.
   const [prayedPoints, setPrayedPoints] = useState({});
@@ -97,7 +97,7 @@ export default function VictoryDayScreen({ route, navigation }) {
   }, [dayNum]);
 
   const togglePrayerPoint = async (idx) => {
-    // Optimistic update — state flips immediately so the tap feels snappy,
+    // Optimistic update � state flips immediately so the tap feels snappy,
     // then we persist. If the write fails the in-memory state already won.
     let next;
     setPrayedPoints((cur) => {
@@ -149,7 +149,7 @@ export default function VictoryDayScreen({ route, navigation }) {
   const shareDay = async () => {
     try {
       await Share.share({
-        message: `Victory Month — Day ${dayNum}\n${day.focus}\n${day.scripture}\n\n${day.message}`,
+        message: `Victory Month � Day ${dayNum}\n${day.focus}\n${day.scripture}\n\n${day.message}`,
       });
     } catch { /* user cancelled */ }
   };
@@ -170,8 +170,8 @@ export default function VictoryDayScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: 30 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
-        {/* Single-line eyebrow keeps the topbar tight — the date used to live
+        {/* -- TOP BAR ------------------------------------------------------- */}
+        {/* Single-line eyebrow keeps the topbar tight � the date used to live
             here too but it's now in the hero, so showing it twice was a waste. */}
         <View style={s.topbar}>
           <TouchableOpacity
@@ -179,7 +179,7 @@ export default function VictoryDayScreen({ route, navigation }) {
             activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2.25} />
           </TouchableOpacity>
           <Text style={[s.eyebrow, { color: tones.chipFg }]}>
             {t('vmp_day_n_of_30', 'DAY {n} OF {total}')
@@ -200,10 +200,10 @@ export default function VictoryDayScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ── HERO ───────────────────────────────────────────────────────── */}
+        {/* -- HERO --------------------------------------------------------- */}
         {/* Compact rearrangement: badge + date/focus column on one row, then
             a single bottom row with scripture pill and a textual Listen pill.
-            The old 44×44 listen icon button was removed — it was the third
+            The old 44�44 listen icon button was removed � it was the third
             listen affordance on the screen (the action row also has one). */}
         <View style={s.heroWrap}>
           <View style={[s.heroCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
@@ -217,7 +217,7 @@ export default function VictoryDayScreen({ route, navigation }) {
                 </Text>
                 {/* Some Victory Month topics run 3-4 lines (e.g. Day 5
                     "Prayer for church-wide revival: Lord, grant a dawn of true
-                    revival and great exploits…"). Don't clamp — readers need
+                    revival and great exploits�"). Don't clamp � readers need
                     the full focus to know what they're praying. */}
                 <Text style={[s.heroFocus, { color: tk.textPrimary }]}>
                   {day.focus}
@@ -227,7 +227,7 @@ export default function VictoryDayScreen({ route, navigation }) {
             <View style={s.heroBottomRow}>
               {!!day.scripture && (
                 <View style={[s.versePill, { backgroundColor: tones.versePillBg }]}>
-                  <ICONS.Book color={tones.versePillFg} size={12} sw={2} />
+                  <ICONS.Book color={tones.versePillFg} size={12} sw={2.25} />
                   <View style={{ flex: 1 }}>
                     <RichVerseText text={day.scripture} isDark={isDark} lineHeight={16}
                       style={[s.versePillTxt, { color: tones.versePillFg }]} />
@@ -241,14 +241,14 @@ export default function VictoryDayScreen({ route, navigation }) {
                   style={[s.listenPill, { backgroundColor: tones.todayBg }]}
                   accessibilityLabel={t('vmp_listen', 'Listen to this prayer')}
                 >
-                  <Text style={[s.listenPillTxt, { color: tones.todayFg }]}>🔊  Listen</Text>
+                  <Text style={[s.listenPillTxt, { color: tones.todayFg }]}>??  Listen</Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
         </View>
 
-        {/* ── MESSAGE ────────────────────────────────────────────────────── */}
+        {/* -- MESSAGE ------------------------------------------------------ */}
         {!!day.message && (
           <Section title={t('vmp_section_message', 'Inspirational Message')} tk={tk} tones={tones}>
             <View style={[s.card, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
@@ -258,8 +258,8 @@ export default function VictoryDayScreen({ route, navigation }) {
           </Section>
         )}
 
-        {/* ── PRAYER POINTS ──────────────────────────────────────────────── */}
-        {/* Each point is tappable — the number badge becomes a green check
+        {/* -- PRAYER POINTS ------------------------------------------------ */}
+        {/* Each point is tappable � the number badge becomes a green check
             once prayed, and the text is muted + struck through. State is
             per-day and persisted in AsyncStorage so a user can pray over
             time and resume where they left off. */}
@@ -311,23 +311,23 @@ export default function VictoryDayScreen({ route, navigation }) {
           </Section>
         )}
 
-        {/* ── INTERCESSION ───────────────────────────────────────────────── */}
+        {/* -- INTERCESSION ------------------------------------------------- */}
         {!!day.intercession && (
           <Section title={t('vmp_section_intercession', 'Special Intercession')} tk={tk} tones={tones}>
             <View style={[s.intercessionBox, { backgroundColor: tones.versePillBg }]}>
-              <Text style={[s.intercessionLabel, { color: tones.versePillFg }]}>★ FOCUS PRAYER</Text>
+              <Text style={[s.intercessionLabel, { color: tones.versePillFg }]}>? FOCUS PRAYER</Text>
               <RichVerseText text={day.intercession} isDark={isDark} lineHeight={s.intercessionTxt?.lineHeight || 24}
                 style={[s.intercessionTxt, { color: tones.versePillFg }]} />
             </View>
           </Section>
         )}
 
-        {/* ── EMPTY STATE ────────────────────────────────────────────────── */}
+        {/* -- EMPTY STATE -------------------------------------------------- */}
         {!hasContent && (
           <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
             <View style={[s.emptyCard, { backgroundColor: tones.glassFill, borderWidth: 1, borderColor: tones.glassEdge }]}>
               <View style={[s.emptyIcon, { backgroundColor: tones.chipBg }]}>
-                <ICONS.Book color={tones.chipFg} size={28} sw={2} />
+                <ICONS.Book color={tones.chipFg} size={28} sw={2.25} />
               </View>
               <Text style={[s.emptyTitle, { color: tk.textPrimary }]}>
                 {t('vmp_empty_title', 'Content arriving soon')}
@@ -340,12 +340,12 @@ export default function VictoryDayScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* ── ACTION ROW ─────────────────────────────────────────────────
+        {/* -- ACTION ROW -------------------------------------------------
             Four modes for engaging with the day:
-              • Reading mode — focused, one prayer point per page
-              • Audio / Listen — TTS read-along
-              • Journal — reflections + custom prayer points
-              • Share — system share sheet
+              � Reading mode � focused, one prayer point per page
+              � Audio / Listen � TTS read-along
+              � Journal � reflections + custom prayer points
+              � Share � system share sheet
             Reading + Listen lead because they're the primary "pray-now"
             actions; Journal + Share are secondary.  */}
         <View style={s.actionRow}>
@@ -354,7 +354,7 @@ export default function VictoryDayScreen({ route, navigation }) {
             activeOpacity={0.85}
             style={[s.actionBtn, { backgroundColor: BLUE[700] }]}
           >
-            <Text style={s.actionTxtLight}>📖  Read</Text>
+            <Text style={s.actionTxtLight}>??  Read</Text>
           </TouchableOpacity>
           {ttsAvailable && (
             <TouchableOpacity
@@ -362,7 +362,7 @@ export default function VictoryDayScreen({ route, navigation }) {
               activeOpacity={0.85}
               style={[s.actionBtn, { backgroundColor: BLUE[500] }]}
             >
-              <Text style={s.actionTxtLight}>🎧  Listen</Text>
+              <Text style={s.actionTxtLight}>??  Listen</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -370,15 +370,15 @@ export default function VictoryDayScreen({ route, navigation }) {
             activeOpacity={0.85}
             style={[s.actionBtn, { backgroundColor: INDIGO[600] }]}
           >
-            <Text style={s.actionTxtLight}>✍️  Journal</Text>
+            <Text style={s.actionTxtLight}>??  Journal</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={shareDay} activeOpacity={0.85}
             style={[s.actionBtn, { backgroundColor: tones.chipBg, flex: 0.55 }]}>
-            <Text style={[s.actionTxtDark, { color: tones.chipFg }]}>↗</Text>
+            <Text style={[s.actionTxtDark, { color: tones.chipFg }]}>?</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── PREV / MARK / NEXT ─────────────────────────────────────────── */}
+        {/* -- PREV / MARK / NEXT ------------------------------------------- */}
         <View style={s.navRow}>
           <TouchableOpacity
             onPress={goPrev}
@@ -389,7 +389,7 @@ export default function VictoryDayScreen({ route, navigation }) {
               borderWidth: 1, borderColor: tones.glassEdge, opacity: dayNum === 1 ? 0.4 : 1,
             }]}
           >
-            <Text style={[s.navBtnTxt, { color: tk.textPrimary }]}>← {t('vmp_prev', 'Prev')}</Text>
+            <Text style={[s.navBtnTxt, { color: tk.textPrimary }]}>? {t('vmp_prev', 'Prev')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={toggleCompleted}
@@ -403,7 +403,7 @@ export default function VictoryDayScreen({ route, navigation }) {
           >
             <Text style={[s.markBtnTxt, !completed && !ready && { color: tones.chipFg }]}>
               {completed
-                ? t('vmp_prayed_check', '✓  Prayed')
+                ? t('vmp_prayed_check', '?  Prayed')
                 : ready
                   ? t('vmp_mark_prayed',  'Mark as prayed')
                   // While the 2-min dwell gate is still counting down, show
@@ -421,7 +421,7 @@ export default function VictoryDayScreen({ route, navigation }) {
               borderWidth: 1, borderColor: tones.glassEdge, opacity: dayNum === TOTAL_DAYS ? 0.4 : 1,
             }]}
           >
-            <Text style={[s.navBtnTxt, { color: tk.textPrimary }]}>{t('vmp_next', 'Next')} →</Text>
+            <Text style={[s.navBtnTxt, { color: tk.textPrimary }]}>{t('vmp_next', 'Next')} ?</Text>
           </TouchableOpacity>
         </View>
       </Animated.ScrollView>
@@ -429,7 +429,7 @@ export default function VictoryDayScreen({ route, navigation }) {
   );
 }
 
-// ── Re-usable bits ───────────────────────────────────────────────────────────
+// -- Re-usable bits -----------------------------------------------------------
 const Section = ({ title, tk, tones, children, right }) => {
   const { fade, translateY } = useStaggerEntry(0);
   return (
@@ -445,7 +445,7 @@ const Section = ({ title, tk, tones, children, right }) => {
   );
 };
 
-// A tappable prayer point — the badge flips to a green check once prayed,
+// A tappable prayer point � the badge flips to a green check once prayed,
 // and the text takes on a struck-through muted treatment so the user can
 // see at a glance which points are still pending mid-prayer.
 const PrayerRow = ({ index, text, prayed, onToggle, tk, tones, isDark }) => {
@@ -494,8 +494,8 @@ const s = StyleSheet.create({
   iconBtn:  { width: 38, height: 38, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
   eyebrow:  { fontSize: 10, fontWeight: '900', letterSpacing: 2 },
 
-  // Hero — compact rearrangement. Day badge shrunk 62→48, focus 21→17,
-  // padding 20→14, hero marginBottom 22→14, headRow marginBottom 14→8.
+  // Hero � compact rearrangement. Day badge shrunk 62?48, focus 21?17,
+  // padding 20?14, hero marginBottom 22?14, headRow marginBottom 14?8.
   // Net: ~70px less vertical space before the message section begins.
   heroWrap:    { paddingHorizontal: 20, marginBottom: 14 },
   heroCard:    { padding: 14, borderRadius: RADII.xl },

@@ -1,8 +1,8 @@
-﻿// screen/victory/VictoryMonthHome.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Victory Month Prayer — landing screen.
+// screen/victory/VictoryMonthHome.jsx
+// -----------------------------------------------------------------------------
+// Victory Month Prayer � landing screen.
 //
-// Layout intentionally asymmetrical (DESIGN.md principle) — generous spacing,
+// Layout intentionally asymmetrical (DESIGN.md principle) � generous spacing,
 // no 1px borders, surfaces defined by tonal shifts and ambient shadows.
 //
 // Sections:
@@ -10,10 +10,10 @@
 //   2. Today's prayer hero (gradient CTA)
 //   3. Progress ring + streak strip
 //   4. 30-day calendar grid
-//   5. Quick-access tiles: Days · Vigils · About · My Progress
+//   5. Quick-access tiles: Days � Vigils � About � My Progress
 //   6. Vigil highlight strip (horizontal)
 //   7. Footer
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
@@ -53,7 +53,7 @@ export default function VictoryMonthHome({ navigation }) {
   const TOTAL_DAYS   = days.length   || 30;
   const TOTAL_VIGILS = vigils.length || 6;
 
-  // Today's day — wraps inside the active window.
+  // Today's day � wraps inside the active window.
   const dayNum = todayDayIndex();
   const today  = days[dayNum - 1] || days[0] || { focus: '', scripture: '' };
 
@@ -74,7 +74,7 @@ export default function VictoryMonthHome({ navigation }) {
   const doneCount = Object.values(completed).filter(Boolean).length;
   const donePct   = Math.round((doneCount / TOTAL_DAYS) * 100);
 
-  // Bottom-nav state — Toolkit tab opens a bottom sheet listing the five
+  // Bottom-nav state � Toolkit tab opens a bottom sheet listing the five
   // spiritual-toolkit destinations (audio rooms / fasting / reminders /
   // categories / achievements) so all of them stay reachable from the bar
   // without bloating it past five primary tabs.
@@ -96,7 +96,7 @@ export default function VictoryMonthHome({ navigation }) {
         contentContainerStyle={{ paddingBottom: NAV_HEIGHT + 24 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
+        {/* -- TOP BAR ------------------------------------------------------- */}
         <View style={s.topbar}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Library')}
@@ -104,7 +104,7 @@ export default function VictoryMonthHome({ navigation }) {
             accessibilityLabel="Library"
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
           >
-            <ICONS.BookStack color={tones.chipFg} size={18} sw={1.9} />
+            <ICONS.BookStack color={tones.chipFg} size={18} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.eyebrow, { color: tones.chipFg }]}>
@@ -124,13 +124,13 @@ export default function VictoryMonthHome({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ── THEME RIBBON ───────────────────────────────────────────────── */}
+        {/* -- THEME RIBBON ------------------------------------------------- */}
         {/* Rich royal-blue-to-indigo gradient. Same fancy treatment in both
-            modes — the depth of the colour carries the card on any backdrop,
+            modes � the depth of the colour carries the card on any backdrop,
             and the text is always light so contrast stays high. */}
         <View style={s.themeRibbonWrap}>
           <LinearGradient
-            colors={['#1D4ED8', '#2563EB', '#4F46E5']} // BLUE 700 → BLUE 600 → INDIGO 600
+            colors={['#1D4ED8', '#2563EB', '#4F46E5']} // BLUE 700 ? BLUE 600 ? INDIGO 600
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={[s.themeRibbon, {
               borderColor: 'rgba(255,255,255,0.16)',
@@ -151,7 +151,7 @@ export default function VictoryMonthHome({ navigation }) {
           </LinearGradient>
         </View>
 
-        {/* ── TODAY HERO ─────────────────────────────────────────────────── */}
+        {/* -- TODAY HERO --------------------------------------------------- */}
         <View style={s.heroWrap}>
           <View style={[s.heroCard, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
             <View style={s.heroRow}>
@@ -173,7 +173,7 @@ export default function VictoryMonthHome({ navigation }) {
 
             {!!today.scripture && (
               <View style={[s.versePill, { backgroundColor: tones.versePillBg }]}>
-                <ICONS.Book color={tones.versePillFg} size={14} sw={2} />
+                <ICONS.Book color={tones.versePillFg} size={14} sw={2.25} />
                 <View style={{ flex: 1 }}>
                   <RichVerseText text={today.scripture} isDark={isDark} lineHeight={18}
                     style={[s.versePillTxt, { color: tones.versePillFg }]} />
@@ -187,13 +187,13 @@ export default function VictoryMonthHome({ navigation }) {
               style={[s.heroCta, { shadowColor: tones.ctaShadow }]}
             >
               <View style={[s.heroCtaInner, { backgroundColor: tones.ctaFrom }]}>
-                <Text style={s.heroCtaTxt}>{t('vmp_open_today', "Open today's prayer")}  →</Text>
+                <Text style={s.heroCtaTxt}>{t('vmp_open_today', "Open today's prayer")}  ?</Text>
               </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── PROGRESS STRIP ─────────────────────────────────────────────── */}
+        {/* -- PROGRESS STRIP ----------------------------------------------- */}
         <View style={s.progressWrap}>
           <View style={[s.progressCard, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge }]}>
             <View style={{ flex: 1 }}>
@@ -202,7 +202,7 @@ export default function VictoryMonthHome({ navigation }) {
                 {doneCount} <Text style={[s.progressOf, { color: tones.textMuted }]}>of {TOTAL_DAYS}</Text>
               </Text>
               <Text style={[s.progressSub, { color: tones.textMuted }]}>
-                {donePct}% complete · {TOTAL_DAYS - doneCount} {TOTAL_DAYS - doneCount === 1 ? 'day' : 'days'} to go
+                {donePct}% complete � {TOTAL_DAYS - doneCount} {TOTAL_DAYS - doneCount === 1 ? 'day' : 'days'} to go
               </Text>
             </View>
             <View style={[s.progressRing, { backgroundColor: tones.chipBg }]}>
@@ -216,9 +216,9 @@ export default function VictoryMonthHome({ navigation }) {
           </View>
         </View>
 
-        {/* ── 30-DAY GRID ────────────────────────────────────────────────── */}
-        {/* Tighter bottom margin here so "Explore" sits closer to the grid —
-            the two sections feel related (calendar → ways to use it). */}
+        {/* -- 30-DAY GRID -------------------------------------------------- */}
+        {/* Tighter bottom margin here so "Explore" sits closer to the grid �
+            the two sections feel related (calendar ? ways to use it). */}
         <View style={[s.section, { marginBottom: 12 }]}>
           <SectionHead
             title={t('vmp_30_days', '30 Days of Prayer')}
@@ -254,7 +254,7 @@ export default function VictoryMonthHome({ navigation }) {
           </View>
         </View>
 
-        {/* ── EXPLORE GRID ───────────────────────────────────────────────── */}
+        {/* -- EXPLORE GRID ------------------------------------------------- */}
         <View style={s.section}>
           <SectionHead
             title={t('vmp_explore', 'Explore')}
@@ -263,7 +263,7 @@ export default function VictoryMonthHome({ navigation }) {
           />
           <View style={s.exploreGrid}>
             <ExploreBox
-              icon={<ICONS.Calendar color={BLUE[600]} size={22} sw={2} />}
+              icon={<ICONS.Calendar color={BLUE[600]} size={22} sw={2.25} />}
               tint={BLUE[600]}
               label={t('vmp_qa_browse_days', 'All Days')}
               sub={`${TOTAL_DAYS} entries`}
@@ -272,7 +272,7 @@ export default function VictoryMonthHome({ navigation }) {
               tk={tk}
             />
             <ExploreBox
-              icon={<ICONS.Prayer color={INDIGO[600]} size={22} sw={2} />}
+              icon={<ICONS.Prayer color={INDIGO[600]} size={22} sw={2.25} />}
               tint={INDIGO[600]}
               label={t('vmp_qa_vigils', 'Vigils')}
               sub={`${TOTAL_VIGILS} group guides`}
@@ -281,7 +281,7 @@ export default function VictoryMonthHome({ navigation }) {
               tk={tk}
             />
             <ExploreBox
-              icon={<ICONS.Stats color={EMERALD[500]} size={22} sw={2} />}
+              icon={<ICONS.Stats color={EMERALD[500]} size={22} sw={2.25} />}
               tint={EMERALD[500]}
               label={t('vmp_qa_progress', 'My Journey')}
               sub={`${donePct}% done`}
@@ -290,7 +290,7 @@ export default function VictoryMonthHome({ navigation }) {
               tk={tk}
             />
             <ExploreBox
-              icon={<ICONS.Sun color={AMBER[500]} size={22} sw={2} />}
+              icon={<ICONS.Sun color={AMBER[500]} size={22} sw={2.25} />}
               tint={AMBER[500]}
               label={t('vmp_qa_about', 'About')}
               sub="Theme & guidelines"
@@ -301,7 +301,7 @@ export default function VictoryMonthHome({ navigation }) {
           </View>
         </View>
 
-        {/* ── VIGIL HIGHLIGHT STRIP ──────────────────────────────────────── */}
+        {/* -- VIGIL HIGHLIGHT STRIP ---------------------------------------- */}
         <View style={[s.section, { paddingHorizontal: 0 }]}>
           <View style={{ paddingHorizontal: 20 }}>
             <SectionHead
@@ -333,7 +333,7 @@ export default function VictoryMonthHome({ navigation }) {
                     {v.focus}
                   </Text>
                   <View style={s.vigilMetaRow}>
-                    <ICONS.Calendar color={tones.textMuted} size={11} sw={2} />
+                    <ICONS.Calendar color={tones.textMuted} size={11} sw={2.25} />
                     <Text style={[s.vigilMeta, { color: tones.textMuted }]} numberOfLines={1}>
                       {v.date.split(',')[1]?.trim() || v.date}
                     </Text>
@@ -344,28 +344,28 @@ export default function VictoryMonthHome({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+        {/* -- FOOTER ------------------------------------------------------- */}
         <View style={s.footer}>
           <Text style={[s.footerLine, { color: tones.textMuted }]}>
-            © {meta.year} {meta.organisation}
+            � {meta.year} {meta.organisation}
           </Text>
           <Text style={[s.footerVerse, { color: tones.chipFg }]}>
-            "Those who know their God shall be strong and do exploits" — Dan 11:32
+            "Those who know their God shall be strong and do exploits" � Dan 11:32
           </Text>
         </View>
       </Animated.ScrollView>
 
-      {/* ── BOTTOM NAV ───────────────────────────────────────────────────── */}
+      {/* -- BOTTOM NAV ----------------------------------------------------- */}
       <VictoryBottomNav activeKey="home" onTab={handleTab} tk={tk} tones={tones} />
 
-      {/* ── TOOLKIT SHEET ────────────────────────────────────────────────── */}
+      {/* -- TOOLKIT SHEET -------------------------------------------------- */}
       <ToolkitSheet
         visible={toolkitOpen}
         onClose={() => setToolkitOpen(false)}
         onPick={(routeName) => {
           setToolkitOpen(false);
           // Defer so the modal dismissal animation can finish before the
-          // navigation transition starts — otherwise the sheet vanishes mid-
+          // navigation transition starts � otherwise the sheet vanishes mid-
           // slide which feels jumpy on lower-end Androids.
           setTimeout(() => navigation.navigate(routeName), 180);
         }}
@@ -377,11 +377,11 @@ export default function VictoryMonthHome({ navigation }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Bottom nav — 5 tabs. Sits absolutely at the bottom; the ScrollView pads
+// -----------------------------------------------------------------------------
+// Bottom nav � 5 tabs. Sits absolutely at the bottom; the ScrollView pads
 // itself enough to leave room. Pure Animated for the pill press feedback so
 // we don't add a Reanimated dep.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const NAV_HEIGHT = Platform.OS === 'ios' ? 86 : 68;
 
 const NAV_TABS = [
@@ -424,7 +424,7 @@ const VictoryBottomNav = ({ activeKey, onTab, tk, tones }) => {
               <View style={[nav.activePill, { backgroundColor: BLUE[50] }]} />
             )}
             <View style={nav.iconWrap}>
-              <Icon color={tint} size={20} sw={1.9} />
+              <Icon color={tint} size={20} sw={2.25} />
             </View>
             <Text
               style={[
@@ -466,18 +466,18 @@ const nav = StyleSheet.create({
   label:    { fontSize: 10, letterSpacing: 0.1, includeFontPadding: false },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Toolkit bottom sheet — opened by the Toolkit tab. Lists the five spiritual
+// -----------------------------------------------------------------------------
+// Toolkit bottom sheet � opened by the Toolkit tab. Lists the five spiritual
 // toolkit destinations exactly as they appear in the page section so users
-// can mentally map "the row I saw" → "the tab that brings it back".
-// ─────────────────────────────────────────────────────────────────────────────
-// Audio prayer rooms intentionally omitted — they're surfaced from the Library
+// can mentally map "the row I saw" ? "the tab that brings it back".
+// -----------------------------------------------------------------------------
+// Audio prayer rooms intentionally omitted � they're surfaced from the Library
 // home now so any signed-in user can join without owning the Victory book.
 const TOOLKIT_ITEMS = [
-  { emoji: '🕯️', label: 'Fasting hub',         sub: 'Schedule consecrated time',   route: 'VictoryFastingHub',        gradient: [INDIGO[700], INDIGO[500]] },
-  { emoji: '🔔', label: 'Prayer reminders',    sub: 'Build a daily rhythm',        route: 'VictoryReminders',         gradient: ['#0EA5E9', '#3B82F6'] },
-  { emoji: '🌿', label: 'Prayer categories',   sub: '9 spiritual focus areas',     route: 'VictoryCategories',        gradient: [EMERALD[500], '#14B8A6'] },
-  { emoji: '🏆', label: 'Achievements',        sub: 'Badges, streaks, milestones', route: 'VictoryAchievementsScreen', gradient: [AMBER[500], '#DC2626'] },
+  { emoji: '???', label: 'Fasting hub',         sub: 'Schedule consecrated time',   route: 'VictoryFastingHub',        gradient: [INDIGO[700], INDIGO[500]] },
+  { emoji: '??', label: 'Prayer reminders',    sub: 'Build a daily rhythm',        route: 'VictoryReminders',         gradient: ['#0EA5E9', '#3B82F6'] },
+  { emoji: '??', label: 'Prayer categories',   sub: '9 spiritual focus areas',     route: 'VictoryCategories',        gradient: [EMERALD[500], '#14B8A6'] },
+  { emoji: '??', label: 'Achievements',        sub: 'Badges, streaks, milestones', route: 'VictoryAchievementsScreen', gradient: [AMBER[500], '#DC2626'] },
 ];
 
 const ToolkitSheet = ({ visible, onClose, onPick, tk, tones, t = (k, f) => f }) => {
@@ -544,7 +544,7 @@ const ToolkitSheet = ({ visible, onClose, onPick, tk, tones, t = (k, f) => f }) 
                     {it.sub}
                   </Text>
                 </View>
-                <Text style={[sheet.rowChev, { color: tones.textMuted }]}>›</Text>
+                <Text style={[sheet.rowChev, { color: tones.textMuted }]}>�</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -587,19 +587,19 @@ const sheet = StyleSheet.create({
   rowChev:    { fontSize: 22, fontWeight: '700', marginLeft: 4 },
 });
 
-// ── Re-usable bits ───────────────────────────────────────────────────────────
+// -- Re-usable bits -----------------------------------------------------------
 const SectionHead = ({ title, action, onAction, tk, tones }) => (
   <View style={s.sectionHead}>
     <Text style={[s.sectionTitle, { color: tk.textPrimary }]}>{title}</Text>
     {!!action && (
       <TouchableOpacity onPress={onAction} activeOpacity={0.75}>
-        <Text style={[s.sectionAction, { color: tones.chipFg }]}>{action} →</Text>
+        <Text style={[s.sectionAction, { color: tones.chipFg }]}>{action} ?</Text>
       </TouchableOpacity>
     )}
   </View>
 );
 
-// 2×2 grid box for the Explore section — icon up top, label, then sub.
+// 2�2 grid box for the Explore section � icon up top, label, then sub.
 // Two boxes per row, soft surface with a tinted icon plate.
 const ExploreBox = ({ icon, tint, label, sub, onPress, tk, tones }) => (
   <TouchableOpacity
@@ -628,7 +628,7 @@ const s = StyleSheet.create({
   eyebrow:    { fontSize: 10, fontWeight: '900', letterSpacing: 2.4 },
   topTitle:   { fontSize: 14, fontWeight: '900', marginTop: 2 },
 
-  // Theme ribbon — narrow card, the "first breath" of the screen.
+  // Theme ribbon � narrow card, the "first breath" of the screen.
   // Solid fill + 1px border for a clean, modern outline.
   themeRibbonWrap: { paddingHorizontal: 20, marginTop: 8, marginBottom: 22 },
   themeRibbon:     { padding: 16, borderRadius: RADII.lg, borderWidth: 1, ...AMBIENT_SHADOW },
@@ -636,7 +636,7 @@ const s = StyleSheet.create({
   themeText:       { fontSize: 17, fontWeight: '900', lineHeight: 23, letterSpacing: -0.3, marginBottom: 6 },
   themeWindow:     { fontSize: 12, fontWeight: '700' },
 
-  // Hero card — asymmetric layout, big day number, gradient CTA
+  // Hero card � asymmetric layout, big day number, gradient CTA
   heroWrap:    { paddingHorizontal: 20, marginBottom: 24 },
   heroCard:    { padding: 22, borderRadius: RADII.xl, borderWidth: 1 },
   heroRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 14 },
@@ -696,7 +696,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.32)', justifyContent: 'center', alignItems: 'center',
   },
 
-  // Explore 2×2 grid — icon stacked over label + sub for a compact tile
+  // Explore 2�2 grid � icon stacked over label + sub for a compact tile
   exploreGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
     columnGap: 12, rowGap: 12,

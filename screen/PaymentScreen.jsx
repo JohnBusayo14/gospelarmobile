@@ -446,7 +446,7 @@ const EmailStep = ({ plan, category, onProceed, onBack, tk, t, isDark }) => {
             transform: [{ translateX: shakeAnim }],
           }]}>
             <View style={{ marginRight: 10 }}>
-              <ICONS.Mail color={tk.textMuted} size={18} sw={1.9} />
+              <ICONS.Mail color={tk.textMuted} size={18} sw={2.25} />
             </View>
             <TextInput
               style={[es.input, { color: tk.textPrimary }]}
@@ -481,7 +481,7 @@ const EmailStep = ({ plan, category, onProceed, onBack, tk, t, isDark }) => {
 
           {/* Reassurance line */}
           <View style={es.reassureRow}>
-            <ICONS.Lock color={tk.textMuted} size={12} sw={2.2} />
+            <ICONS.Lock color={tk.textMuted} size={12} sw={2.25} />
             <Text style={[es.reassureTxt, { color: tk.textMuted }]}>
               {t('pay_trust_paystack', 'Secured by Paystack')}
             </Text>
@@ -604,7 +604,7 @@ const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack',
   if (initError) {
     return (
       <View style={{ flex: 1, backgroundColor: '#060E20', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
-        <ICONS.AlertTriangle color="#F59E0B" size={40} sw={2} />
+        <ICONS.AlertTriangle color="#F59E0B" size={40} sw={2.25} />
         <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', textAlign: 'center' }}>
           {t('pay_init_failed', "Couldn't start payment")}
         </Text>

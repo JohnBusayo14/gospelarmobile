@@ -424,7 +424,7 @@ const PaystackModal = ({ visible, email, plan, category, onSuccess, onCancel, t 
             {step === 'success' && (
               <View style={pm.stateBox}>
                 <View style={[pm.stateIcon, { backgroundColor: '#ECFDF5' }]}>
-                  <ICONS.CheckCircle color="#10B981" size={56} sw={2} />
+                  <ICONS.CheckCircle color="#10B981" size={56} sw={2.25} />
                 </View>
                 <Text style={pm.stateTitle}>{t('guard_sub_activated', 'Subscription Activated!')}</Text>
                 <Text style={pm.stateSub}>
@@ -437,7 +437,7 @@ const PaystackModal = ({ visible, email, plan, category, onSuccess, onCancel, t 
             {step === 'failed' && (
               <View style={pm.stateBox}>
                 <View style={[pm.stateIcon, { backgroundColor: '#FEE2E2', marginBottom: 16 }]}>
-                  <ICONS.AlertCircle color="#EF4444" size={56} sw={2} />
+                  <ICONS.AlertCircle color="#EF4444" size={56} sw={2.25} />
                 </View>
                 <Text style={pm.stateTitle}>{t('guard_payment_failed', 'Payment Failed')}</Text>
                 <Text style={pm.stateSub}>

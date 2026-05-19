@@ -453,7 +453,7 @@ export default function SundaySchoolVoiceReading({ route, navigation }) {
             style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
             accessibilityLabel={t('btn_back', 'Back')}
           >
-            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tones.chipFg} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.eyebrowTop, { color: tones.chipFg }]}>

@@ -34,7 +34,7 @@ const SectionHead = ({ title, icon, Icon, tk }) => (
   <View style={{ paddingHorizontal:20, paddingTop:28, paddingBottom:10,
     flexDirection:'row', alignItems:'center', gap:8 }}>
     {Icon
-      ? <Icon color={tk.textMuted} size={14} sw={2} />
+      ? <Icon color={tk.textMuted} size={14} sw={2.25} />
       : icon ? <Text style={{ fontSize:16 }}>{icon}</Text> : null}
     <Text style={{ fontSize:10, fontWeight:'900', letterSpacing:2.5, color:tk.textMuted }}>
       {title}
@@ -61,7 +61,7 @@ const Row = ({ icon, Icon, label, sub, onPress, right, tk, danger, noBorder }) =
       <View style={{ width:42, height:42, borderRadius:13, justifyContent:'center',
         alignItems:'center', backgroundColor:danger ? '#FEE2E2' : BLUE_LIGHT }}>
         {Icon
-          ? <Icon color={tint} size={20} sw={1.9} />
+          ? <Icon color={tint} size={20} sw={2.25} />
           : <Text style={{ fontSize:20 }}>{icon}</Text>}
       </View>
       <View style={{ flex:1, marginLeft:14 }}>
@@ -73,7 +73,7 @@ const Row = ({ icon, Icon, label, sub, onPress, right, tk, danger, noBorder }) =
       {right}
       {onPress && !right && (
         <View style={{ marginLeft:8 }}>
-          <ICONS.ChevronRight color={tk.textMuted} size={18} sw={1.9} />
+          <ICONS.ChevronRight color={tk.textMuted} size={18} sw={2.25} />
         </View>
       )}
     </TouchableOpacity>
@@ -287,14 +287,14 @@ export default function SettingsScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}
           style={{ width:40, height:40, borderRadius:20, justifyContent:'center',
             alignItems:'center', backgroundColor:tk.surfaceEl }}>
-          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+          <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
         </TouchableOpacity>
         <Text style={{ fontSize:17, fontWeight:'800', color:tk.textPrimary }}>{t('settings', 'Settings')}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.75}
           accessibilityLabel="Profile"
           style={{ width:40, height:40, borderRadius:20, justifyContent:'center',
             alignItems:'center', backgroundColor:BLUE_LIGHT }}>
-          <ICONS.User color={BLUE} size={18} sw={1.9} />
+          <ICONS.User color={BLUE} size={18} sw={2.25} />
         </TouchableOpacity>
       </View>
 
@@ -444,7 +444,7 @@ export default function SettingsScreen({ navigation, route }) {
                 activeOpacity={0.85}
                 style={{ flexDirection:'row', alignItems:'center', margin:14, borderRadius:14,
                   borderWidth:1, padding:14, backgroundColor:BLUE_LIGHT, borderColor:BLUE+'30' }}>
-                <ICONS.Bell color={BLUE} size={22} sw={2} />
+                <ICONS.Bell color={BLUE} size={22} sw={2.25} />
                 <View style={{ flex:1, marginLeft:12 }}>
                   <Text style={{ fontSize:14, fontWeight:'800', marginBottom:2,
                     color:tk.textPrimary }}>{t('set_enable_notifications', 'Enable Notifications')}</Text>

@@ -91,7 +91,7 @@ export default function BookPaywallScreen({ route, navigation }) {
         <View style={[s.topbar, { backgroundColor: tk.bg }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}
             style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}>
-            <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2} />
+            <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
           </TouchableOpacity>
           <View style={{ alignItems: 'center' }}>
             <Text style={[s.topLabel, { color: tk.textMuted }]}>{t('paywall_caps', 'PREVIEW')}</Text>
@@ -136,13 +136,13 @@ export default function BookPaywallScreen({ route, navigation }) {
                     <Text style={[s.previewTitle, { color: tk.textPrimary }]} numberOfLines={1}>{p.title}</Text>
                     {!!p.scripture && (
                       <View style={s.previewMeta}>
-                        <ICONS.Book color={tk.textMuted} size={11} sw={2} />
+                        <ICONS.Book color={tk.textMuted} size={11} sw={2.25} />
                         <Text style={[s.previewMetaTxt, { color: tk.textMuted }]}>{p.scripture}</Text>
                       </View>
                     )}
                   </View>
                   <View style={s.previewLockMini}>
-                    <ICONS.Lock color={tk.textMuted} size={12} sw={2.2} />
+                    <ICONS.Lock color={tk.textMuted} size={12} sw={2.25} />
                   </View>
                 </View>
               ))}
@@ -159,17 +159,17 @@ export default function BookPaywallScreen({ route, navigation }) {
         <View style={s.section}>
           <View style={[s.trustRow, { backgroundColor: tk.surface, borderColor: tk.border }]}>
             <View style={s.trustItem}>
-              <ICONS.Book color={tk.textPrimary} size={18} sw={1.9} />
+              <ICONS.Book color={tk.textPrimary} size={18} sw={2.25} />
               <Text style={[s.trustTxt, { color: tk.textPrimary }]}>{t('paywall_offline', 'Offline-friendly')}</Text>
             </View>
             <View style={[s.trustDivider, { backgroundColor: tk.border }]} />
             <View style={s.trustItem}>
-              <ICONS.Globe color={tk.textPrimary} size={18} sw={1.9} />
+              <ICONS.Globe color={tk.textPrimary} size={18} sw={2.25} />
               <Text style={[s.trustTxt, { color: tk.textPrimary }]}>{t('paywall_languages', '4 languages')}</Text>
             </View>
             <View style={[s.trustDivider, { backgroundColor: tk.border }]} />
             <View style={s.trustItem}>
-              <ICONS.Lock color={tk.textPrimary} size={18} sw={1.9} />
+              <ICONS.Lock color={tk.textPrimary} size={18} sw={2.25} />
               <Text style={[s.trustTxt, { color: tk.textPrimary }]}>{t('paywall_secure_pay', 'Secure pay')}</Text>
             </View>
           </View>

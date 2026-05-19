@@ -80,7 +80,7 @@ export default function SundaySchoolAnthemScreen({ navigation }) {
             shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.10, shadowRadius: 12, elevation: 5,
           }}>
-            <ICONS.Music color={ACCENT} size={36} sw={2} />
+            <ICONS.Music color={ACCENT} size={36} sw={2.25} />
           </View>
           <Text style={{
             fontSize: 22, fontWeight: '900',

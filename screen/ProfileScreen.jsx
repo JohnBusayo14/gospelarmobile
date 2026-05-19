@@ -1,5 +1,5 @@
-﻿// screens/ProfileScreen.jsx — Bamboo fintech redesign
-// White cards #F5F7FA · Blue #1A56DB · All edit/save/avatar/lang logic preserved
+// screens/ProfileScreen.jsx � Bamboo fintech redesign
+// White cards #F5F7FA � Blue #1A56DB � All edit/save/avatar/lang logic preserved
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, StatusBar, TextInput, Switch, Alert, ActivityIndicator, Platform, Animated, Pressable } from 'react-native';
@@ -19,12 +19,12 @@ import { useScreenEntry, usePressScale } from '../hooks/useFluidAnim';
 
 const API=API_BASE_URL;
 const BLUE='#1A56DB', BLUE_LIGHT='#EFF6FF';
-const AVATARS=['👤','😊','🙏','✝️','📖','🌟','🎵','🏆','🌍','💡','🦁','✨'];
+const AVATARS=['??','??','??','??','??','??','??','??','??','??','??','?'];
 const buildLangOptions=(t)=>[
-  {code:'en',label:t('set_lang_english','English'),flag:'🇬🇧'},
-  {code:'ig',label:t('set_lang_igbo','Igbo'),flag:'🇳🇬'},
-  {code:'yo',label:t('set_lang_yoruba','Yoruba'),flag:'🇳🇬'},
-  {code:'ha',label:t('set_lang_hausa','Hausa'),flag:'🇳🇬'},
+  {code:'en',label:t('set_lang_english','English'),flag:'????'},
+  {code:'ig',label:t('set_lang_igbo','Igbo'),flag:'????'},
+  {code:'yo',label:t('set_lang_yoruba','Yoruba'),flag:'????'},
+  {code:'ha',label:t('set_lang_hausa','Hausa'),flag:'????'},
 ];
 
 // Both SectionHead and Row accept either the legacy emoji `icon` string OR a
@@ -32,7 +32,7 @@ const buildLangOptions=(t)=>[
 const SectionHead=({title,icon,Icon,tk})=>(
   <View style={{paddingHorizontal:20,paddingTop:24,paddingBottom:10,flexDirection:'row',alignItems:'center',gap:8}}>
     {Icon
-      ? <Icon color={tk.textMuted} size={14} sw={2} />
+      ? <Icon color={tk.textMuted} size={14} sw={2.25} />
       : icon ? <Text style={{fontSize:18}}>{icon}</Text> : null}
     <Text style={{fontSize:10,fontWeight:'900',letterSpacing:2.5,color:tk.textMuted}}>{title}</Text>
   </View>
@@ -45,7 +45,7 @@ const Row=({icon,Icon,label,value,onPress,right,tk,danger,noBorder})=>{
       style={{flexDirection:'row',alignItems:'center',paddingHorizontal:16,paddingVertical:14,borderBottomWidth:noBorder?0:1,borderBottomColor:tk.glassEdge}}>
       <View style={{width:44,height:44,borderRadius:14,justifyContent:'center',alignItems:'center',backgroundColor:danger?'#EF444414':BLUE_LIGHT}}>
         {Icon
-          ? <Icon color={tint} size={20} sw={1.9} />
+          ? <Icon color={tint} size={20} sw={2.25} />
           : <Text style={{fontSize:20}}>{icon}</Text>}
       </View>
       <View style={{flex:1,marginLeft:14}}>
@@ -55,7 +55,7 @@ const Row=({icon,Icon,label,value,onPress,right,tk,danger,noBorder})=>{
       {right}
       {onPress&&!right&&(
         <View style={{marginLeft:8}}>
-          <ICONS.ChevronRight color={tk.textMuted} size={18} sw={1.9} />
+          <ICONS.ChevronRight color={tk.textMuted} size={18} sw={2.25} />
         </View>
       )}
     </TouchableOpacity>
@@ -76,7 +76,7 @@ export default function ProfileScreen({navigation}) {
   const [saving,setSaving]=useState(false);
   const [editMode,setEditMode]=useState(false);
   const [displayName,setDisplayName]=useState('');
-  const [avatar,setAvatar]=useState('👤');
+  const [avatar,setAvatar]=useState('??');
   const [church,setChurch]=useState('');
   const [location,setLocation]=useState('');
   const [notifications,setNotifications]=useState(true);
@@ -96,7 +96,7 @@ export default function ProfileScreen({navigation}) {
   const handleDownloadOffline=async()=>{
     if(downloading)return;
     setDownloading(true);
-    setDownloadProgress({done:0,total:0,label:t('offline_starting','Starting…')});
+    setDownloadProgress({done:0,total:0,label:t('offline_starting','Starting�')});
     try{
       const result=await prefetchAllForOffline({
         langs:['en','yo','ig','ha'],
@@ -139,7 +139,7 @@ export default function ProfileScreen({navigation}) {
       setEmail(em);
       const res=await fetch(`${API}/api/profile/${encodeURIComponent(em)}`);
       const data=await res.json();
-      setDisplayName(data.display_name||'');setAvatar(data.avatar_emoji||'👤');
+      setDisplayName(data.display_name||'');setAvatar(data.avatar_emoji||'??');
       setChurch(data.church||'');setLocation(data.location||'');
       setNotifications(data.notifications!==false);
     }catch(e){console.error('Profile:',e.message);}
@@ -170,7 +170,7 @@ export default function ProfileScreen({navigation}) {
       {/* TOP BAR */}
       <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:20,paddingVertical:12,borderBottomWidth:1,borderBottomColor:tk.glassEdge}}>
         <TouchableOpacity onPress={()=>navigation.goBack()} activeOpacity={0.7} style={{width:42,height:42,borderRadius:14,justifyContent:'center',alignItems:'center',backgroundColor:tk.glassFill}}>
-          <Text style={{fontSize:20,fontWeight:'600',color:tk.textPrimary}}>←</Text>
+          <Text style={{fontSize:20,fontWeight:'600',color:tk.textPrimary}}>?</Text>
         </TouchableOpacity>
         <Text style={{fontSize:17,fontWeight:'900',color:tk.textPrimary}}>{t('profile_title', 'Profile & Settings')}</Text>
         <Animated.View style={{ transform:[{ scale: saveBtn.scale }] }}>
@@ -192,13 +192,13 @@ export default function ProfileScreen({navigation}) {
               {/* Avatar */}
               <TouchableOpacity onPress={()=>editMode&&setShowAvatarPicker(v=>!v)} activeOpacity={editMode?0.7:1}
                 style={{width:100,height:100,borderRadius:50,borderWidth:2,justifyContent:'center',alignItems:'center',marginBottom:16,position:'relative',backgroundColor:BLUE_LIGHT,borderColor:BLUE+'40'}}>
-                {avatar&&avatar!=='👤'?<Text style={{fontSize:44}}>{avatar}</Text>:(
+                {avatar&&avatar!=='??'?<Text style={{fontSize:44}}>{avatar}</Text>:(
                   <View style={{width:80,height:80,borderRadius:40,backgroundColor:BLUE,justifyContent:'center',alignItems:'center'}}>
                     <Text style={{color:'#fff',fontSize:34,fontWeight:'900'}}>{firstLetter}</Text>
                   </View>
                 )}
                 {editMode&&<View style={{position:'absolute',bottom:4,right:4,width:24,height:24,borderRadius:12,backgroundColor:BLUE,justifyContent:'center',alignItems:'center'}}>
-                  <ICONS.Edit color="#fff" size={11} sw={2.2} />
+                  <ICONS.Edit color="#fff" size={11} sw={2.25} />
                 </View>}
               </TouchableOpacity>
               {/* Avatar picker */}
@@ -256,18 +256,18 @@ export default function ProfileScreen({navigation}) {
             <SectionHead title={t('offline_section','Offline Content').toUpperCase()} Icon={ICONS.Inbox} tk={tk}/>
             <View style={{marginHorizontal:20,borderRadius:18,borderWidth:1,overflow:'hidden',backgroundColor:tk.glassFill,borderColor:tk.glassEdge}}>
               <Row
-                icon="⬇️"
+                icon="??"
                 label={downloading
-                  ? t('offline_downloading','Downloading…')
+                  ? t('offline_downloading','Downloading�')
                   : t('offline_download','Download for Offline')}
                 value={downloading
-                  ? `${downloadProgress.done}/${downloadProgress.total||'?'} · ${downloadProgress.label||''}`
+                  ? `${downloadProgress.done}/${downloadProgress.total||'?'} � ${downloadProgress.label||''}`
                   : (offlineStats.latestTs
-                      ? t('offline_synced_at','Last synced {when} · {n} items · {size}')
+                      ? t('offline_synced_at','Last synced {when} � {n} items � {size}')
                           .replace('{when}',formatLastSync(offlineStats.latestTs)||'')
                           .replace('{n}',String(offlineStats.count))
                           .replace('{size}',formatBytes(offlineStats.bytes))
-                      : t('offline_not_yet','Not yet downloaded · tap to start'))}
+                      : t('offline_not_yet','Not yet downloaded � tap to start'))}
                 tk={tk}
                 onPress={downloading?undefined:handleDownloadOffline}
                 right={downloading?<ActivityIndicator color={BLUE} size="small"/>:undefined}
@@ -307,14 +307,14 @@ export default function ProfileScreen({navigation}) {
             </View>
 
             <View style={{alignItems:'center',marginTop:28,paddingHorizontal:20,marginBottom:8}}>
-              <Text style={{fontSize:11,textAlign:'center',marginBottom:5,color:tk.textMuted}}>{t('login_footer', '© Gospelar Sunday School Department')}</Text>
+              <Text style={{fontSize:11,textAlign:'center',marginBottom:5,color:tk.textMuted}}>{t('login_footer', '� Gospelar Sunday School Department')}</Text>
               <Text style={{fontSize:12,fontWeight:'700',color:BLUE}}>www.gospelar.com</Text>
             </View>
           </>
         )}
       </Animated.ScrollView>
 
-      {/* Settings tab removed — Settings lives on the Library home only.
+      {/* Settings tab removed � Settings lives on the Library home only.
           Profile was previously bound to activeTab={4}; now it sits over the
           bar without a highlighted tab so the user knows they're on a sub-
           screen reached from Settings rather than a primary destination. */}

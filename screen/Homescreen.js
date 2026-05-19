@@ -1,10 +1,10 @@
-﻿// screens/Homescreen.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Bamboo fintech aesthetic — Professional spacing, Bamboo card patterns
-//   • Age group selector with human icons (replaces quick-action buttons)
-//   • Recent Lessons — last 5 visited (from AsyncStorage)
-//   • Quick Access: Notes · Lessons · Language · Devotional
-// ─────────────────────────────────────────────────────────────────────────────
+// screens/Homescreen.jsx
+// -----------------------------------------------------------------------------
+// Bamboo fintech aesthetic � Professional spacing, Bamboo card patterns
+//   � Age group selector with human icons (replaces quick-action buttons)
+//   � Recent Lessons � last 5 visited (from AsyncStorage)
+//   � Quick Access: Notes � Lessons � Language � Devotional
+// -----------------------------------------------------------------------------
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -30,8 +30,8 @@ const { width } = require('react-native').Dimensions.get('window');
 const BLUE       = PALETTE.blue;
 const BLUE_LIGHT = '#EFF6FF';
 
-// ── Age group definitions with human icons ────────────────────────────────────
-// Age-group images — one photo per category
+// -- Age group definitions with human icons ------------------------------------
+// Age-group images � one photo per category
 const CATEGORY_IMAGES = {
   adult:        require('../assets/adult.jpg'),
   youth:        require('../assets/youth.jpg'),
@@ -40,23 +40,23 @@ const CATEGORY_IMAGES = {
 };
 
 const CATEGORIES = [
-  { id:'adult',        label:'Adult',        ageRange:'Ages 26+',  emoji:'🧑‍🦳', color:'#7C3AED', route:'SecondPage' },
-  { id:'youth',        label:'Youth',        ageRange:'Ages 18–25', emoji:'🧑',   color:BLUE,       route:'SecondPage' },
-  { id:'intermediate', label:'Intermediate', ageRange:'Ages 12–17', emoji:'🧒',   color:'#10B981',  route:'SecondPage' },
-  { id:'children',     label:'Children',     ageRange:'Ages 4–11',  emoji:'👧',   color:'#F97316',  route:'SecondPage' },
+  { id:'adult',        label:'Adult',        ageRange:'Ages 26+',  emoji:'?????', color:'#7C3AED', route:'SecondPage' },
+  { id:'youth',        label:'Youth',        ageRange:'Ages 18�25', emoji:'??',   color:BLUE,       route:'SecondPage' },
+  { id:'intermediate', label:'Intermediate', ageRange:'Ages 12�17', emoji:'??',   color:'#10B981',  route:'SecondPage' },
+  { id:'children',     label:'Children',     ageRange:'Ages 4�11',  emoji:'??',   color:'#F97316',  route:'SecondPage' },
 ];
 
-// ── Promo banner colors/emojis (titles/subs translated at render time) ────────
+// -- Promo banner colors/emojis (titles/subs translated at render time) --------
 const BANNERS_META = [
-  { id:1, color:BLUE,      emoji:'✛',  titleKey:'home_banner_quarter_title',     titleFb:'Q4 2026 Quarter',    subKey:'home_banner_quarter_sub',     subFb:'Exposition on Philemon'  },
-  { id:2, color:'#1976D2', emoji:'📖', titleKey:'home_banner_devotionals_title', titleFb:'Daily Devotionals',  subKey:'home_banner_devotionals_sub', subFb:'Read & grow each morning' },
-  { id:3, color:'#B8860B', emoji:'⚡', titleKey:'home_banner_quiz_title',        titleFb:'Quiz Challenge',     subKey:'home_banner_quiz_sub',        subFb:'Earn points this week'    },
-  { id:4, color:'#6A1B9A', emoji:'🏆', titleKey:'home_banner_leaderboard_title', titleFb:'Leaderboard',        subKey:'home_banner_leaderboard_sub', subFb:'See where you rank'       },
+  { id:1, color:BLUE,      emoji:'?',  titleKey:'home_banner_quarter_title',     titleFb:'Q4 2026 Quarter',    subKey:'home_banner_quarter_sub',     subFb:'Exposition on Philemon'  },
+  { id:2, color:'#1976D2', emoji:'??', titleKey:'home_banner_devotionals_title', titleFb:'Daily Devotionals',  subKey:'home_banner_devotionals_sub', subFb:'Read & grow each morning' },
+  { id:3, color:'#B8860B', emoji:'?', titleKey:'home_banner_quiz_title',        titleFb:'Quiz Challenge',     subKey:'home_banner_quiz_sub',        subFb:'Earn points this week'    },
+  { id:4, color:'#6A1B9A', emoji:'??', titleKey:'home_banner_leaderboard_title', titleFb:'Leaderboard',        subKey:'home_banner_leaderboard_sub', subFb:'See where you rank'       },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // BANNER CARD
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const BannerCard = ({ item, t }) => (
   <View style={[bn.card, { backgroundColor: item.color }]}>
     <Text style={bn.emoji}>{item.emoji}</Text>
@@ -71,9 +71,9 @@ const bn = StyleSheet.create({
   sub:   { fontSize:11, color:'rgba(255,255,255,.75)', marginTop:2 },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QUARTER CARD — like Bamboo's wealth card
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// QUARTER CARD � like Bamboo's wealth card
+// -----------------------------------------------------------------------------
 const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
   const catLabel = t(`cat_${cat.id}`, cat.label);
   return (
@@ -82,7 +82,7 @@ const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
       <View style={qc.row}>
         <View style={{ flex:1 }}>
           <Text style={[qc.meta, { color:tk.textMuted }]}>
-            {quarterInfo.quarter} · {t('home_class_for', '{label} Class').replace('{label}', catLabel)}
+            {quarterInfo.quarter} � {t('home_class_for', '{label} Class').replace('{label}', catLabel)}
           </Text>
           <Text style={[qc.theme, { color:tk.textPrimary }]}>
             {quarterInfo.theme_title || t('cunits_default_theme', 'Demonstration of the Christian Life')}
@@ -100,17 +100,17 @@ const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
       </View>
       <View style={[qc.divider, { backgroundColor:tk.glassEdge }]} />
       <View style={qc.row}>
-        {/* Music-note button — opens the Sunday School anthem. Uses its own
+        {/* Music-note button � opens the Sunday School anthem. Uses its own
             TouchableOpacity so the tap doesn't also fire the card's onPress. */}
         <TouchableOpacity
           onPress={onAnthemPress}
           activeOpacity={0.7}
           accessibilityLabel={t('home_anthem_a11y', 'Open Sunday School anthem')}
           style={[qc.anthemBtn, { backgroundColor: BLUE_LIGHT }]}>
-          <ICONS.Music color={BLUE} size={18} sw={2} />
+          <ICONS.Music color={BLUE} size={18} sw={2.25} />
         </TouchableOpacity>
         <View style={[qc.startBtn, { backgroundColor:BLUE }]}>
-          <Text style={qc.startBtnTxt}>{t('home_start', 'Start →')}</Text>
+          <Text style={qc.startBtnTxt}>{t('home_start', 'Start ?')}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -131,14 +131,14 @@ const qc = StyleSheet.create({
   startBtnTxt:{ color:'#fff', fontSize:13, fontWeight:'700' },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AGE GROUP CARD — circular image (or emoji fallback) + label + active state
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// AGE GROUP CARD � circular image (or emoji fallback) + label + active state
+// -----------------------------------------------------------------------------
 const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
   const imgSrc = CATEGORY_IMAGES[item.id];
   const label    = t(`cat_${item.id}`,       item.label);
   const ageRange = t(`cat_${item.id}_range`, item.ageRange);
-  // Staggered fade+slide entry — each card pops in 60ms after the previous one
+  // Staggered fade+slide entry � each card pops in 60ms after the previous one
   const { fade, translateY } = useStaggerEntry(index);
   return (
     <Animated.View style={{ opacity: fade, transform: [{ translateY }] }}>
@@ -161,7 +161,7 @@ const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
         )}
         {locked && (
           <View style={ag.lockOverlay}>
-            <ICONS.Lock color="#fff" size={20} sw={2.2} />
+            <ICONS.Lock color="#fff" size={20} sw={2.25} />
           </View>
         )}
       </View>
@@ -176,7 +176,7 @@ const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
       )}
       {locked && (
         <View style={[ag.lockedPill, { backgroundColor: tk.surfaceEl, borderColor: tk.glassEdge }]}>
-          <Text style={[ag.lockedPillTxt, { color: tk.textMuted }]}>{t('home_locked_pill', '🔒  Locked')}</Text>
+          <Text style={[ag.lockedPillTxt, { color: tk.textMuted }]}>{t('home_locked_pill', '??  Locked')}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -198,14 +198,14 @@ const ag = StyleSheet.create({
   lockedPillTxt:{ fontSize:9, fontWeight:'900', letterSpacing:.5 },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LESSON ROW — Bamboo portfolio row style
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// LESSON ROW � Bamboo portfolio row style
+// -----------------------------------------------------------------------------
 const LessonRow = ({ lesson, tk, onPress, isLast }) => (
   <TouchableOpacity onPress={onPress} activeOpacity={0.7}
     style={[lr.row, { borderBottomColor:tk.glassEdge, borderBottomWidth:isLast?0:1 }]}>
     <View style={[lr.iconBox, { backgroundColor:BLUE_LIGHT }]}>
-      <ICONS.Book color={BLUE} size={20} sw={2} />
+      <ICONS.Book color={BLUE} size={20} sw={2.25} />
     </View>
     <View style={lr.mid}>
       <Text style={[lr.title, { color:tk.textPrimary }]} numberOfLines={1}>
@@ -232,9 +232,9 @@ const lr = StyleSheet.create({
   num:      { fontSize:12, fontWeight:'900' },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION HEADER — Bamboo style
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// SECTION HEADER � Bamboo style
+// -----------------------------------------------------------------------------
 const SectionHeader = ({ title, action, onAction, tk }) => (
   <View style={sh.row}>
     <Text style={[sh.title, { color:tk.textPrimary }]}>{title}</Text>
@@ -251,9 +251,9 @@ const sh = StyleSheet.create({
   action: { fontSize:13, fontWeight:'700' },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // MAIN SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 export default function Homescreen({ navigation }) {
   const { isDark }  = useTheme();
   const { t, lang } = useLanguage();
@@ -335,7 +335,7 @@ export default function Homescreen({ navigation }) {
 
   // Tab navigation
   // 4-tab mapping: 0=Home 1=Units 2=Notes 3=Stats
-  // Settings intentionally removed — it lives on the Library home now so a
+  // Settings intentionally removed � it lives on the Library home now so a
   // single, central entry covers every book in the catalogue.
   const handleTab = useCallback((i) => {
     setActiveTab(i);
@@ -354,8 +354,8 @@ export default function Homescreen({ navigation }) {
   //
   //     Cannot read property 'stopTracking' of undefined
   //
-  // …from Pressability's cleanup. The defer fully resolves it without
-  // perceptible delay (one frame ≈ 16 ms).
+  // �from Pressability's cleanup. The defer fully resolves it without
+  // perceptible delay (one frame � 16 ms).
   const navTo = useCallback((screen, params) => {
     requestAnimationFrame(() => navigation.navigate(screen, params));
   }, [navigation]);
@@ -364,13 +364,13 @@ export default function Homescreen({ navigation }) {
 
   // Quick access items.
   // The old "Language" tile that routed to Settings has been replaced with a
-  // "Library" tile — Settings is no longer reachable from Sunday School; it
+  // "Library" tile � Settings is no longer reachable from Sunday School; it
   // lives on the Library home so it's centralised for all books.
   const QUICK_ACCESS = [
-    { icon:'📝', label:t('notes','Notes'),           sub:t('notes_sub','Your class notes'),         bg:'#EFF6FF', onPress:()=>navigation.navigate('Notes') },
-    { icon:'📚', label:t('lessons','Lessons'),       sub:t('lessons_sub','Browse all units'),       bg:'#F5F3FF', onPress:()=>navigation.navigate(safeRoute, { category: cat }) },
-    { icon:'🏛️', label:t('library','Library'),       sub:t('library_sub','Switch books · settings'),bg:'#ECFDF5', onPress:()=>navigation.navigate('Library') },
-    { icon:'🌅', label:t('devotional','Devotional'), sub:t('devotional_sub','Daily reading plan'),  bg:'#FFF7ED', locked:true,
+    { icon:'??', label:t('notes','Notes'),           sub:t('notes_sub','Your class notes'),         bg:'#EFF6FF', onPress:()=>navigation.navigate('Notes') },
+    { icon:'??', label:t('lessons','Lessons'),       sub:t('lessons_sub','Browse all units'),       bg:'#F5F3FF', onPress:()=>navigation.navigate(safeRoute, { category: cat }) },
+    { icon:'???', label:t('library','Library'),       sub:t('library_sub','Switch books � settings'),bg:'#ECFDF5', onPress:()=>navigation.navigate('Library') },
+    { icon:'??', label:t('devotional','Devotional'), sub:t('devotional_sub','Daily reading plan'),  bg:'#FFF7ED', locked:true,
       onPress:()=>Alert.alert(t('devotional','Devotional'), t('home_coming_soon','This feature is coming soon.')) },
   ];
 
@@ -383,7 +383,7 @@ export default function Homescreen({ navigation }) {
         contentContainerStyle={s.scrollContent}
         style={{ opacity: fade, transform: [{ translateY }] }}>
 
-        {/* ── TOP BAR ──
+        {/* -- TOP BAR --
             All navigation calls go through navTo() so the press animation
             finishes before the screen unmounts (see Pressability comment
             above). Bare `navigation.navigate(...)` here was the source of
@@ -394,7 +394,7 @@ export default function Homescreen({ navigation }) {
               <Text style={s.avatarLetter}>{displayName[0]?.toUpperCase() || 'G'}</Text>
             </View>
             <View>
-              <Text style={[s.greeting, { color:tk.textMuted }]}>{t('home_good_day', 'Good day 👋')}</Text>
+              <Text style={[s.greeting, { color:tk.textMuted }]}>{t('home_good_day', 'Good day ??')}</Text>
               <Text style={[s.userName,  { color:tk.textPrimary }]}>{displayName}</Text>
             </View>
           </TouchableOpacity>
@@ -404,21 +404,21 @@ export default function Homescreen({ navigation }) {
             <TouchableOpacity onPress={() => navTo('Library')} activeOpacity={0.75}
               accessibilityLabel="Library"
               style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
-              <ICONS.BookStack color={BLUE} size={18} sw={1.9} />
+              <ICONS.BookStack color={BLUE} size={18} sw={2.25} />
             </TouchableOpacity>
             {userRole === 'teacher' && (
               <TouchableOpacity onPress={() => navTo('TeacherDashboard')} activeOpacity={0.75}
                 accessibilityLabel="Teacher dashboard"
                 style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
-                <ICONS.Classes color={BLUE} size={18} sw={1.9} />
+                <ICONS.Classes color={BLUE} size={18} sw={2.25} />
               </TouchableOpacity>
             )}
-            {/* Settings intentionally removed — Settings is now reachable only
+            {/* Settings intentionally removed � Settings is now reachable only
                 from the Library home so it covers every book in one place. */}
           </View>
         </View>
 
-        {/* ── PROMO BANNERS ── */}
+        {/* -- PROMO BANNERS -- */}
         <View style={s.bannerSection}>
           <FlatList data={BANNERS_META} keyExtractor={b=>String(b.id)} horizontal
             showsHorizontalScrollIndicator={false}
@@ -426,7 +426,7 @@ export default function Homescreen({ navigation }) {
             renderItem={({ item }) => <BannerCard item={item} t={t}/>}/>
         </View>
 
-        {/* ── QUARTER CARD ── */}
+        {/* -- QUARTER CARD -- */}
         <View style={s.section}>
           <QuarterCard
             cat={cat}
@@ -438,7 +438,7 @@ export default function Homescreen({ navigation }) {
           />
         </View>
 
-        {/* ── AGE GROUP SELECTOR (replaces quick-action buttons) ── */}
+        {/* -- AGE GROUP SELECTOR (replaces quick-action buttons) -- */}
         <View style={s.section}>
           <SectionHeader title={t('age_group', 'Age Group')} tk={tk}/>
           <View style={s.ageRow}>
@@ -458,7 +458,7 @@ export default function Homescreen({ navigation }) {
                       const targetLbl = t(`cat_${c.id}`, c.label);
                       Alert.alert(
                         t('category_locked', 'Category Locked'),
-                        t('home_locked_alert_msg', 'Your ₦500 plan only unlocks the {label} category. Upgrade to All Categories (₦1,000) to access {target}.')
+                        t('home_locked_alert_msg', 'Your ?500 plan only unlocks the {label} category. Upgrade to All Categories (?1,000) to access {target}.')
                           .replace('{label}', subbedLbl)
                           .replace('{target}', targetLbl),
                         [
@@ -479,11 +479,11 @@ export default function Homescreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── RECENT LESSONS ── */}
+        {/* -- RECENT LESSONS -- */}
         <View style={s.section}>
           <SectionHeader
             title={isRecentMode ? t('recently_visited', 'Recently Visited') : t('recent_lessons', 'Recent Lessons')}
-            action={t('view_all', 'View All →')}
+            action={t('view_all', 'View All ?')}
             onAction={() => navigation.navigate(safeRoute, { category:cat })}
             tk={tk}
           />
@@ -491,11 +491,11 @@ export default function Homescreen({ navigation }) {
             {lessonsLoading && !isRecentMode ? (
               <View style={s.loadingBox}>
                 <ActivityIndicator color={BLUE} size="small"/>
-                <Text style={[s.loadingText, { color:tk.textMuted }]}>{t('home_loading_lessons', 'Loading lessons…')}</Text>
+                <Text style={[s.loadingText, { color:tk.textMuted }]}>{t('home_loading_lessons', 'Loading lessons�')}</Text>
               </View>
             ) : displayedLessons.length === 0 ? (
               <View style={s.emptyBox}>
-                <Text style={{ fontSize:36, marginBottom:10 }}>📖</Text>
+                <Text style={{ fontSize:36, marginBottom:10 }}>??</Text>
                 <Text style={[s.emptyText, { color:tk.textMuted }]}>
                   {t('home_no_recent', 'No recently visited lessons yet.')}
                 </Text>
@@ -530,7 +530,7 @@ export default function Homescreen({ navigation }) {
           )}
         </View>
 
-        {/* ── QUICK ACCESS ── */}
+        {/* -- QUICK ACCESS -- */}
         <View style={s.section}>
           <SectionHeader title={t('quick_access', 'Quick Actions')} tk={tk}/>
           <View style={s.qaGrid}>
@@ -545,7 +545,7 @@ export default function Homescreen({ navigation }) {
                   <Text style={{ fontSize:26 }}>{item.icon}</Text>
                   {item.locked && (
                     <View style={s.qaLockOverlay}>
-                      <ICONS.Lock color="#fff" size={14} sw={2.2} />
+                      <ICONS.Lock color="#fff" size={14} sw={2.25} />
                     </View>
                   )}
                 </View>
@@ -553,7 +553,7 @@ export default function Homescreen({ navigation }) {
                 <Text style={[s.qaSub,   { color:tk.textMuted }]}>{item.sub}</Text>
                 {item.locked && (
                   <View style={[s.qaLockedPill, { backgroundColor: tk.surfaceEl, borderColor: tk.glassEdge, flexDirection:'row', alignItems:'center', gap:6 }]}>
-                    <ICONS.Lock color={tk.textMuted} size={11} sw={2.2} />
+                    <ICONS.Lock color={tk.textMuted} size={11} sw={2.25} />
                     <Text style={[s.qaLockedTxt, { color: tk.textMuted }]}>{t('home_coming_soon_pill','Coming Soon')}</Text>
                   </View>
                 )}
@@ -562,16 +562,16 @@ export default function Homescreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── FOOTER ── */}
+        {/* -- FOOTER -- */}
         <View style={s.footer}>
-          <Text style={[s.footerTxt, { color:tk.textMuted }]}>{t('login_footer', '© Gospelar Sunday School Department')}</Text>
+          <Text style={[s.footerTxt, { color:tk.textMuted }]}>{t('login_footer', '� Gospelar Sunday School Department')}</Text>
           <Text style={[s.footerSite, { color:BLUE }]}>www.gospelar.com</Text>
         </View>
 
       </Animated.ScrollView>
 
-      {/* ── TAB BAR ──
-          Four tabs: Home · Lessons · Notes · Stats. Settings lives on the
+      {/* -- TAB BAR --
+          Four tabs: Home � Lessons � Notes � Stats. Settings lives on the
           Library home so it's reachable from every book in one place. */}
       <AppTabBar
         activeTab={activeTab}
@@ -588,7 +588,7 @@ export default function Homescreen({ navigation }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const s = StyleSheet.create({
   safe:         { flex:1 },
   scrollContent:{ paddingBottom:110 },
@@ -606,7 +606,7 @@ const s = StyleSheet.create({
   // Banners
   bannerSection:{ marginBottom:28 },
 
-  // Sections — consistent 28px bottom margin
+  // Sections � consistent 28px bottom margin
   section:      { paddingHorizontal:20, marginBottom:28 },
 
   // Age group row
@@ -621,7 +621,7 @@ const s = StyleSheet.create({
   emptyHint:    { fontSize:12, textAlign:'center' },
   recentHint:   { fontSize:11, marginTop:8, textAlign:'center', fontStyle:'italic' },
 
-  // Quick access 2×2 grid
+  // Quick access 2�2 grid
   qaGrid:   { flexDirection:'row', flexWrap:'wrap', gap:14 },
   qaItem:   { width:(width-54)/2, borderRadius:18, borderWidth:1, padding:18, shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:.05, shadowRadius:8, elevation:1 },
   qaIcon:   { width:52, height:52, borderRadius:16, justifyContent:'center', alignItems:'center', marginBottom:12, position:'relative' },
