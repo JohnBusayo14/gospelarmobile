@@ -11,11 +11,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, ScrollView, Dimensions,
-  Animated, StatusBar, ActivityIndicator, Platform, Alert, Image, Pressable,
+  Animated, StatusBar, ActivityIndicator, Platform, Alert, Pressable,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage       from '@react-native-async-storage/async-storage';
+import LottieView         from 'lottie-react-native';
 import { API_BASE_URL }   from '../services/api';
 import { useTheme }       from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -119,19 +120,11 @@ export default function LoginScreen({ navigation }) {
   // ── Entrance animations ───────────────────────────────────────────────────
   const fadeAnim   = useRef(new Animated.Value(0)).current;
   const slideAnim  = useRef(new Animated.Value(40)).current;
-  const logoScale  = useRef(new Animated.Value(0.7)).current;
-  const logoOpacity= useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(logoScale,   { toValue: 1,   tension: 80, friction: 8,  useNativeDriver: true }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0,  tension: 60, friction: 10, useNativeDriver: true }),
-      ]),
+    Animated.parallel([
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0,  tension: 60, friction: 10, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -237,7 +230,7 @@ export default function LoginScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero header ────────────────────────────────────────────────── */}
+          {/* ── Hero (Lottie) ──────────────────────────────────────────────── */}
           <LinearGradient
             colors={
               isDark
@@ -246,39 +239,12 @@ export default function LoginScreen({ navigation }) {
             }
             style={s.hero}
           >
-            <Animated.View
-              style={[
-                s.logoCircle,
-                {
-                  backgroundColor: isDark ? '#1A1D27' : '#fff',
-                  borderColor:     isDark ? '#2A2D3A' : ACCENT + '30',
-                  transform:       [{ scale: logoScale }],
-                  opacity:         logoOpacity,
-                },
-              ]}
-            >
-              <Image
-                source={require('../assets/image2.png')}
-                style={s.logoImg}
-                resizeMode="contain"
-              />
-            </Animated.View>
-
-            <Text style={[s.appName, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-              Gospelar
-            </Text>
-            <Text style={[s.appSub, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              {t('login_sunday_school', 'Sunday School')}
-            </Text>
-
-            <View style={[s.heroDivider, { backgroundColor: ACCENT }]} />
-
-            <Text style={[s.heroTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-              {t('login_welcome_back', 'Welcome back')}
-            </Text>
-            <Text style={[s.heroSub, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              {t('login_welcome_sub', 'Sign in to continue your learning journey')}
-            </Text>
+            <LottieView
+              source={require('../assets/lottie/Unlocked.json')}
+              autoPlay
+              loop
+              style={s.lottie}
+            />
           </LinearGradient>
 
           {/* ── Form card ──────────────────────────────────────────────────── */}
@@ -401,23 +367,10 @@ export default function LoginScreen({ navigation }) {
 const s = StyleSheet.create({
   safe:        { flex: 1 },
   hero:        {
-    alignItems: 'center',
-    paddingTop: 40, paddingBottom: 36, paddingHorizontal: 24,
+    alignItems: 'center', justifyContent: 'center',
+    paddingTop: 16, paddingBottom: 8, paddingHorizontal: 24,
   },
-  logoCircle:  {
-    width: 90, height: 90, borderRadius: 45,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 16, borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12, shadowRadius: 12, elevation: 6,
-  },
-  logoImg:     { width: 60, height: 60 },
-  appName:     { fontSize: 28, fontWeight: '900', letterSpacing: 2, marginBottom: 2 },
-  appSub:      { fontSize: 14, fontWeight: '600', letterSpacing: 0.5, marginBottom: 20 },
-  heroDivider: { width: 40, height: 3, borderRadius: 2, marginBottom: 20 },
-  heroTitle:   { fontSize: 26, fontWeight: '900', letterSpacing: -0.5, marginBottom: 8 },
-  heroSub:     { fontSize: 14, textAlign: 'center', lineHeight: 21 },
+  lottie:      { width: width * 0.7, height: width * 0.7 },
   formWrap:    { paddingHorizontal: 20, paddingBottom: 16 },
   card:        {
     borderRadius: 24, borderWidth: 1, padding: 24,

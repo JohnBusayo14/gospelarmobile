@@ -8,11 +8,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, ScrollView, Dimensions,
-  Animated, StatusBar, ActivityIndicator, Platform, Image, Pressable
+  Animated, StatusBar, ActivityIndicator, Platform, Pressable
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage       from '@react-native-async-storage/async-storage';
+import LottieView         from 'lottie-react-native';
 import { API_BASE_URL }   from '../services/api';
 import { useTheme }       from '../context/ThemeContext';
 import { useLanguage }    from '../context/LanguageContext';
@@ -208,25 +209,17 @@ export default function RegisterScreen({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero ── */}
+          {/* ── Hero (Lottie) ── */}
           <LinearGradient
             colors={isDark ? ['#0F1117','#1A1D27','#0F1117'] : ['#ECFDF5','#D1FAE5','#FFFFFF']}
             style={s.hero}
           >
-            <View style={[s.logoCircle, { backgroundColor: isDark ? '#1A1D27' : '#fff', borderColor: isDark ? '#2A2D3A' : '#10B98130' }]}>
-              <Image
-                source={require('../assets/image2.png')}
-                style={s.logoImg}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={[s.appName, { color: isDark ? '#F9FAFB' : '#111827' }]}>Gospelar</Text>
-            <Text style={[s.appSub,  { color: isDark ? '#9CA3AF' : '#6B7280' }]}>{t('login_sunday_school', 'Sunday School')}</Text>
-            <View style={[s.heroDivider, { backgroundColor: '#10B981' }]} />
-            <Text style={[s.heroTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>{t('register_title', 'Create account')}</Text>
-            <Text style={[s.heroSub,   { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-              {t('register_sub', "Join thousands learning God's word daily")}
-            </Text>
+            <LottieView
+              source={require('../assets/lottie/security.json')}
+              autoPlay
+              loop
+              style={s.lottie}
+            />
           </LinearGradient>
 
           {/* ── Form ── */}
@@ -403,14 +396,8 @@ export default function RegisterScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe:        { flex:1 },
-  hero:        { alignItems:'center', paddingTop:36, paddingBottom:28, paddingHorizontal:24 },
-  logoCircle:  { width:90, height:90, borderRadius:45, justifyContent:'center', alignItems:'center', marginBottom:14, borderWidth:2, shadowColor:'#000', shadowOffset:{width:0,height:4}, shadowOpacity:0.12, shadowRadius:12, elevation:6 },
-  logoImg:     { width:60, height:60 },
-  appName:     { fontSize:26, fontWeight:'900', letterSpacing:2, marginBottom:2 },
-  appSub:      { fontSize:13, fontWeight:'600', letterSpacing:0.5, marginBottom:16 },
-  heroDivider: { width:40, height:3, borderRadius:2, marginBottom:16 },
-  heroTitle:   { fontSize:24, fontWeight:'900', letterSpacing:-0.5, marginBottom:6 },
-  heroSub:     { fontSize:13.5, textAlign:'center', lineHeight:20 },
+  hero:        { alignItems:'center', justifyContent:'center', paddingTop:12, paddingBottom:8, paddingHorizontal:24 },
+  lottie:      { width: width * 0.65, height: width * 0.65 },
   formWrap:    { paddingHorizontal:20, paddingBottom:16 },
   card:        { borderRadius:24, borderWidth:1, padding:24, shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.06, shadowRadius:12, elevation:3 },
   formError:   { backgroundColor:'#FEF2F2', borderRadius:12, padding:12, marginBottom:16, borderWidth:1, borderColor:'#FECACA' },
