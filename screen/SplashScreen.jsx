@@ -69,11 +69,12 @@ export default function SplashScreen({ navigation }) {
           // open. The Sunday-School flow still lives at HomeScreen, one tap deeper.
           navigation.replace('Library');
         } else {
-          // First-launch onboarding gate — show the tour once, gated by an
-          // AsyncStorage flag set by OnboardingScreen on Get-Started / Skip.
-          // Returning installs hit Login directly.
-          const onboarded = await AsyncStorage.getItem('gospelar.onboarded.v1');
-          navigation.replace(onboarded ? 'Login' : 'Onboarding');
+          // ⚠ TEMPORARY: always send anonymous users through Onboarding so
+          // the tour is visible every cold-start while we're iterating on it.
+          // Restore the AsyncStorage gate below when ready to ship:
+          //   const onboarded = await AsyncStorage.getItem('gospelar.onboarded.v1');
+          //   navigation.replace(onboarded ? 'Login' : 'Onboarding');
+          navigation.replace('Onboarding');
         }
       } catch {
         navigation.replace('Login');
