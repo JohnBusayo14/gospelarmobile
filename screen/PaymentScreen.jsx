@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView }    from 'react-native-safe-area-context';
 import { WebView }         from 'react-native-webview';
+import LottieView          from 'lottie-react-native';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useLanguage }     from '../context/LanguageContext';
@@ -791,9 +792,12 @@ const SuccessStep = ({ email, expiryDate, plan, category, tk, t }) => {
       }]}>
         <View style={[suc.stripe, { backgroundColor: accent }]} />
         <View style={{ padding: 26, alignItems: 'center' }}>
-          <View style={[suc.icon, { backgroundColor: '#10B98114', borderColor: '#10B98140' }]}>
-            <ICONS.Check color="#10B981" size={42} sw={3} />
-          </View>
+          <LottieView
+            source={require('../assets/lottie/success.json')}
+            autoPlay
+            loop={false}
+            style={suc.lottie}
+          />
           <Text style={[suc.title, { color: tk.textPrimary }]}>
             {t('pay_success_title', 'Access Granted!')}
           </Text>
@@ -832,7 +836,7 @@ const SuccessStep = ({ email, expiryDate, plan, category, tk, t }) => {
 const suc = StyleSheet.create({
   card:     { borderRadius: 20, overflow: 'hidden', width: '100%', maxWidth: 420, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 8 },
   stripe:   { height: 4 },
-  icon:     { width: 76, height: 76, borderRadius: 38, justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1.5 },
+  lottie:   { width: 140, height: 140, marginBottom: 4 },
   title:    { fontSize: 24, fontWeight: '900', textAlign: 'center', marginBottom: 8, letterSpacing: -0.4 },
   sub:      { fontSize: 13, lineHeight: 20, textAlign: 'center', marginBottom: 20, paddingHorizontal: 8 },
   receipt:  { width: '100%', borderRadius: 14, paddingHorizontal: 14, marginBottom: 16 },
