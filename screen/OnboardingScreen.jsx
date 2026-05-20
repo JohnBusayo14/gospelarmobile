@@ -55,7 +55,7 @@ function makeSlides(t) {
   return [
     {
       key:   'welcome',
-      image: require('../assets/frontimage.jpg'),
+      image: require('../assets/welcome.png'),
       title: t('ob_welcome_title', 'Welcome to Gospelar'),
       body:  t(
         'ob_welcome_body',
@@ -64,7 +64,7 @@ function makeSlides(t) {
     },
     {
       key:   'lessons',
-      image: require('../assets/adult.jpg'),
+      image: require('../assets/sunday school class.png'),
       title: t('ob_lessons_title', 'Sunday School, every week'),
       body:  t(
         'ob_lessons_body',
@@ -73,7 +73,7 @@ function makeSlides(t) {
     },
     {
       key:   'prayer',
-      image: require('../assets/frontimage2.jpg'),
+      image: require('../assets/prayer.png'),
       title: t('ob_prayer_title', 'Victory Month Prayer'),
       body:  t(
         'ob_prayer_body',
@@ -82,7 +82,7 @@ function makeSlides(t) {
     },
     {
       key:   'identity',
-      image: require('../assets/teach.png'),
+      image: require('../assets/identification.png'),
       title: t('ob_identity_title', 'Your Gospeler ID'),
       body:  t(
         'ob_identity_body',
@@ -266,21 +266,20 @@ export default function OnboardingScreen({ navigation }) {
   );
 }
 
-// Per-slide layout. Image hero + title + body. The image card has a soft
-// gradient overlay from the brand BG_BOTTOM at the bottom so the title
-// underneath blends rather than colliding with the photo edge.
+// Per-slide layout. Image hero on top, title + body underneath. The
+// images are transparent character illustrations, so we use resizeMode
+// 'contain' (preserve aspect, no crop) and skip the dark card backdrop
+// from the previous version — the gradient screen background reads
+// through cleanly behind the figures.
 function Slide({ slide }) {
   const { image, title, body } = slide;
   return (
     <View style={[s.slide, { width: SCREEN_W }]}>
       <View style={s.imageWrap}>
-        <Image source={image} style={s.image} resizeMode="cover" />
-        {/* Bottom-fade so the photo merges into the dark background. */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={['transparent', 'rgba(13,27,94,0.55)']}
-          style={StyleSheet.absoluteFill}
-        />
+        {/* Subtle soft glow behind the figure — pulls focus to the
+            illustration without putting it in a hard-edged card. */}
+        <View style={s.imageGlow} />
+        <Image source={image} style={s.image} resizeMode="contain" />
       </View>
       <Text style={s.slideTitle} numberOfLines={2}>{title}</Text>
       <Text style={s.slideBody}>{body}</Text>
@@ -288,10 +287,12 @@ function Slide({ slide }) {
   );
 }
 
-// Image card sizing — tuned to leave headroom for title + body + dots + CTA
-// on a typical 6.1" phone (~844pt). Aspect 4:3 keeps the photo readable.
-const IMAGE_W = SCREEN_W - 48;
-const IMAGE_H = Math.min(IMAGE_W * 0.78, SCREEN_H * 0.40);
+// Image hero sizing — larger than the previous photo card. Transparent
+// PNG illustrations look best when they take the dominant share of the
+// screen, capped at ~50% of viewport height so there's still room for
+// title + body + dots + CTA on a typical 6.1" phone (~844pt).
+const IMAGE_W = SCREEN_W - 24;
+const IMAGE_H = Math.min(IMAGE_W, SCREEN_H * 0.50);
 
 const s = StyleSheet.create({
   root: { flex: 1 },
@@ -320,16 +321,19 @@ const s = StyleSheet.create({
   imageWrap: {
     width: IMAGE_W,
     height: IMAGE_H,
-    borderRadius: 24,
-    overflow: 'hidden',
-    marginBottom: 28,
-    // soft drop shadow so the image sits above the gradient backdrop
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 22,
-    elevation: 10,
-    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  // Soft radial-feel halo sitting behind the illustration. Pure View with
+  // a translucent white fill + huge corner radius reads as a light glow
+  // against the dark gradient backdrop.
+  imageGlow: {
+    position: 'absolute',
+    width: IMAGE_W * 0.78,
+    height: IMAGE_W * 0.78,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   image: { width: '100%', height: '100%' },
 
