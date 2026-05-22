@@ -36,16 +36,19 @@ const InputField = ({
   keyboardType, autoCapitalize, tk, error, onToggleSecure, isSecure,
 }) => {
   const [focused, setFocused] = useState(false);
-  const borderAnim = useRef(new Animated.Value(0)).current;
+  const borderAnim   = useRef(new Animated.Value(0)).current;
+  // Hold the in-flight handle so unmount can stop it — otherwise a screen that
+  // unmounts mid-focus-transition crashes with "stopTracking of undefined".
+  const borderHandle = useRef(null);
 
-  const handleFocus = () => {
-    setFocused(true);
-    Animated.timing(borderAnim, { toValue: 1, duration: 180, useNativeDriver: false }).start();
+  const animateBorder = (toValue) => {
+    borderHandle.current?.stop?.();
+    borderHandle.current = Animated.timing(borderAnim, { toValue, duration: 180, useNativeDriver: false });
+    borderHandle.current.start();
   };
-  const handleBlur = () => {
-    setFocused(false);
-    Animated.timing(borderAnim, { toValue: 0, duration: 180, useNativeDriver: false }).start();
-  };
+  const handleFocus = () => { setFocused(true);  animateBorder(1); };
+  const handleBlur  = () => { setFocused(false); animateBorder(0); };
+  useEffect(() => () => { try { borderHandle.current?.stop?.(); } catch { /* already done */ } }, []);
 
   const borderColor = borderAnim.interpolate({
     inputRange:  [0, 1],
@@ -118,14 +121,20 @@ export default function LoginScreen({ navigation }) {
   const [errors,   setErrors]   = useState({});
 
   // ── Entrance animations ───────────────────────────────────────────────────
+  // Hold the parallel handle so unmount can stop it. Logging in inside the
+  // 500ms window (or any unmount mid-entry) would otherwise crash with
+  // "Cannot read property 'stopTracking' of undefined" when the native
+  // animator finalises an Animated.Value whose owning component is gone.
   const fadeAnim   = useRef(new Animated.Value(0)).current;
   const slideAnim  = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    const handle = Animated.parallel([
       Animated.timing(fadeAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0,  tension: 60, friction: 10, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -204,7 +213,13 @@ export default function LoginScreen({ navigation }) {
       // routes them to PaymentScreen with a back arrow back to Library, so
       // a brand-new user never gets stuck on the paywall before seeing what
       // the app offers.
-      navigation.reset({ index: 0, routes: [{ name: 'Library' }] });
+      //
+      // Defer one frame so the sign-in button's Pressability finishes its
+      // press cycle before this screen unmounts — synchronous nav here was
+      // the source of the "stopTracking of undefined" crash after login.
+      requestAnimationFrame(() =>
+        navigation.reset({ index: 0, routes: [{ name: 'Library' }] })
+      );
 
     } catch (e) {
       console.error('[Login]', e.message);

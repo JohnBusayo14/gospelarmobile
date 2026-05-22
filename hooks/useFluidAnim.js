@@ -71,11 +71,25 @@ export function useStaggerEntry(index = 0, { stagger = 60, max = 12, slide = 14 
 // Use with Pressable; wrap the visible content in Animated.View.
 // ─────────────────────────────────────────────────────────────────────────────
 export function usePressScale({ to = 0.96 } = {}) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn  = () =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, tension: 200, friction: 12 }).start();
-  const onPressOut = () =>
-    Animated.spring(scale, { toValue: 1,  useNativeDriver: true, tension: 200, friction: 12 }).start();
+  const scale  = useRef(new Animated.Value(1)).current;
+  // Track the in-flight spring so unmount can stop it. Without this, a button
+  // whose parent screen navigates while the press-in/out spring is still
+  // running triggers "Cannot read property 'stopTracking' of undefined" when
+  // the native animator finalises an Animated.Value with no owner.
+  const handle = useRef(null);
+
+  const onPressIn  = () => {
+    handle.current?.stop?.();
+    handle.current = Animated.spring(scale, { toValue: to, useNativeDriver: true, tension: 200, friction: 12 });
+    handle.current.start();
+  };
+  const onPressOut = () => {
+    handle.current?.stop?.();
+    handle.current = Animated.spring(scale, { toValue: 1,  useNativeDriver: true, tension: 200, friction: 12 });
+    handle.current.start();
+  };
+
+  useEffect(() => () => { try { handle.current?.stop?.(); } catch { /* already done */ } }, []);
   return { scale, onPressIn, onPressOut };
 }
 

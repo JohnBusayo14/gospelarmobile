@@ -116,13 +116,18 @@ export default function RegisterScreen({ navigation }) {
   const [churchChecking, setChurchChecking] = useState(false);
 
   // Entrance animation
+  // Hold the parallel handle so unmount can stop it — prevents the recurring
+  // "Cannot read property 'stopTracking' of undefined" crash when the user
+  // navigates away (or registration succeeds) inside the 600ms window.
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   useEffect(() => {
-    Animated.parallel([
+    const handle = Animated.parallel([
       Animated.timing(fadeAnim,  { toValue:1, duration:600, useNativeDriver:false }),
       Animated.timing(slideAnim, { toValue:0, duration:500, useNativeDriver:false }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   const validate = () => {
