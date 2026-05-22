@@ -95,10 +95,14 @@ const NoteEditor = ({ note, prefillLesson, prefillNumber, tk, onSave, onCancel, 
 
   useEffect(()=>{
     if (!note && prefillLesson) setTitle(t('notes_prefill_title', 'Notes — {lesson}').replace('{lesson}', prefillLesson));
-    Animated.parallel([
+    // Hold the handle so the editor unmounting mid-entry doesn't leave the
+    // animator finalising a dead Animated.Value (stopTracking of undefined).
+    const handle = Animated.parallel([
       Animated.timing(fadeAnim, {toValue:1,duration:280,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
       Animated.timing(slideAnim,{toValue:0,duration:280,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   },[]);
 
   const wc = wordCount(body);

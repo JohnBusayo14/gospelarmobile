@@ -312,16 +312,25 @@ const PaystackModal = ({ visible, email, plan, category, onSuccess, onCancel, t 
   const [step, setStep]      = useState('webview');
   const [failReason, setFR]  = useState('');           // ← surfaced in `failed` state
   const slideAnim            = useRef(new Animated.Value(SH)).current;
+  // Hold the in-flight slide so a follow-up visibility toggle (or a
+  // react-native-screens reconnect) can stop it cleanly — otherwise the
+  // engine throws "stopTracking of undefined" when it tries to finalise
+  // a previously-attached tracking node that was torn down offscreen.
+  const slideHandle          = useRef(null);
   const { verifyPayment }    = useSubscription();
 
   useEffect(() => {
+    slideHandle.current?.stop?.();
     if (visible) {
       setStep('webview');
-      Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 12, useNativeDriver: true }).start();
+      slideHandle.current = Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 12, useNativeDriver: true });
     } else {
-      Animated.timing(slideAnim, { toValue: SH, duration: 260, useNativeDriver: true }).start();
+      slideHandle.current = Animated.timing(slideAnim, { toValue: SH, duration: 260, useNativeDriver: true });
     }
+    slideHandle.current.start();
   }, [visible]);
+
+  useEffect(() => () => { try { slideHandle.current?.stop?.(); } catch {} }, []);
 
   const amount    = plan?.kobo ?? 50000;
   const planLabel = plan?.label ?? t('guard_standard', 'Standard');
@@ -486,10 +495,16 @@ const SubscribeCard = ({ onPay, onLogout, t, plans }) => {
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    // Hold the parallel handle so unmount can stop it. Without this, a quick
+    // navigate-away (or a react-native-screens reconnect) mid-entry crashes
+    // with "Cannot read property 'stopTracking' of undefined" when the
+    // native animator finalises a value owned by a now-gone component.
+    const handle = Animated.parallel([
       Animated.timing(fadeAnim,  { toValue: 1, duration: 380, delay: 100, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, tension: 80, friction: 11, delay: 100, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch {} };
   }, []);
 
   const handleSelectPlan = (p) => {

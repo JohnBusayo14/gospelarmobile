@@ -31,18 +31,36 @@ const UnitCard = ({ unit, index, onPress, T, t, isDark }) => {
   const isOdd    = index % 2 !== 0;
   const accent   = isOdd ? '#7C3AED' : P.sky;
   const accentAlt= isOdd ? '#5B21B6' : '#1D4ED8';
+  // Hold the entrance + press-feedback handles so a card unmounting mid-flight
+  // (or React reconnecting a frozen subtree) doesn't leave the animator
+  // finalising a dead Animated.Value — the "stopTracking of undefined" trap.
+  const entryHandle = useRef(null);
+  const pressHandle = useRef(null);
 
   useEffect(() => {
     const delay = index * 90;
-    Animated.parallel([
+    entryHandle.current = Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 420, delay, useNativeDriver: true }),
       Animated.spring(slideY,  { toValue: 0, delay, tension: 60, friction: 10, useNativeDriver: true }),
       Animated.spring(scale,   { toValue: 1, delay, tension: 80, friction: 8,  useNativeDriver: true }),
-    ]).start();
+    ]);
+    entryHandle.current.start();
+    return () => {
+      try { entryHandle.current?.stop?.(); } catch { /* already done */ }
+      try { pressHandle.current?.stop?.(); } catch { /* already done */ }
+    };
   }, []);
 
-  const handlePressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 200 }).start();
-  const handlePressOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, tension: 200 }).start();
+  const handlePressIn  = () => {
+    try { pressHandle.current?.stop?.(); } catch {}
+    pressHandle.current = Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 200 });
+    pressHandle.current.start();
+  };
+  const handlePressOut = () => {
+    try { pressHandle.current?.stop?.(); } catch {}
+    pressHandle.current = Animated.spring(scale, { toValue: 1,    useNativeDriver: true, tension: 200 });
+    pressHandle.current.start();
+  };
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY: slideY }, { scale }] }}>
@@ -106,7 +124,11 @@ export default function SecondPage({ navigation }) {
   const { data: units, loading, error, refetch } = useApi(fetcher, [lang]);
 
   useEffect(() => {
-    Animated.timing(headerAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    // Hold the handle so the screen unmounting mid-entry doesn't leave the
+    // animator finalising a dead Animated.Value (stopTracking of undefined).
+    const handle = Animated.timing(headerAnim, { toValue: 1, duration: 600, useNativeDriver: true });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   return (

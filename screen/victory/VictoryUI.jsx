@@ -261,7 +261,10 @@ export const CelebrateOverlay = ({ visible, badge, onDone }) => {
 
   useEffect(() => {
     if (!visible) return;
-    Animated.sequence([
+    // Hold the handle so unmount mid-celebration (or React reconnecting a
+    // frozen subtree) doesn't leave the animator finalising a dead value —
+    // the "Cannot read property 'stopTracking' of undefined" trap.
+    const handle = Animated.sequence([
       Animated.parallel([
         Animated.timing(fade,  { toValue: 1, duration: 220, useNativeDriver: true }),
         Animated.spring(scale, { toValue: 1, tension: 110, friction: 7, useNativeDriver: true }),
@@ -271,7 +274,9 @@ export const CelebrateOverlay = ({ visible, badge, onDone }) => {
         Animated.timing(fade,  { toValue: 0, duration: 260, useNativeDriver: true, easing: Easing.in(Easing.cubic) }),
         Animated.timing(scale, { toValue: 0.7, duration: 260, useNativeDriver: true }),
       ]),
-    ]).start(() => onDone?.());
+    ]);
+    handle.start(() => onDone?.());
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [visible]);   // eslint-disable-line
 
   if (!visible || !badge) return null;

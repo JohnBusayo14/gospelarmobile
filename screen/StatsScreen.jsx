@@ -122,11 +122,16 @@ function StreakRing({ streak, longest, tk, isDark, size = 168 }) {
 
   const anim = useRef(new Animated.Value(C)).current;
   useEffect(() => {
-    Animated.timing(anim, {
+    // Hold the handle so unmount mid-animation can stop it — without this the
+    // animator finalises an Animated.Value whose owner is gone, surfacing as
+    // "Cannot read property 'stopTracking' of undefined".
+    const handle = Animated.timing(anim, {
       toValue: C * (1 - pct),
       duration: 1100,
       useNativeDriver: false,
-    }).start();
+    });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [pct, C, anim]);
 
   const animatedStreak = useCountUp(streak);

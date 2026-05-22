@@ -129,11 +129,16 @@ const ReadingHero = ({ streak, longest, totalDays, thisWeek, thisMonth, xp, tk, 
 
   const anim = useRef(new Animated.Value(C)).current;
   useEffect(() => {
-    Animated.timing(anim, {
+    // Hold the handle so the cleanup can stop in-flight work — otherwise
+    // unmounting mid-animation surfaces as "Cannot read property
+    // 'stopTracking' of undefined" when the animator finalises a dead value.
+    const handle = Animated.timing(anim, {
       toValue: C * (1 - pct),
       duration: 1000,
       useNativeDriver: false,
-    }).start();
+    });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, [pct, C, anim]);
 
   const animStreak = useCountUp(streak, 900);

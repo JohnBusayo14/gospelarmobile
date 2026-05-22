@@ -367,15 +367,22 @@ const EmailStep = ({ plan, category, onProceed, onBack, tk, t, isDark }) => {
   const [error,   setError]   = useState('');
   const [focused, setFocused] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  // Track the in-flight shake so a re-trigger (or unmount) can stop the
+  // previous run — avoids "Cannot read property 'stopTracking' of undefined"
+  // when the animator finalises a value whose owner is gone.
+  const shakeHandle = useRef(null);
 
   const shake = () => {
-    Animated.sequence([
+    try { shakeHandle.current?.stop?.(); } catch {}
+    shakeHandle.current = Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 8,  duration: 60, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 6,  duration: 60, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0,  duration: 60, useNativeDriver: true }),
-    ]).start();
+    ]);
+    shakeHandle.current.start();
   };
+  useEffect(() => () => { try { shakeHandle.current?.stop?.(); } catch {} }, []);
 
   const validate = () => {
     const v = email.trim().toLowerCase();
@@ -769,10 +776,15 @@ const SuccessStep = ({ email, expiryDate, plan, category, tk, t }) => {
   const fadeAnim   = useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
-    Animated.parallel([
+    // Hold the handle so the cleanup can stop in-flight work — otherwise
+    // unmounting mid-entry surfaces as "Cannot read property 'stopTracking'
+    // of undefined" when the animator finalises a dead value.
+    const handle = Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 1, friction: 7, tension: 80, useNativeDriver: true }),
       Animated.timing(fadeAnim,  { toValue: 1, duration: 320, useNativeDriver: true }),
-    ]).start();
+    ]);
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []);
 
   const expiry = expiryDate

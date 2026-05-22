@@ -72,6 +72,10 @@ export default function QuizModal({
   const [score,      setScore]      = useState(0);
   const [maxScore,   setMaxScore]   = useState(0);
   const fadeAnim = useState(new Animated.Value(0))[0];
+  // Hold the fade handle so toggling visible (or unmount mid-fade) stops the
+  // previous run cleanly — avoids "stopTracking of undefined" when the
+  // animator finalises a value whose owner is gone.
+  const fadeHandle = React.useRef(null);
 
   // Fetch questions filtered by category + lang
   const loadQuestions = useCallback(async () => {
@@ -98,13 +102,16 @@ export default function QuizModal({
   }, [lessonId, categoryId, lang]);
 
   useEffect(() => {
+    try { fadeHandle.current?.stop?.(); } catch {}
     if (visible) {
       loadQuestions();
-      Animated.timing(fadeAnim, { toValue: 1, duration: 260, useNativeDriver: true }).start();
+      fadeHandle.current = Animated.timing(fadeAnim, { toValue: 1, duration: 260, useNativeDriver: true });
     } else {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+      fadeHandle.current = Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true });
     }
+    fadeHandle.current.start();
   }, [visible]);
+  useEffect(() => () => { try { fadeHandle.current?.stop?.(); } catch {} }, []);
 
   const selectAnswer = (qId, opt) => {
     if (submitted) return;

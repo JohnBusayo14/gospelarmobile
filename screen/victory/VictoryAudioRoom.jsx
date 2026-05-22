@@ -643,8 +643,8 @@ const SpeakingRings = ({ active }) => {
       ),
     );
     if (active) loops.forEach((l) => l.start());
-    else loops.forEach((l) => l.stop());
-    return () => loops.forEach((l) => l.stop());
+    else loops.forEach((l) => { try { l.stop(); } catch {} });
+    return () => loops.forEach((l) => { try { l.stop(); } catch { /* already done */ } });
   }, [active]);  // eslint-disable-line
   return (
     <View style={{ position: 'absolute', top: 0, alignItems: 'center', justifyContent: 'center' }}>
@@ -691,7 +691,7 @@ const MicLevelMeter = ({ active }) => {
       ),
     );
     loops.forEach((l) => l.start());
-    return () => loops.forEach((l) => l.stop());
+    return () => loops.forEach((l) => { try { l.stop(); } catch { /* already done */ } });
   }, [active]); // eslint-disable-line
   return (
     <View style={s.micMeter}>
@@ -715,10 +715,14 @@ const MicLevelMeter = ({ active }) => {
 const FloatingReaction = ({ flt }) => {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(anim, {
+    // Hold the handle so the reaction unmounting mid-drift doesn't leave the
+    // animator finalising a dead Animated.Value (stopTracking of undefined).
+    const handle = Animated.timing(anim, {
       toValue: 1, duration: 2400, easing: Easing.out(Easing.quad),
       useNativeDriver: true,
-    }).start();
+    });
+    handle.start();
+    return () => { try { handle.stop(); } catch { /* already done */ } };
   }, []); // eslint-disable-line
   return (
     <Animated.View

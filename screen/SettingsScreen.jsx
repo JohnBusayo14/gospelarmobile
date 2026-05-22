@@ -83,14 +83,22 @@ const Row = ({ icon, Icon, label, sub, onPress, right, tk, danger, noBorder }) =
 // ── Language row — full-width, clean, professional ────────────────────────────
 const LangRow = ({ code, label, native, flag, desc, active, onPress, tk, isLast }) => {
   const scaleRef = useRef(new Animated.Value(1)).current;
+  // Hold the press-feedback handle so a rapid re-tap (or unmount mid-sequence)
+  // doesn't leave the animator finalising a dead value — the
+  // "stopTracking of undefined" trap.
+  const animHandle = useRef(null);
 
   const handlePress = () => {
-    Animated.sequence([
+    try { animHandle.current?.stop?.(); } catch {}
+    animHandle.current = Animated.sequence([
       Animated.timing(scaleRef, { toValue:0.97, duration:80, useNativeDriver:true }),
       Animated.spring(scaleRef, { toValue:1, tension:200, friction:10, useNativeDriver:true }),
-    ]).start();
+    ]);
+    animHandle.current.start();
     onPress();
   };
+
+  useEffect(() => () => { try { animHandle.current?.stop?.(); } catch {} }, []);
 
   return (
     <Animated.View style={{ transform:[{ scale:scaleRef }] }}>

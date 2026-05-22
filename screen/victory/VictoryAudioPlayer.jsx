@@ -65,14 +65,20 @@ function ReflectionPauseOverlay({ visible, remain, total, onSkip, accent = BLUE[
   // Backdrop fades in on activation so dismissal feels intentional.
   const backdrop = useRef(new Animated.Value(0)).current;
 
+  // Hold the backdrop fade handle so toggling visible (or unmount mid-fade)
+  // doesn't leave the animator finalising a dead Animated.Value — the
+  // "Cannot read property 'stopTracking' of undefined" trap.
+  const backdropHandle = useRef(null);
   useEffect(() => {
+    try { backdropHandle.current?.stop?.(); } catch {}
     if (!visible) {
       backdrop.setValue(0);
       return undefined;
     }
-    Animated.timing(backdrop, {
+    backdropHandle.current = Animated.timing(backdrop, {
       toValue: 1, duration: 260, useNativeDriver: true,
-    }).start();
+    });
+    backdropHandle.current.start();
 
     const ringLoop = (v, delay) =>
       Animated.loop(
@@ -105,8 +111,9 @@ function ReflectionPauseOverlay({ visible, remain, total, onSkip, accent = BLUE[
     loops.forEach((l) => l.start());
     pulseLoop.start();
     return () => {
-      loops.forEach((l) => l.stop());
-      pulseLoop.stop();
+      try { backdropHandle.current?.stop?.(); } catch { /* already done */ }
+      loops.forEach((l) => { try { l.stop(); } catch { /* already done */ } });
+      try { pulseLoop.stop(); } catch { /* already done */ }
     };
   }, [visible, r0, r1, r2, pulse, backdrop]);
 
@@ -967,10 +974,10 @@ const Visualiser = ({ playing }) => {
     );
     if (playing) loops.forEach((l) => l.start());
     else {
-      loops.forEach((l) => l.stop());
+      loops.forEach((l) => { try { l.stop(); } catch {} });
       bars.forEach((b) => b.setValue(0.18));
     }
-    return () => loops.forEach((l) => l.stop());
+    return () => loops.forEach((l) => { try { l.stop(); } catch { /* already done */ } });
   }, [playing]);    // eslint-disable-line
   return (
     <View style={s.viz}>

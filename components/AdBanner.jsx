@@ -21,6 +21,11 @@ export default function AdBanner() {
   const slideAnim = useRef(new Animated.Value(0.85)).current;  // scale anim for center modal
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const dismissed = useRef(new Set()).current;   // track dismissed banner IDs per session
+  // Track the in-flight enter/dismiss animation so a follow-up start() can
+  // stop the previous one cleanly. Without this, toggling visibility while
+  // an animation is mid-flight (or React reconnecting a frozen subtree) can
+  // surface as "Cannot read property 'stopTracking' of undefined".
+  const animHandle = useRef(null);
 
   const fetchBanner = useCallback(async () => {
     try {
@@ -52,20 +57,28 @@ export default function AdBanner() {
   // Animate in when visible changes
   useEffect(() => {
     if (visible) {
+      animHandle.current?.stop?.();
       slideAnim.setValue(0.85);
-      Animated.parallel([
+      animHandle.current = Animated.parallel([
         Animated.spring(slideAnim, { toValue: 1, tension: 80, friction: 9, useNativeDriver: true }),
         Animated.timing(fadeAnim,  { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]).start();
+      ]);
+      animHandle.current.start();
     }
   }, [visible]);
 
+  // Unmount-time cleanup so the engine never finalises a value owned by a
+  // GC'd component (the "stopTracking of undefined" trap).
+  useEffect(() => () => { try { animHandle.current?.stop?.(); } catch {} }, []);
+
   const dismiss = () => {
     if (banner) dismissed.add(banner.id);
-    Animated.parallel([
+    animHandle.current?.stop?.();
+    animHandle.current = Animated.parallel([
       Animated.timing(slideAnim, { toValue: 0.85, duration: 200, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       Animated.timing(fadeAnim,  { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => setVisible(false));
+    ]);
+    animHandle.current.start(() => setVisible(false));
   };
 
   const handleTap = () => {

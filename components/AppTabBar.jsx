@@ -45,18 +45,40 @@ export default function AppTabBar({ activeTab = 0, onTab, tk, labels, tabs }) {
   }
   const _anims = animsRef.current;
   const prevTab = useRef(activeTab);
+  // Track in-flight tab animations so we can stop them before starting new
+  // ones and on unmount. Without this, when react-native-screens reconnects
+  // a previously-frozen screen, React re-runs this effect — the new .start()
+  // tries to clean up the prior tracking node which was torn down during the
+  // offscreen interval, surfacing as "Cannot read property 'stopTracking' of
+  // undefined" inside commitHookPassiveMountEffects.
+  const handlesRef = useRef([]);
   const bg      = tk?.surface  || '#FFFFFF';
   const border  = tk?.border   || '#E8EAED';
   const muted   = tk?.textMuted|| '#9AA0AB';
 
   useEffect(() => {
+    // Stop any in-flight tab animations before kicking off new ones.
+    handlesRef.current.forEach((h) => { try { h?.stop?.(); } catch {} });
+    handlesRef.current = [];
+
     const prev = prevTab.current;
-    if (prev !== activeTab) {
-      Animated.timing(_anims[prev], { toValue: 0, duration: 160, useNativeDriver: true }).start();
+    if (prev !== activeTab && _anims[prev]) {
+      const out = Animated.timing(_anims[prev], { toValue: 0, duration: 160, useNativeDriver: true });
+      handlesRef.current.push(out);
+      out.start();
       prevTab.current = activeTab;
     }
-    Animated.spring(_anims[activeTab], { toValue: 1, tension: 140, friction: 9, useNativeDriver: true }).start();
+    if (_anims[activeTab]) {
+      const into = Animated.spring(_anims[activeTab], { toValue: 1, tension: 140, friction: 9, useNativeDriver: true });
+      handlesRef.current.push(into);
+      into.start();
+    }
   }, [activeTab]);
+
+  useEffect(() => () => {
+    handlesRef.current.forEach((h) => { try { h?.stop?.(); } catch {} });
+    handlesRef.current = [];
+  }, []);
 
   return (
     <View style={[s.bar, { backgroundColor: bg, borderTopColor: border }]}>

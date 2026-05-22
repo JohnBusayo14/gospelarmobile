@@ -50,6 +50,11 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
   const controlFade = useRef(new Animated.Value(1)).current;
   const scrollRef   = useRef(null);
   const ctrlTimer   = useRef(null);
+  // Hold the slide & control-fade handles so toggling visible (or unmounting
+  // mid-animation) doesn't leave the animator finalising a dead value — the
+  // "Cannot read property 'stopTracking' of undefined" trap.
+  const slideHandle   = useRef(null);
+  const ctrlFadeHandle = useRef(null);
   const rt = READ_THEMES[readTheme];
   const fs = FONT_SIZES[fontSizeIdx];
   const part = parts?.[partIndex];
@@ -57,20 +62,31 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
 
   useEffect(() => { if (visible) { setPartIndex(initialIndex); setScrollPct(0); } }, [visible, initialIndex]);
   useEffect(() => {
-    if (visible) Animated.spring(slideAnim, { toValue:0, tension:65, friction:12, useNativeDriver:true }).start();
-    else Animated.timing(slideAnim, { toValue:height, duration:260, useNativeDriver:true }).start();
+    try { slideHandle.current?.stop?.(); } catch {}
+    slideHandle.current = visible
+      ? Animated.spring(slideAnim, { toValue:0, tension:65, friction:12, useNativeDriver:true })
+      : Animated.timing(slideAnim, { toValue:height, duration:260, useNativeDriver:true });
+    slideHandle.current.start();
   }, [visible]);
 
   const showCtrl = () => {
     setShowControls(true);
-    Animated.timing(controlFade, { toValue:1, duration:180, useNativeDriver:true }).start();
+    try { ctrlFadeHandle.current?.stop?.(); } catch {}
+    ctrlFadeHandle.current = Animated.timing(controlFade, { toValue:1, duration:180, useNativeDriver:true });
+    ctrlFadeHandle.current.start();
     clearTimeout(ctrlTimer.current);
     ctrlTimer.current = setTimeout(() => {
-      Animated.timing(controlFade, { toValue:0, duration:400, useNativeDriver:true }).start();
+      try { ctrlFadeHandle.current?.stop?.(); } catch {}
+      ctrlFadeHandle.current = Animated.timing(controlFade, { toValue:0, duration:400, useNativeDriver:true });
+      ctrlFadeHandle.current.start();
       setShowControls(false);
     }, 3500);
   };
   useEffect(() => { if (visible) showCtrl(); return () => clearTimeout(ctrlTimer.current); }, [visible, partIndex]);
+  useEffect(() => () => {
+    try { slideHandle.current?.stop?.(); } catch {}
+    try { ctrlFadeHandle.current?.stop?.(); } catch {}
+  }, []);
 
   const goTo = (i) => {
     if (i<0||i>=total) return;
@@ -226,20 +242,25 @@ const rm = StyleSheet.create({
 const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }) => {
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
+  // Track the in-flight parallel so toggling visible (or unmount mid-flight)
+  // stops the previous run cleanly — avoids "stopTracking of undefined" when
+  // the animator finalises a value whose owner is gone.
+  const animHandle = useRef(null);
 
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue:1, tension:80, friction:10, useNativeDriver:true }),
-        Animated.timing(fadeAnim,  { toValue:1, duration:220, useNativeDriver:true }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(scaleAnim, { toValue:0.88, duration:180, useNativeDriver:true }),
-        Animated.timing(fadeAnim,  { toValue:0,    duration:180, useNativeDriver:true }),
-      ]).start();
-    }
+    try { animHandle.current?.stop?.(); } catch {}
+    animHandle.current = visible
+      ? Animated.parallel([
+          Animated.spring(scaleAnim, { toValue:1, tension:80, friction:10, useNativeDriver:true }),
+          Animated.timing(fadeAnim,  { toValue:1, duration:220, useNativeDriver:true }),
+        ])
+      : Animated.parallel([
+          Animated.timing(scaleAnim, { toValue:0.88, duration:180, useNativeDriver:true }),
+          Animated.timing(fadeAnim,  { toValue:0,    duration:180, useNativeDriver:true }),
+        ]);
+    animHandle.current.start();
   }, [visible]);
+  useEffect(() => () => { try { animHandle.current?.stop?.(); } catch {} }, []);
 
   return (
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
@@ -434,11 +455,17 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
   const [readMode, setReadMode] = useState(false);
   const rotAnim = useRef(new Animated.Value(index===0?1:0)).current;
   const spin    = rotAnim.interpolate({ inputRange:[0,1], outputRange:['0deg','180deg'] });
+  // Track the in-flight rotation so a rapid toggle (or unmount mid-spin)
+  // doesn't leave the animator finalising a dead value.
+  const rotHandle = useRef(null);
 
   const toggle = () => {
-    Animated.timing(rotAnim, { toValue:open?0:1, duration:220, useNativeDriver:true }).start();
+    try { rotHandle.current?.stop?.(); } catch {}
+    rotHandle.current = Animated.timing(rotAnim, { toValue:open?0:1, duration:220, useNativeDriver:true });
+    rotHandle.current.start();
     setOpen(v=>!v);
   };
+  useEffect(() => () => { try { rotHandle.current?.stop?.(); } catch {} }, []);
 
   return (
     <>
