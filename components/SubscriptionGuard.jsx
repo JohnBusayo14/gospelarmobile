@@ -4,10 +4,10 @@
 //   loading/unchecked  → spinner
 //   serverError        → retry
 //   isSubscribed       → render children (+ expiry warning)
-//   unsubscribed       → blur + centred 80% card with 3-step flow:
-//                          Step 1: choose plan (₦500 single / ₦1,000 all)
-//                          Step 2: (₦500 only) choose age category
-//                          Step 3: Paystack WebView → verify → success/fail
+//   unsubscribed       → blur + centred 80% card with plan + category steps,
+//                        then redirect to PaymentScreen (which opens the
+//                        provider's hosted checkout in the SYSTEM BROWSER —
+//                        no in-app WebView, for Google Play compliance).
 //
 // Category access enforcement:
 //   planType === 'all'    → all 4 categories unlocked
@@ -17,11 +17,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Animated,
-  Easing, ActivityIndicator, Platform, Modal, Dimensions,
+  Easing, ActivityIndicator, Platform, Dimensions,
   ScrollView,
 } from 'react-native';
 import { BlurView }        from 'expo-blur';
-import { WebView }         from 'react-native-webview';
 import { LinearGradient }  from 'expo-linear-gradient';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useTheme }        from '../context/ThemeContext';
@@ -38,10 +37,11 @@ const BLUE_MID    = '#1D4ED8';
 const BLUE_LIGHT  = '#EFF6FF';
 const PURPLE      = '#7C3AED';
 const PURPLE_DARK = '#5B21B6';
-// Paystack credentials live entirely on the backend now (PAYSTACK_SECRET_KEY).
-// The PaystackModal in this file is dead code — the active flow navigates to
-// PaymentScreen which hosts the WebView. Keep the constant out so a fresh
-// PR doesn't accidentally re-introduce the inline.js pattern.
+// Paystack credentials live entirely on the backend. This file is purely a
+// gate / paywall card — it routes unsubscribed users to PaymentScreen, which
+// hands off the actual payment to the system browser via Linking.openURL.
+// Do not re-introduce inline.js or in-app payment WebViews here; Google
+// Play's Payments policy forbids native WebView checkout for digital content.
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 // Format kobo (1/100 of NGN) → "₦500" / "₦1,000"
@@ -303,184 +303,6 @@ const ss = StyleSheet.create({
   ctaWrap:       { borderRadius: 14, overflow: 'hidden', shadowColor: BLUE, shadowOffset: { width:0, height:5 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 7 },
   cta:           { height: 50, alignItems: 'center', justifyContent: 'center' },
   ctaTxt:        { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.3 },
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PAYSTACK PAYMENT MODAL (bottom sheet)
-// ─────────────────────────────────────────────────────────────────────────────
-const PaystackModal = ({ visible, email, plan, category, onSuccess, onCancel, t }) => {
-  const [step, setStep]      = useState('webview');
-  const [failReason, setFR]  = useState('');           // ← surfaced in `failed` state
-  const slideAnim            = useRef(new Animated.Value(SH)).current;
-  // Hold the in-flight slide so a follow-up visibility toggle (or a
-  // react-native-screens reconnect) can stop it cleanly — otherwise the
-  // engine throws "stopTracking of undefined" when it tries to finalise
-  // a previously-attached tracking node that was torn down offscreen.
-  const slideHandle          = useRef(null);
-  const { verifyPayment }    = useSubscription();
-
-  useEffect(() => {
-    slideHandle.current?.stop?.();
-    if (visible) {
-      setStep('webview');
-      slideHandle.current = Animated.spring(slideAnim, { toValue: 0, tension: 65, friction: 12, useNativeDriver: true });
-    } else {
-      slideHandle.current = Animated.timing(slideAnim, { toValue: SH, duration: 260, useNativeDriver: true });
-    }
-    slideHandle.current.start();
-  }, [visible]);
-
-  useEffect(() => () => { try { slideHandle.current?.stop?.(); } catch {} }, []);
-
-  const amount    = plan?.kobo ?? 50000;
-  const planLabel = plan?.label ?? t('guard_standard', 'Standard');
-  // category is the age-group object (or null for all-access)
-  const catId     = plan?.id === 'all' ? 'all' : (category?.id || 'adult');
-
-  const html = `<!DOCTYPE html><html><head>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <style>*{margin:0;padding:0;box-sizing:border-box;}
-    body{background:#060E20;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}
-    .l{text-align:center;color:#fff;}
-    .s{width:44px;height:44px;border:4px solid rgba(255,255,255,.15);border-top-color:${BLUE};border-radius:50%;
-       animation:spin .8s linear infinite;margin:0 auto 14px;}
-    @keyframes spin{to{transform:rotate(360deg);}}p{color:rgba(255,255,255,.5);font-size:13px;}</style>
-    </head><body><div class="l"><div class="s"></div><p>Loading secure payment…</p></div>
-    <script src="https://js.paystack.co/v1/inline.js"></script>
-    <script>window.onload=function(){
-      PaystackPop.setup({
-        key:'${PAYSTACK_KEY}', email:'${email}', amount:${amount}, currency:'NGN',
-        ref:'Gospelar_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),
-        metadata:{custom_fields:[
-          {display_name:'Plan',variable_name:'plan',value:'${planLabel}'},
-          {display_name:'Category',variable_name:'category',value:'${catId}'}
-        ]},
-        onClose:function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'CANCELLED'}));},
-        callback:function(r){window.ReactNativeWebView.postMessage(JSON.stringify({type:'SUCCESS',reference:r.reference}));}
-      }).openIframe();
-    };</script></body></html>`;
-
-  const onMessage = useCallback(async (e) => {
-    try {
-      const data = JSON.parse(e.nativeEvent.data);
-      if (data.type === 'CANCELLED') { onCancel(); return; }
-      if (data.type === 'SUCCESS') {
-        setStep('verifying');
-        const result = await verifyPayment(data.reference, email, catId);
-        if (result.success) {
-          setStep('success');
-          setTimeout(onSuccess, 1800);
-        } else {
-          // Capture the structured server message so the user sees what's
-          // actually wrong (Paystack auth, email mismatch, unknown ref, etc.)
-          // instead of a generic "Please try again."
-          setFR(result.message || 'Payment could not be verified.');
-          setStep('failed');
-        }
-      }
-    } catch {}
-  }, [email, catId, verifyPayment, onSuccess, onCancel]);
-
-  if (!visible) return null;
-
-  const planColor = plan?.color ?? BLUE;
-
-  return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onCancel}>
-      <View style={pm.backdrop}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onCancel} />
-        <Animated.View style={[pm.sheet, { transform: [{ translateY: slideAnim }] }]}>
-          <View style={pm.handle} />
-
-          {/* Header */}
-          <View style={pm.header}>
-            <View style={[pm.headerIcon, { backgroundColor: planColor + '18' }]}>
-              <Text style={{ fontSize: 20 }}>{plan?.icon ?? '🔐'}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={pm.hTitle}>
-                {step === 'webview'   ? `${planLabel} — ${plan?.price ?? '₦500'}` :
-                 step === 'verifying' ? t('guard_verifying_payment', 'Verifying payment…') :
-                 step === 'success'   ? t('guard_access_granted', 'Access Granted! 🎉') : t('guard_payment_failed', 'Payment Failed')}
-              </Text>
-              <Text style={pm.hSub}>
-                {step === 'webview'   ? (catId === 'all'
-                    ? t('guard_unlock_all_300', 'Unlocking all categories · 300 days')
-                    : t('guard_category_300', 'Category: {label} · 300 days').replace('{label}', category?.label ?? catId)) :
-                 step === 'verifying' ? t('guard_confirming_paystack', 'Confirming with Paystack…') :
-                 step === 'success'   ? t('guard_sub_active', 'Your subscription is now active') : t('guard_try_again_msg', 'Please try again')}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onCancel} style={pm.closeBtn} activeOpacity={0.75}
-              accessibilityLabel="Close">
-              <ICONS.X color="#fff" size={18} sw={2.4} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ flex: 1 }}>
-            {step === 'webview' && (
-              <WebView source={{ html }} onMessage={onMessage}
-                javaScriptEnabled domStorageEnabled originWhitelist={['*']}
-                style={{ flex: 1, backgroundColor: '#060E20' }} />
-            )}
-            {step === 'verifying' && (
-              <View style={pm.stateBox}>
-                <ActivityIndicator color={planColor} size="large" />
-                <Text style={pm.stateTitle}>{t('guard_verifying_your_payment', 'Verifying your payment…')}</Text>
-                <Text style={pm.stateSub}>{t('guard_takes_few_seconds', 'This usually takes a few seconds.')}</Text>
-              </View>
-            )}
-            {step === 'success' && (
-              <View style={pm.stateBox}>
-                <View style={[pm.stateIcon, { backgroundColor: '#ECFDF5' }]}>
-                  <ICONS.CheckCircle color="#10B981" size={56} sw={2.25} />
-                </View>
-                <Text style={pm.stateTitle}>{t('guard_sub_activated', 'Subscription Activated!')}</Text>
-                <Text style={pm.stateSub}>
-                  {catId === 'all'
-                    ? t('guard_access_all_4', 'You now have access to all 4 categories!')
-                    : t('guard_access_category', 'You now have access to the {label} category!').replace('{label}', category?.label ?? catId)}
-                </Text>
-              </View>
-            )}
-            {step === 'failed' && (
-              <View style={pm.stateBox}>
-                <View style={[pm.stateIcon, { backgroundColor: '#FEE2E2', marginBottom: 16 }]}>
-                  <ICONS.AlertCircle color="#EF4444" size={56} sw={2.25} />
-                </View>
-                <Text style={pm.stateTitle}>{t('guard_payment_failed', 'Payment Failed')}</Text>
-                <Text style={pm.stateSub}>
-                  {failReason || t('guard_could_not_verify', "We couldn't verify your payment. Please try again.")}
-                </Text>
-                <TouchableOpacity onPress={() => { setFR(''); setStep('webview'); }}
-                  style={[pm.retryBtn, { backgroundColor: planColor }]} activeOpacity={0.85}>
-                  <Text style={pm.retryTxt}>{t('guard_try_again', 'Try Again')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
-
-const pm = StyleSheet.create({
-  backdrop:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
-  sheet:      { height: SH * 0.84, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: '#fff', overflow: 'hidden' },
-  handle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E8EAED', alignSelf: 'center', marginTop: 12, marginBottom: 4 },
-  header:     { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F2F5' },
-  headerIcon: { width: 42, height: 42, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  hTitle:     { fontSize: 15, fontWeight: '900', color: '#0D0F12' },
-  hSub:       { fontSize: 11, color: '#9AA0AB', marginTop: 2 },
-  closeBtn:   { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F0F2F5', justifyContent: 'center', alignItems: 'center' },
-  closeX:     { fontSize: 14, fontWeight: '700', color: '#4A5568' },
-  stateBox:   { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  stateIcon:  { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  stateTitle: { fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 10, color: '#0D0F12' },
-  stateSub:   { fontSize: 14, lineHeight: 21, textAlign: 'center', color: '#6B7280' },
-  retryBtn:   { marginTop: 24, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 40 },
-  retryTxt:   { color: '#fff', fontSize: 15, fontWeight: '800' },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -3,8 +3,13 @@
 // Category-gated subscription flow:
 //   Step 1 → Choose a plan (single category ₦500 OR all-access ₦1000)
 //   Step 2 → Enter email
-//   Step 3 → Paystack WebView
-//   Step 4 → Verify + persist category to AsyncStorage
+//   Step 3 → Choose payment provider (Paystack / Flutterwave / Stripe)
+//   Step 4 → ExternalCheckoutStep opens the provider's hosted checkout in the
+//            SYSTEM BROWSER (Linking.openURL — NOT a native WebView, for Google
+//            Play Payments-policy compliance). User pays in browser; backend's
+//            /api/payments/callback redirects to gospelar://payment-success
+//            which wakes the app and triggers verify.
+//   Step 5 → Verify + persist category to AsyncStorage
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -13,9 +18,9 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, StatusBar, ActivityIndicator,
   KeyboardAvoidingView, Platform, Animated, Pressable,
+  Linking, AppState,
 } from 'react-native';
 import { SafeAreaView }    from 'react-native-safe-area-context';
-import { WebView }         from 'react-native-webview';
 import LottieView          from 'lottie-react-native';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -31,10 +36,14 @@ const BLUE_DEEP  = '#1D4ED8';
 const BLUE_LIGHT = '#EFF6FF';
 const PURPLE     = '#7C3AED';
 
-// Paystack credentials live entirely on the backend now. The mobile app
-// asks /api/payments/initialize (which uses PAYSTACK_SECRET_KEY server-side)
-// and opens the returned authorization_url in a WebView. No public key in
-// the bundle, no client-side amount construction, no inline.js.
+// Paystack/Flutterwave/Stripe payment is fully server-driven. The mobile app
+// asks /api/payments/initialize (which uses the provider's server-side secret
+// key) and opens the returned authorization_url in the SYSTEM BROWSER via
+// Linking.openURL — NOT in an in-app WebView. This complies with Google Play's
+// Payments policy, which prohibits taking digital-content payments inside a
+// native WebView. The user pays in their browser, the backend's callback
+// redirects them back to the app via a gospelar:// deep link, and the app
+// confirms the subscription server-side with POST /api/verify-payment.
 
 // Format kobo (1/100 of NGN) → "₦500" / "₦1,000"
 const formatNaira = (kobo) => '₦' + (Math.round(kobo / 100)).toLocaleString('en-NG');
@@ -523,35 +532,50 @@ const es = StyleSheet.create({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Paystack WebView — fully server-driven.
+// ExternalCheckoutStep — Google-Play-compliant external-browser payment flow.
 //
 // Flow:
 //   1. On mount, POST /api/payments/initialize with { email, plan, category,
-//      book_id }. Backend resolves the price from subscription_plans (so the
-//      amount can never be tampered with on the device), calls Paystack with
-//      the secret key, and returns { authorization_url, reference }.
-//   2. WebView opens authorization_url. User completes payment in Paystack's
-//      hosted checkout — no public key, no inline.js, nothing custom.
-//   3. Paystack redirects to callback_url (api.gospelar.com/api/payments/callback
-//      with ?reference=…). onShouldStartLoadWithRequest intercepts that URL,
-//      pulls the reference out, and calls onSuccess(reference).
-//   4. Caller calls /api/verify-payment with that reference to activate.
+//      book_id, provider }. Backend resolves the price from subscription_plans
+//      (so the amount can never be tampered with on the device), calls the
+//      provider with its server-side secret key, and returns
+//      { authorization_url, reference }.
+//   2. App opens authorization_url in the system browser via Linking.openURL
+//      — NO in-app WebView, because Google Play's Payments policy forbids
+//      taking digital-content payments inside a native WebView.
+//   3. User pays in their browser. Provider redirects to our backend's
+//      /api/payments/callback, which serves an HTML page that redirects to
+//      gospelar://payment-success?ref=<reference>&status=success.
+//   4. The custom-scheme deep link wakes the app. The Linking listener picks
+//      up the URL, extracts ref, and calls onSuccess(ref).
+//   5. As a robustness fallback, AppState foreground events also trigger a
+//      verify attempt (in case the deep link is swallowed by an aggressive
+//      Android browser), and a manual "I've paid — Check status" button is
+//      always visible.
+//   6. onSuccess(ref) is wired (unchanged) to call POST /api/verify-payment,
+//      which writes the activation to subscribers DB.
 // ─────────────────────────────────────────────────────────────────────────────
-const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack', onSuccess, onCancel, t }) => {
-  const [authUrl, setAuthUrl]       = useState(null);
-  const [initError, setInitError]   = useState('');
-  const [pageLoading, setPageLoading] = useState(true);
-  const refSeenRef = useRef(null);   // de-dup: don't fire onSuccess twice
+const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'paystack', onSuccess, onCancel, t }) => {
+  const [authUrl,   setAuthUrl]   = useState(null);
+  const [reference, setReference] = useState(null);
+  const [initError, setInitError] = useState('');
+  const [opening,   setOpening]   = useState(false);
+  const [opened,    setOpened]    = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const refSeenRef = useRef(null);              // de-dup so onSuccess fires once
+  const appStateRef = useRef(AppState.currentState);
 
-  // Step 1 — ask backend to initialize the transaction with the chosen
-  // provider. Each provider returns its own hosted-checkout authorization_url
-  // and a reference (Paystack ref / FW tx_ref / Stripe session id) that the
-  // backend will accept for verify-payment.
+  // Step 1 — ask backend to initialize the transaction. Each provider returns
+  // its own hosted-checkout authorization_url and a reference (Paystack ref /
+  // Flutterwave tx_ref / Stripe session id) that POST /api/verify-payment
+  // will accept.
   useEffect(() => {
     let cancelled = false;
     setAuthUrl(null);
+    setReference(null);
     setInitError('');
-    setPageLoading(true);
+    setOpened(false);
+    refSeenRef.current = null;
 
     fetch(`${API_BASE_URL}/api/payments/initialize`, {
       method:  'POST',
@@ -569,6 +593,7 @@ const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack',
         if (cancelled) return;
         if (data.status === 'success' && data.authorization_url) {
           setAuthUrl(data.authorization_url);
+          setReference(data.reference);
         } else {
           setInitError(data.message || `Init failed (HTTP ${r.status})`);
         }
@@ -578,37 +603,74 @@ const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack',
     return () => { cancelled = true; };
   }, [email, plan?.id, category?.id, bookId, provider]);
 
-  // Step 3 — intercept navigation back to our callback URL. Pulling the ref
-  // out of the URL is more reliable than waiting for a postMessage that
-  // might not fire if the user closes the WebView mid-redirect.
-  // Each provider sends a different query param back:
-  //   Paystack    → reference= / trxref=
-  //   Flutterwave → tx_ref= (transaction_id= also present for direct verify)
-  //   Stripe      → session_id= (always starts with cs_)
-  const onNavChange = useCallback((navState) => {
-    const url = navState.url || '';
-    if (url.includes('/api/payments/callback')) {
-      // Stripe cancellation comes back as ?cancelled=1
-      if (/[?&]cancelled=1\b/.test(url)) { onCancel(); return; }
-      const m = url.match(/(?:reference|trxref|tx_ref|session_id)=([^&#]+)/);
-      const ref = m ? decodeURIComponent(m[1]) : null;
-      if (ref && refSeenRef.current !== ref) {
-        refSeenRef.current = ref;
-        onSuccess(ref);
-      }
-      return;
-    }
-    // User tapped Cancel / Close on a checkout page.
-    if (
-      url.includes('paystack.shop/cancelled') ||
-      url.includes('checkout.paystack.com/cancelled') ||
-      url.includes('flutterwave.com/v3/redirect?status=cancelled')
-    ) {
-      onCancel();
-    }
-  }, [onSuccess, onCancel]);
+  // Confirm helper — de-duped so a deep link + AppState resume don't both
+  // fire verify twice. onSuccess (the caller) calls /api/verify-payment.
+  const confirmPayment = useCallback((refOverride) => {
+    const ref = refOverride || reference;
+    if (!ref) return;
+    if (refSeenRef.current === ref) return;
+    if (verifying) return;
+    refSeenRef.current = ref;
+    setVerifying(true);
+    onSuccess(ref);
+  }, [reference, verifying, onSuccess]);
 
-  // Init failed (no key, network down, Paystack rejected) — show a recoverable error.
+  // Step 2 — open the hosted checkout in the system browser as soon as the
+  // backend returns the authorization_url. Only fire once per init.
+  useEffect(() => {
+    if (!authUrl || opened || opening) return;
+    setOpening(true);
+    Linking.openURL(authUrl)
+      .then(() => setOpened(true))
+      .catch((e) => setInitError(e?.message || 'Could not open the payment page in your browser.'))
+      .finally(() => setOpening(false));
+  }, [authUrl, opened, opening]);
+
+  // Step 4 — handle the deep link that wakes the app after payment. Matches
+  // both the custom scheme (gospelar://payment-success) and the universal
+  // https variant (https://gospelar.com/payment-success) in case Android
+  // routes the link through the autoVerify https intent-filter instead.
+  useEffect(() => {
+    const handleUrl = ({ url }) => {
+      if (!url) return;
+      const isPaymentUrl =
+        url.startsWith('gospelar://payment-success') ||
+        /gospelar\.com\/payment-success/i.test(url);
+      if (!isPaymentUrl) return;
+      if (/[?&]status=cancelled/i.test(url)) { onCancel(); return; }
+      if (/[?&]status=failed/i.test(url)) {
+        setInitError(t('pay_failed_msg', 'Payment was not completed. You can try again.'));
+        return;
+      }
+      const m = url.match(/[?&](?:ref|reference|trxref|tx_ref|session_id)=([^&#]+)/);
+      const refFromUrl = m ? decodeURIComponent(m[1]) : null;
+      confirmPayment(refFromUrl || reference);
+    };
+    const sub = Linking.addEventListener('url', handleUrl);
+    // Cover the cold-start case where the OS opens the app from a fresh
+    // deep link rather than resuming a backgrounded instance.
+    Linking.getInitialURL().then((url) => { if (url) handleUrl({ url }); });
+    return () => sub.remove();
+  }, [reference, confirmPayment, onCancel, t]);
+
+  // Step 5 — robustness fallback: if the user returns to the app via the
+  // task switcher instead of the deep link, attempt to verify on foreground.
+  // Idempotent: /api/verify-payment de-dupes by reference at the DB layer,
+  // and refSeenRef gates the second client-side call.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      const wasBackgrounded = /inactive|background/.test(appStateRef.current);
+      appStateRef.current = nextState;
+      if (wasBackgrounded && nextState === 'active' && opened && reference) {
+        // Small delay lets the deep link listener fire first (preferred path),
+        // then this only does work if the deep link didn't arrive.
+        setTimeout(() => confirmPayment(), 400);
+      }
+    });
+    return () => sub.remove();
+  }, [opened, reference, confirmPayment]);
+
+  // Init failed (no key, network down, provider rejected) — show recoverable error.
   if (initError) {
     return (
       <View style={{ flex: 1, backgroundColor: '#060E20', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 }}>
@@ -627,38 +689,63 @@ const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack',
     );
   }
 
+  // Pre-browser-open: initializing transaction with backend.
+  if (!opened) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#060E20', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <ActivityIndicator size="large" color={BLUE} />
+        <Text style={{ color: 'rgba(255,255,255,.7)', fontSize: 14, fontWeight: '600' }}>
+          {t('pay_opening_secure', 'Opening secure payment...')}
+        </Text>
+      </View>
+    );
+  }
+
+  // Browser opened: user is paying. We're waiting for the deep link / AppState
+  // wakeup to confirm. Manual "I've paid" button is always available as a
+  // belt-and-braces escape hatch.
   return (
-    <View style={{ flex: 1, backgroundColor: '#060E20' }}>
-      {authUrl ? (
-        <WebView
-          source={{ uri: authUrl }}
-          onNavigationStateChange={onNavChange}
-          onLoadEnd={() => setPageLoading(false)}
-          onError={(e) => {
-            const desc = e?.nativeEvent?.description || '';
-            setPageLoading(false);
-            setInitError(desc || t('pay_webview_error', 'Payment page failed to load. Check your connection and try again.'));
-          }}
-          onHttpError={(e) => {
-            const status = e?.nativeEvent?.statusCode;
-            setPageLoading(false);
-            setInitError(t('pay_webview_http_error', `Payment provider returned an error (HTTP ${status || '?'}). Please try again.`));
-          }}
-          renderError={() => null}
-          javaScriptEnabled
-          domStorageEnabled
-          startInLoadingState={false}
-          style={{ flex: 1, backgroundColor: '#060E20' }}
-        />
-      ) : null}
-      {(pageLoading || !authUrl) && (
-        <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: '#060E20', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <ActivityIndicator size="large" color={BLUE} />
-          <Text style={{ color: 'rgba(255,255,255,.7)', fontSize: 14, fontWeight: '600' }}>
-            {t('pay_opening_secure', 'Opening secure payment...')}
-          </Text>
+    <View style={{ flex: 1, backgroundColor: '#060E20', padding: 26, justifyContent: 'center' }}>
+      <View style={{ alignItems: 'center', gap: 16 }}>
+        <View style={{
+          width: 64, height: 64, borderRadius: 32,
+          backgroundColor: 'rgba(26,86,219,0.18)',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <ICONS.Lock color={BLUE} size={28} sw={2.25} />
         </View>
-      )}
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', textAlign: 'center', letterSpacing: -0.2 }}>
+          {t('pay_complete_in_browser', 'Complete your payment in the browser')}
+        </Text>
+        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13.5, textAlign: 'center', lineHeight: 20, marginBottom: 6 }}>
+          {t('pay_browser_help', "We've opened the secure checkout page in your browser. Finish paying there, then return here — we'll confirm your subscription automatically.")}
+        </Text>
+
+        <View style={{ width: '100%', maxWidth: 340 }}>
+          <PrimaryCTA
+            label={verifying
+              ? t('pay_checking', 'Checking…')
+              : t('pay_ive_paid', "I've paid — Check status")}
+            onPress={() => confirmPayment()}
+            disabled={verifying || !reference}
+          />
+        </View>
+
+        <TouchableOpacity
+          onPress={() => { if (authUrl) Linking.openURL(authUrl).catch(() => {}); }}
+          style={{ marginTop: 4, paddingHorizontal: 12, paddingVertical: 8 }}
+        >
+          <Text style={{ color: BLUE, fontSize: 13, fontWeight: '700' }}>
+            {t('pay_reopen_browser', 'Reopen payment page')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onCancel} style={{ marginTop: 2, paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, fontWeight: '700' }}>
+            {t('btn_cancel', 'Cancel')}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -1051,7 +1138,7 @@ export default function PaymentScreen({ navigation, route }) {
       {!isBookFlow && (step === 'plan' || step === 'email') && <StepDots step={step} tk={tk} />}
 
       {step === 'webview' && (
-        <PaystackWebView
+        <ExternalCheckoutStep
           email={email}
           plan={plan}
           category={category}
