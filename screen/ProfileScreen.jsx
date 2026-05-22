@@ -160,7 +160,7 @@ export default function ProfileScreen({navigation}) {
 
   const handleLangChange=(code)=>{setLang(code);if(email)fetch(`${API}/api/profile/${encodeURIComponent(email)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({lang_pref:code})}).catch(()=>{});};
   const handleThemeToggle=()=>{toggleTheme();if(email)fetch(`${API}/api/profile/${encodeURIComponent(email)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({dark_mode:!isDark})}).catch(()=>{});};
-  const handleLogout=()=>{Alert.alert(t('sign_out','Sign Out'),t('set_signout_confirm','Are you sure?'),[{text:t('btn_cancel','Cancel'),style:'cancel'},{text:t('sign_out','Sign Out'),style:'destructive',onPress:async()=>{await AsyncStorage.multiRemove(['userEmail','userToken']);navigation.reset({index:0,routes:[{name:'HomeScreen'}]});}}]);};
+  const handleLogout=()=>{Alert.alert(t('sign_out','Sign Out'),t('set_signout_confirm','Are you sure?'),[{text:t('btn_cancel','Cancel'),style:'cancel'},{text:t('sign_out','Sign Out'),style:'destructive',onPress:async()=>{await AsyncStorage.multiRemove(['userEmail','userToken']);navigation.reset({index:0,routes:[{name:'Login'}]});}}]);};
 
   const firstLetter=(displayName||email||'?')[0].toUpperCase();
 

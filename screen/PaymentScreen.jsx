@@ -634,6 +634,17 @@ const PaystackWebView = ({ email, plan, category, bookId, provider = 'paystack',
           source={{ uri: authUrl }}
           onNavigationStateChange={onNavChange}
           onLoadEnd={() => setPageLoading(false)}
+          onError={(e) => {
+            const desc = e?.nativeEvent?.description || '';
+            setPageLoading(false);
+            setInitError(desc || t('pay_webview_error', 'Payment page failed to load. Check your connection and try again.'));
+          }}
+          onHttpError={(e) => {
+            const status = e?.nativeEvent?.statusCode;
+            setPageLoading(false);
+            setInitError(t('pay_webview_http_error', `Payment provider returned an error (HTTP ${status || '?'}). Please try again.`));
+          }}
+          renderError={() => null}
           javaScriptEnabled
           domStorageEnabled
           startInLoadingState={false}

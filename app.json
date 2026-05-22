@@ -32,7 +32,10 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "VIBRATE"
       ],
       "googleServicesFile": "./google-services.json",
       "package": "com.gospelar.sundayschool",
@@ -60,6 +63,19 @@
           "sounds": [
             "./assets/notification.wav"
           ]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Gospelar needs access to your photos so you can upload a profile picture for your Gospeler ID card."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Gospelar needs access to your media library to save downloaded content.",
+          "savePhotosPermission": "Gospelar needs permission to save images to your device."
         }
       ]
     ],
