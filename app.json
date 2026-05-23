@@ -17,7 +17,7 @@
     "scheme": "gospelar",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gospelar.sundayschool",
+      "bundleIdentifier": "com.gospelar.app",
       "associatedDomains": [
         "applinks:gospelar.com",
         "applinks:www.gospelar.com"
@@ -38,11 +38,10 @@
         "VIBRATE"
       ],
       "googleServicesFile": "./google-services.json",
-      "package": "com.gospelar.sundayschool",
+      "package": "com.gospelar.app",
       "intentFilters": [
         {
           "action": "VIEW",
-          "autoVerify": true,
           "data": [
             { "scheme": "https", "host": "gospelar.com" },
             { "scheme": "https", "host": "www.gospelar.com" }

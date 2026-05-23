@@ -1,13 +1,32 @@
 {
   "project_info": {
-    "project_number": "528770650363",
-    "project_id": "gospeler-3ff1d",
-    "storage_bucket": "gospeler-3ff1d.firebasestorage.app"
+    "project_number": "43746376664",
+    "project_id": "gospelar-68c4f",
+    "storage_bucket": "gospelar-68c4f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:528770650363:android:91280b24dd88ca7136205e",
+        "mobilesdk_app_id": "1:43746376664:android:9f8d0f01afc11e68f510ad",
+        "android_client_info": {
+          "package_name": "com.gospelar.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhnesfvYFGJocB675MflG95GgyveUom8Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:43746376664:android:265beef9db859bfcf510ad",
         "android_client_info": {
           "package_name": "com.gospelar.sundayschool"
         }
@@ -15,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyACsb20eDNhq5mvLfgMKG3eJ34bQXoMQuo"
+          "current_key": "AIzaSyBhnesfvYFGJocB675MflG95GgyveUom8Y"
         }
       ],
       "services": {
