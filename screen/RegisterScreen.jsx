@@ -8,7 +8,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, ScrollView, Dimensions,
-  Animated, StatusBar, ActivityIndicator, Platform, Pressable
+  Animated, StatusBar, ActivityIndicator, Platform, Pressable, Alert,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -167,38 +167,136 @@ export default function RegisterScreen({ navigation }) {
     return () => clearTimeout(handle);
   }, [churchCode, role]);
 
+  // Persist session and navigate forward. Used by both the happy path and the
+  // recovery path (where we detect that a prior network-failed registration
+  // actually succeeded server-side and silently sign the user in).
+  const finishApprovedSession = async (data) => {
+    await AsyncStorage.multiSet([
+      ['userEmail', data.user.email],
+      ['userToken', String(data.token || '')],
+      ['userName',  data.user.full_name || ''],
+      ['userRole',  data.user.role || 'student'],
+    ]);
+    navigation.reset({ index: 0, routes: [{ name: 'Library' }] });
+  };
+
+  // Recovery: if registration's response was lost in transit but the account
+  // was actually created, try to log in with the same credentials. Returns:
+  //   { type: 'logged-in', data }  → token issued, sign them in
+  //   { type: 'pending'  , data }  → teacher account exists but awaiting approval
+  //   { type: 'failed' }            → credentials don't match an existing account
+  const tryRecoverViaLogin = async (emailLc, pw) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 60_000);
+      const res  = await fetch(`${API}/api/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: emailLc, password: pw }),
+        signal:  controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.token) return { type: 'logged-in', data };
+      // Teacher pending approval — registration succeeded, just no token yet.
+      if (res.status === 403 && (data.error === 'pending' || /approval/i.test(data.message || ''))) {
+        return { type: 'pending', data };
+      }
+      return { type: 'failed', data };
+    } catch {
+      return { type: 'failed' };
+    }
+  };
+
   const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
+
+    const emailLc = email.trim().toLowerCase();
+    const pw      = password;
+
+    // Explicit 60s timeout so the request gives up at a known boundary
+    // (matches the axios client's REQUEST_TIMEOUT_MS in services/api.js).
+    // Without this, a slow backend cold-start can leave the request hanging
+    // indefinitely while the user assumes the app is frozen.
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 60_000);
+
     try {
       const res  = await fetch(`${API}/api/auth/register`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          email:       email.trim().toLowerCase(),
-          password,
+          email:       emailLc,
+          password:    pw,
           full_name:   fullName.trim(),
           role,
           church_code: role === 'teacher' ? churchCode.trim().toUpperCase() : undefined,
         }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrors({ form: data.error || t('register_failed', 'Registration failed.') });
+      clearTimeout(timeoutId);
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        // Teacher pending — backend returns 201 with no token. Don't try to
+        // persist an undefined token (AsyncStorage rejects); show the message
+        // and bounce them back to Login so they can return once approved.
+        if (data.pending || data.approval_status === 'pending' || !data.token) {
+          Alert.alert(
+            t('register_pending_title', 'Application submitted'),
+            data.message || t('register_pending_msg',
+              'Your account is awaiting approval. You will be able to sign in once your church admin approves it.'),
+            [{ text: t('btn_ok', 'OK'), onPress: () => navigation.replace('Login') }],
+          );
+          return;
+        }
+        await finishApprovedSession(data);
         return;
       }
-      // Persist session
-      await AsyncStorage.multiSet([
-        ['userEmail', data.user.email],
-        ['userToken', data.token],
-        ['userName',  data.user.full_name || ''],
-        ['userRole',  data.user.role || 'student'],
-      ]);
-      // Everyone — students and teachers — lands on Library after sign-up.
-      // From there, tapping a locked book opens PaymentScreen (with a back
-      // arrow back to Library), and tapping an unlocked book opens it.
-      navigation.reset({ index: 0, routes: [{ name: 'Library' }] });
+
+      // 409 — the email is already on file. This is often the *second tap*
+      // after a network-failed first attempt that DID create the account.
+      // If the user's credentials match the existing record, sign them in
+      // silently. Otherwise it's a real "different person owns this email"
+      // case and we tell them to sign in or use a different email.
+      if (res.status === 409) {
+        const rec = await tryRecoverViaLogin(emailLc, pw);
+        if (rec.type === 'logged-in') { await finishApprovedSession(rec.data); return; }
+        if (rec.type === 'pending') {
+          Alert.alert(
+            t('register_pending_title', 'Application submitted'),
+            rec.data?.message || t('register_pending_msg',
+              'Your account is awaiting approval. You will be able to sign in once your church admin approves it.'),
+            [{ text: t('btn_ok', 'OK'), onPress: () => navigation.replace('Login') }],
+          );
+          return;
+        }
+        // Account truly belongs to someone else, or the password the user
+        // re-typed differs from what they used originally.
+        setErrors({ form: t('register_exists_signin',
+          "An account with this email already exists. If it's yours, tap 'Sign In' below — or use a different email.") });
+        return;
+      }
+
+      setErrors({ form: data.error || t('register_failed', 'Registration failed.') });
     } catch (e) {
+      clearTimeout(timeoutId);
+      // Network error, abort, or response-body read failure. The request MAY
+      // have reached the server and created the account — try to confirm by
+      // logging in with the same credentials before showing a network error.
+      const rec = await tryRecoverViaLogin(emailLc, pw);
+      if (rec.type === 'logged-in') { await finishApprovedSession(rec.data); return; }
+      if (rec.type === 'pending') {
+        Alert.alert(
+          t('register_pending_title', 'Application submitted'),
+          rec.data?.message || t('register_pending_msg',
+            'Your account is awaiting approval. You will be able to sign in once your church admin approves it.'),
+          [{ text: t('btn_ok', 'OK'), onPress: () => navigation.replace('Login') }],
+        );
+        return;
+      }
       setErrors({ form: t('err_network', 'Network error. Please check your connection.') });
     } finally {
       setLoading(false);
