@@ -4,11 +4,14 @@
 //   Step 1 → Choose a plan (single category ₦500 OR all-access ₦1000)
 //   Step 2 → Enter email
 //   Step 3 → Choose payment provider (Paystack / Flutterwave / Stripe)
-//   Step 4 → ExternalCheckoutStep opens the provider's hosted checkout in the
-//            SYSTEM BROWSER (Linking.openURL — NOT a native WebView, for Google
-//            Play Payments-policy compliance). User pays in browser; backend's
-//            /api/payments/callback redirects to gospelar://payment-success
-//            which wakes the app and triggers verify.
+//   Step 4 → ExternalCheckoutStep opens the provider's hosted checkout in a
+//            Chrome Custom Tab on Android / ASWebAuthenticationSession on iOS
+//            via WebBrowser.openAuthSessionAsync — visually in-app, but Google
+//            Play classifies it as the system browser (not a native WebView)
+//            so the Payments-policy restriction does NOT apply. The tab auto-
+//            closes when the backend's /api/payments/callback redirects to
+//            gospelar://payment-success?ref=…&status=success; the session
+//            promise resolves with that URL and we kick off verify.
 //   Step 5 → Verify + persist category to AsyncStorage
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -21,6 +24,7 @@ import {
   Linking, AppState,
 } from 'react-native';
 import { SafeAreaView }    from 'react-native-safe-area-context';
+import * as WebBrowser     from 'expo-web-browser';
 import LottieView          from 'lottie-react-native';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -532,38 +536,42 @@ const es = StyleSheet.create({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ExternalCheckoutStep — Google-Play-compliant external-browser payment flow.
+// ExternalCheckoutStep — Google-Play-compliant in-app-browser payment flow.
 //
-// Flow:
-//   1. On mount, POST /api/payments/initialize with { email, plan, category,
-//      book_id, provider }. Backend resolves the price from subscription_plans
-//      (so the amount can never be tampered with on the device), calls the
-//      provider with its server-side secret key, and returns
-//      { authorization_url, reference }.
-//   2. App opens authorization_url in the system browser via Linking.openURL
-//      — NO in-app WebView, because Google Play's Payments policy forbids
-//      taking digital-content payments inside a native WebView.
-//   3. User pays in their browser. Provider redirects to our backend's
-//      /api/payments/callback, which serves an HTML page that redirects to
-//      gospelar://payment-success?ref=<reference>&status=success.
-//   4. The custom-scheme deep link wakes the app. The Linking listener picks
-//      up the URL, extracts ref, and calls onSuccess(ref).
-//   5. As a robustness fallback, AppState foreground events also trigger a
-//      verify attempt (in case the deep link is swallowed by an aggressive
-//      Android browser), and a manual "I've paid — Check status" button is
-//      always visible.
-//   6. onSuccess(ref) is wired (unchanged) to call POST /api/verify-payment,
-//      which writes the activation to subscribers DB.
+// Architecture:
+//   The provider's hosted checkout (Paystack / Flutterwave / Stripe) opens
+//   inside a Chrome Custom Tab on Android (or ASWebAuthenticationSession on
+//   iOS) via WebBrowser.openAuthSessionAsync. Google Play classifies this as
+//   the system browser — NOT a native WebView — so the Payments policy
+//   restriction on in-app digital-content checkout does not apply. Visually
+//   it feels in-app: the tab slides up over PaymentScreen, the user pays,
+//   and the tab auto-dismisses the instant the browser navigates to our
+//   redirect URL (gospelar://payment-success?ref=…). The session promise
+//   resolves with result.url, and we hand that to handleReturnUrl which
+//   parses the reference and triggers POST /api/verify-payment.
+//
+// Three independent confirmation paths so a flaky environment can't strand
+// a paid user:
+//   1. WebBrowser auth-session result (the happy path — fires on auto-close
+//      when the redirect URL is hit).
+//   2. Linking 'url' listener (catches the case where the user reopens the
+//      tab via the "Reopen" button — Linking.openURL bypass — or where the
+//      OS routes the deep link via the autoVerify https intent-filter).
+//   3. AppState foreground recheck (final fallback if the user returns
+//      via the task switcher without the redirect ever firing).
+//
+// All three converge on confirmPayment(ref), which is de-duped via
+// refSeenRef so only ONE /api/verify-payment call goes out per reference.
 // ─────────────────────────────────────────────────────────────────────────────
 const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'paystack', onSuccess, onCancel, t }) => {
-  const [authUrl,   setAuthUrl]   = useState(null);
-  const [reference, setReference] = useState(null);
-  const [initError, setInitError] = useState('');
-  const [opening,   setOpening]   = useState(false);
-  const [opened,    setOpened]    = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const refSeenRef = useRef(null);              // de-dup so onSuccess fires once
-  const appStateRef = useRef(AppState.currentState);
+  const [authUrl,    setAuthUrl]    = useState(null);
+  const [reference,  setReference]  = useState(null);
+  const [initError,  setInitError]  = useState('');
+  const [sessionRan, setSessionRan] = useState(false);   // auth-session resolved (success OR dismissed)
+  const [verifying,  setVerifying]  = useState(false);
+  const refSeenRef         = useRef(null);               // de-dup so onSuccess fires once
+  const sessionStartedRef  = useRef(false);              // ensure openAuthSessionAsync only fires once per init
+  const appStateRef        = useRef(AppState.currentState);
 
   // Step 1 — ask backend to initialize the transaction. Each provider returns
   // its own hosted-checkout authorization_url and a reference (Paystack ref /
@@ -574,8 +582,9 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
     setAuthUrl(null);
     setReference(null);
     setInitError('');
-    setOpened(false);
+    setSessionRan(false);
     refSeenRef.current = null;
+    sessionStartedRef.current = false;
 
     fetch(`${API_BASE_URL}/api/payments/initialize`, {
       method:  'POST',
@@ -603,8 +612,7 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
     return () => { cancelled = true; };
   }, [email, plan?.id, category?.id, bookId, provider]);
 
-  // Confirm helper — de-duped so a deep link + AppState resume don't both
-  // fire verify twice. onSuccess (the caller) calls /api/verify-payment.
+  // De-duped verify trigger. All three confirmation paths funnel through here.
   const confirmPayment = useCallback((refOverride) => {
     const ref = refOverride || reference;
     if (!ref) return;
@@ -615,60 +623,107 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
     onSuccess(ref);
   }, [reference, verifying, onSuccess]);
 
-  // Step 2 — open the hosted checkout in the system browser as soon as the
-  // backend returns the authorization_url. Only fire once per init.
-  useEffect(() => {
-    if (!authUrl || opened || opening) return;
-    setOpening(true);
-    Linking.openURL(authUrl)
-      .then(() => setOpened(true))
-      .catch((e) => setInitError(e?.message || 'Could not open the payment page in your browser.'))
-      .finally(() => setOpening(false));
-  }, [authUrl, opened, opening]);
+  // Shared URL handler — invoked by the WebBrowser result, the Linking
+  // listener, and the cold-start getInitialURL check. Centralises the
+  // success / cancelled / failed branching so the three paths stay in sync.
+  const handleReturnUrl = useCallback((url) => {
+    if (!url) return;
+    if (/[?&]status=cancelled/i.test(url)) { onCancel(); return; }
+    if (/[?&]status=failed/i.test(url)) {
+      setInitError(t('pay_failed_msg', 'Payment was not completed. You can try again.'));
+      return;
+    }
+    const m = url.match(/[?&](?:ref|reference|trxref|tx_ref|session_id)=([^&#]+)/);
+    const refFromUrl = m ? decodeURIComponent(m[1]) : null;
+    confirmPayment(refFromUrl || reference);
+  }, [confirmPayment, reference, onCancel, t]);
 
-  // Step 4 — handle the deep link that wakes the app after payment. Matches
-  // both the custom scheme (gospelar://payment-success) and the universal
-  // https variant (https://gospelar.com/payment-success) in case Android
-  // routes the link through the autoVerify https intent-filter instead.
+  // Reopen the auth session — used by the "Reopen payment page" button after
+  // the user dismissed the first tab without paying. Same redirect URL and
+  // same handleReturnUrl convergence, so a successful return still funnels
+  // into a single verify call.
+  const reopenSession = useCallback(async () => {
+    if (!authUrl) return;
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, 'gospelar://payment-success', {
+        showInRecents:      false,
+        controlsColor:      '#FFFFFF',
+        toolbarColor:       '#060E20',
+        dismissButtonStyle: 'close',
+      });
+      if (result.type === 'success' && result.url) handleReturnUrl(result.url);
+    } catch (e) {
+      setInitError(e?.message || 'Could not reopen the payment page.');
+    }
+  }, [authUrl, handleReturnUrl]);
+
+  // Step 2 — open the hosted checkout in an in-app browser. Chrome Custom Tab
+  // on Android / ASWebAuthenticationSession on iOS. The redirect URL we hand
+  // it (gospelar://payment-success) matches our backend callback's redirect
+  // target; when the browser navigates there, the tab auto-closes and
+  // result.url contains the full deep link including ?ref=… and ?status=….
   useEffect(() => {
-    const handleUrl = ({ url }) => {
+    if (!authUrl || sessionStartedRef.current) return;
+    sessionStartedRef.current = true;
+    let unmounted = false;
+
+    WebBrowser.openAuthSessionAsync(authUrl, 'gospelar://payment-success', {
+      showInRecents:      false,
+      controlsColor:      '#FFFFFF',
+      toolbarColor:       '#060E20',
+      dismissButtonStyle: 'close',
+    })
+      .then((result) => {
+        if (unmounted) return;
+        setSessionRan(true);
+        if (result.type === 'success' && result.url) {
+          handleReturnUrl(result.url);
+        }
+        // 'cancel' / 'dismiss': user closed the tab manually without the
+        // redirect firing. We can't tell whether they paid. The Linking
+        // listener, AppState recheck, and manual "I've paid" button all
+        // remain in play below — any of them can still confirm.
+      })
+      .catch((e) => {
+        if (unmounted) return;
+        setSessionRan(true);
+        setInitError(e?.message || 'Could not open the payment page.');
+      });
+
+    return () => { unmounted = true; };
+  }, [authUrl, handleReturnUrl]);
+
+  // Step 3 — Linking listener. Covers the "Reopen via Linking.openURL"
+  // path (we still expose that as a manual fallback) plus the rare case
+  // where the OS dispatches the gospelar:// URL while the app is in the
+  // background and the auth-session has already resolved.
+  useEffect(() => {
+    const onUrl = ({ url }) => {
       if (!url) return;
       const isPaymentUrl =
         url.startsWith('gospelar://payment-success') ||
         /gospelar\.com\/payment-success/i.test(url);
-      if (!isPaymentUrl) return;
-      if (/[?&]status=cancelled/i.test(url)) { onCancel(); return; }
-      if (/[?&]status=failed/i.test(url)) {
-        setInitError(t('pay_failed_msg', 'Payment was not completed. You can try again.'));
-        return;
-      }
-      const m = url.match(/[?&](?:ref|reference|trxref|tx_ref|session_id)=([^&#]+)/);
-      const refFromUrl = m ? decodeURIComponent(m[1]) : null;
-      confirmPayment(refFromUrl || reference);
+      if (isPaymentUrl) handleReturnUrl(url);
     };
-    const sub = Linking.addEventListener('url', handleUrl);
-    // Cover the cold-start case where the OS opens the app from a fresh
-    // deep link rather than resuming a backgrounded instance.
-    Linking.getInitialURL().then((url) => { if (url) handleUrl({ url }); });
+    const sub = Linking.addEventListener('url', onUrl);
+    Linking.getInitialURL().then((url) => { if (url) onUrl({ url }); }).catch(() => {});
     return () => sub.remove();
-  }, [reference, confirmPayment, onCancel, t]);
+  }, [handleReturnUrl]);
 
-  // Step 5 — robustness fallback: if the user returns to the app via the
-  // task switcher instead of the deep link, attempt to verify on foreground.
-  // Idempotent: /api/verify-payment de-dupes by reference at the DB layer,
-  // and refSeenRef gates the second client-side call.
+  // Step 4 — AppState foreground recheck. The 400 ms grace lets the deep
+  // link listener fire first (preferred path); only does work if neither
+  // the auth-session callback nor the deep link arrived. Idempotent —
+  // /api/verify-payment de-dupes by reference at the DB layer too.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
       const wasBackgrounded = /inactive|background/.test(appStateRef.current);
       appStateRef.current = nextState;
-      if (wasBackgrounded && nextState === 'active' && opened && reference) {
-        // Small delay lets the deep link listener fire first (preferred path),
-        // then this only does work if the deep link didn't arrive.
+      if (wasBackgrounded && nextState === 'active' && sessionRan && reference) {
         setTimeout(() => confirmPayment(), 400);
       }
     });
     return () => sub.remove();
-  }, [opened, reference, confirmPayment]);
+  }, [sessionRan, reference, confirmPayment]);
 
   // Init failed (no key, network down, provider rejected) — show recoverable error.
   if (initError) {
@@ -689,8 +744,11 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
     );
   }
 
-  // Pre-browser-open: initializing transaction with backend.
-  if (!opened) {
+  // Before the auth-session resolves: brief spinner. From the user's
+  // perspective this is sub-second — the Custom Tab opens immediately and
+  // covers the screen while they pay; the underlying spinner only shows
+  // during the short init request + tab presentation animation.
+  if (!sessionRan) {
     return (
       <View style={{ flex: 1, backgroundColor: '#060E20', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <ActivityIndicator size="large" color={BLUE} />
@@ -701,9 +759,8 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
     );
   }
 
-  // Browser opened: user is paying. We're waiting for the deep link / AppState
-  // wakeup to confirm. Manual "I've paid" button is always available as a
-  // belt-and-braces escape hatch.
+  // Auth-session closed without a redirect (user dismissed manually). Show
+  // recovery UI: reopen the tab, mark as paid manually, or cancel out.
   return (
     <View style={{ flex: 1, backgroundColor: '#060E20', padding: 26, justifyContent: 'center' }}>
       <View style={{ alignItems: 'center', gap: 16 }}>
@@ -715,28 +772,31 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
           <ICONS.Lock color={BLUE} size={28} sw={2.25} />
         </View>
         <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', textAlign: 'center', letterSpacing: -0.2 }}>
-          {t('pay_complete_in_browser', 'Complete your payment in the browser')}
+          {t('pay_complete_in_browser', 'Complete your payment')}
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13.5, textAlign: 'center', lineHeight: 20, marginBottom: 6 }}>
-          {t('pay_browser_help', "We've opened the secure checkout page in your browser. Finish paying there, then return here — we'll confirm your subscription automatically.")}
+          {t('pay_browser_help_v2', "Tap below to reopen the secure checkout. If you've already paid, tap 'I've paid' and we'll confirm your subscription.")}
         </Text>
 
         <View style={{ width: '100%', maxWidth: 340 }}>
           <PrimaryCTA
             label={verifying
               ? t('pay_checking', 'Checking…')
-              : t('pay_ive_paid', "I've paid — Check status")}
-            onPress={() => confirmPayment()}
-            disabled={verifying || !reference}
+              : t('pay_reopen_browser', 'Reopen payment page')}
+            onPress={reopenSession}
+            disabled={verifying}
           />
         </View>
 
         <TouchableOpacity
-          onPress={() => { if (authUrl) Linking.openURL(authUrl).catch(() => {}); }}
+          onPress={() => confirmPayment()}
+          disabled={verifying || !reference}
           style={{ marginTop: 4, paddingHorizontal: 12, paddingVertical: 8 }}
         >
-          <Text style={{ color: BLUE, fontSize: 13, fontWeight: '700' }}>
-            {t('pay_reopen_browser', 'Reopen payment page')}
+          <Text style={{ color: BLUE, fontSize: 13, fontWeight: '700', opacity: verifying || !reference ? 0.5 : 1 }}>
+            {verifying
+              ? t('pay_checking', 'Checking…')
+              : t('pay_ive_paid', "I've paid — Check status")}
           </Text>
         </TouchableOpacity>
 
