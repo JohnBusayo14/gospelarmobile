@@ -43,10 +43,19 @@
         {
           "action": "VIEW",
           "data": [
-            { "scheme": "https", "host": "gospelar.com" },
-            { "scheme": "https", "host": "www.gospelar.com" }
+            {
+              "scheme": "https",
+              "host": "gospelar.com"
+            },
+            {
+              "scheme": "https",
+              "host": "www.gospelar.com"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -76,7 +85,8 @@
           "photosPermission": "Gospelar needs access to your media library to save downloaded content.",
           "savePhotosPermission": "Gospelar needs permission to save images to your device."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
