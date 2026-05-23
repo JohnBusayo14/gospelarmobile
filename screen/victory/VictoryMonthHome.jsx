@@ -34,6 +34,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BLUE, INDIGO, AMBER, EMERALD, RADII, AMBIENT_SHADOW, victoryTones, groupAccent } from './victoryTheme';
 import { RichVerseText } from '../../components/BibleVerseLink';
+import EmojiIcon from '../../components/EmojiIcon';
 
 const { width: W } = Dimensions.get('window');
 const STORAGE_KEY = 'vmp_completed_days';
