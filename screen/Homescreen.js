@@ -33,10 +33,10 @@ const BLUE_LIGHT = '#EFF6FF';
 // ── Age group definitions with human icons ────────────────────────────────────
 // Age-group images — one photo per category
 const CATEGORY_IMAGES = {
-  adult:        require('../assets/adult.jpg'),
-  youth:        require('../assets/youth.jpg'),
-  intermediate: require('../assets/intermediate.jpg'),
-  children:     require('../assets/children.jpg'),
+  adult:        require('../assets/adult.png'),
+  youth:        require('../assets/youth.png'),
+  intermediate: require('../assets/intermediate.png'),
+  children:     require('../assets/children.png'),
 };
 
 const CATEGORIES = [
