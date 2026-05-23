@@ -54,7 +54,7 @@ export const BOOKS = [
     title:       'Victory Month Prayer',
     subtitle:    '31-day prayer focus',
     description: 'Walk through 31 days of Spirit-led prayer, scripture meditation, and bold declarations. Each day pairs a focused theme with practical prayer points and a reflection prompt.',
-    cover:       require('../assets/prayer.png'),
+    cover:       require('../assets/victory.png'),
     accent:      '#F97316',
     available:   true,
     requiresSubscription: true,
