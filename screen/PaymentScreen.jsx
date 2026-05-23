@@ -374,7 +374,7 @@ const ps = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // Step 2 — Email entry
 // ─────────────────────────────────────────────────────────────────────────────
-const EmailStep = ({ plan, category, onProceed, onBack, tk, t, isDark }) => {
+const EmailStep = ({ plan, category, onProceed, tk, t, isDark }) => {
   const CATEGORIES = useMemo(() => buildCategories(t), [t]);
   const [email,   setEmail]   = useState('');
   const [error,   setError]   = useState('');
@@ -443,11 +443,6 @@ const EmailStep = ({ plan, category, onProceed, onBack, tk, t, isDark }) => {
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[es.sumPrice, { color: accent }]}>{plan.display}</Text>
-              <TouchableOpacity onPress={onBack} style={[es.changeBtn, { borderColor: accent + '60' }]}>
-                <Text style={[es.changeTxt, { color: accent }]}>
-                  {t('pay_change', 'Change')}
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -521,8 +516,6 @@ const es = StyleSheet.create({
   sumTitle:    { fontSize: 15, fontWeight: '800', marginTop: 2 },
   sumCat:      { fontSize: 12, fontWeight: '700', marginTop: 1 },
   sumPrice:    { fontSize: 18, fontWeight: '900', letterSpacing: -0.4, marginBottom: 6 },
-  changeBtn:   { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
-  changeTxt:   { fontSize: 11, fontWeight: '800' },
 
   title:       { fontSize: 22, fontWeight: '900', letterSpacing: -0.3, marginBottom: 6 },
   subTxt:      { fontSize: 13, lineHeight: 20, fontWeight: '500', marginBottom: 18 },
@@ -1233,7 +1226,7 @@ export default function PaymentScreen({ navigation, route }) {
       )}
 
       {step === 'plan'      && <PlanStep      onProceed={handlePlanProceed} tk={tk} t={t} plans={plans} isDark={isDark} />}
-      {step === 'email'     && <EmailStep     plan={plan} category={category} onProceed={handleEmailProceed} onBack={() => setStep('plan')} tk={tk} t={t} isDark={isDark} />}
+      {step === 'email'     && <EmailStep     plan={plan} category={category} onProceed={handleEmailProceed} tk={tk} t={t} isDark={isDark} />}
       {step === 'provider'  && <ProviderStep  plan={plan} onProceed={handleProviderProceed} tk={tk} t={t} isDark={isDark} />}
       {step === 'verifying' && <VerifyingStep tk={tk} t={t} />}
       {step === 'success'   && <SuccessStep   email={email} expiryDate={expiryDate} plan={plan} category={category} tk={tk} t={t} />}
