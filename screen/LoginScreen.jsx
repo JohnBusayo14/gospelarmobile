@@ -119,6 +119,11 @@ export default function LoginScreen({ navigation }) {
   const [showPass, setShowPass] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [errors,   setErrors]   = useState({});
+  // Approval-state banner (teachers awaiting / declined by their church
+  // admin). Distinct from errors.form so it persists when the user re-types
+  // their password — they need to keep seeing why they can't sign in yet.
+  // Shape: { kind: 'pending' | 'rejected', title, message } | null
+  const [statusBanner, setStatusBanner] = useState(null);
 
   // ── Entrance animations ───────────────────────────────────────────────────
   // Hold the parallel handle so unmount can stop it. Logging in inside the
@@ -154,6 +159,7 @@ export default function LoginScreen({ navigation }) {
     if (!force && !validate()) return;
     setLoading(true);
     setErrors({});
+    setStatusBanner(null);
 
     try {
       const res = await fetch(`${API}/api/auth/login`, {
@@ -187,6 +193,34 @@ export default function LoginScreen({ navigation }) {
           ],
           { cancelable: true }
         );
+        return;
+      }
+
+      // ── Teacher awaiting approval ────────────────────────────────────────
+      // Backend signals this with 403 + { error: 'pending' }. The literal
+      // word "pending" is meaningless to a teacher who's just trying to sign
+      // in, so render a proper informational banner with what's actually
+      // happening and what they should do next.
+      if (res.status === 403 && data.error === 'pending') {
+        setStatusBanner({
+          kind:    'pending',
+          title:   t('login_pending_title', 'Waiting for church admin approval'),
+          message: data.message ||
+            t('login_pending_msg',
+              "Thanks for registering as a teacher. Your church admin still needs to review and approve your account before you can sign in. You'll be able to log in here as soon as they do — there's no action needed from you right now."),
+        });
+        return;
+      }
+
+      // ── Teacher application declined ─────────────────────────────────────
+      if (res.status === 403 && data.error === 'rejected') {
+        setStatusBanner({
+          kind:    'rejected',
+          title:   t('login_rejected_title', 'Application declined'),
+          message: data.message ||
+            t('login_rejected_msg',
+              'Your church admin has declined your teacher account application. Please contact your church admin directly to resolve this — they can re-enable your account or let you know what needs to change.'),
+        });
         return;
       }
 
@@ -273,6 +307,43 @@ export default function LoginScreen({ navigation }) {
             ]}
           >
             <View style={[s.card, { backgroundColor: tk.bg, borderColor: tk.border }]}>
+
+              {/* Teacher approval-state banner — distinct from the red error
+                  banner so a "waiting for approval" message reads as info,
+                  not as a problem the user can fix by re-typing. */}
+              {!!statusBanner && (
+                <View style={[
+                  s.statusBanner,
+                  statusBanner.kind === 'rejected' ? s.statusBannerRejected : s.statusBannerPending,
+                ]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    {statusBanner.kind === 'rejected'
+                      ? <ICONS.AlertCircle color="#B91C1C" size={18} sw={2.25} />
+                      : <ICONS.Hourglass   color="#92400E" size={18} sw={2.25} />}
+                    <Text style={[
+                      s.statusTitle,
+                      { color: statusBanner.kind === 'rejected' ? '#991B1B' : '#92400E' },
+                    ]}>
+                      {statusBanner.title}
+                    </Text>
+                  </View>
+                  <Text style={[
+                    s.statusBody,
+                    { color: statusBanner.kind === 'rejected' ? '#7F1D1D' : '#78350F' },
+                  ]}>
+                    {statusBanner.message}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setStatusBanner(null)}
+                    style={{ alignSelf: 'flex-start', marginTop: 10 }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.statusDismiss, { color: statusBanner.kind === 'rejected' ? '#B91C1C' : '#B45309' }]}>
+                      {t('btn_dismiss', 'Dismiss')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Form-level error banner */}
               {!!errors.form && (
@@ -397,6 +468,12 @@ const s = StyleSheet.create({
     marginBottom: 16, borderWidth: 1, borderColor: '#FECACA',
   },
   formErrorTxt:{ fontSize: 13.5, color: '#DC2626', fontWeight: '600' },
+  statusBanner:         { borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1 },
+  statusBannerPending:  { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
+  statusBannerRejected: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+  statusTitle:          { fontSize: 14, fontWeight: '800', letterSpacing: -0.1, flex: 1 },
+  statusBody:           { fontSize: 13, fontWeight: '500', lineHeight: 19 },
+  statusDismiss:        { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.3, textTransform: 'uppercase' },
   forgotTxt:   { fontSize: 13, fontWeight: '700' },
   btnWrap:     { borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
   btn:         { paddingVertical: 17, alignItems: 'center', justifyContent: 'center' },
