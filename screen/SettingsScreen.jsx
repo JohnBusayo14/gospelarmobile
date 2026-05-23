@@ -503,18 +503,6 @@ export default function SettingsScreen({ navigation, route }) {
             )}
           </Card>
 
-          {/* GOSPELER ID — entry point for the digital Christian identity flow.
-              Sits above ACCOUNT because it's identity-first, not preferences. */}
-          <SectionHead title={t('gid_section', 'GOSPELER ID')} Icon={ICONS.ShieldCheck} tk={tk}/>
-          <Card tk={tk}>
-            <Row Icon={ICONS.ShieldCheck}
-              label={t('gid_settings_label', 'My Gospeler ID')}
-              sub={t('gid_settings_sub', 'Digital Christian identity, QR & verification')}
-              tk={tk}
-              onPress={() => navigation.navigate('GospelerId')}
-              noBorder/>
-          </Card>
-
           {/* ACCOUNT */}
           <SectionHead title={t('account', 'Account').toUpperCase()} Icon={ICONS.User} tk={tk}/>
           <Card tk={tk}>
