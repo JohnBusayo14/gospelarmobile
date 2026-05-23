@@ -30,8 +30,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BOOKS } from '../data/books';
 import { fetchBooks } from '../services/api';
 import { ICONS } from '../components/icons';
-import { allLive, allRecorded } from './victory/victoryAudioData';
-import { useUserRooms } from './victory/victoryHooks';
 
 // Normalize a row from /api/books into the shape the cards already render.
 // Falls back to the matching local BOOKS entry for image assets (require())
@@ -150,73 +148,6 @@ const FeaturedCard = ({ book, onPress, t }) => {
             <Inner />
           </View>
         )}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-// ── Audio Rooms hero card ────────────────────────────────────────────────────
-// First content on the Library home — the community-prayer entry point. Lives
-// here (not inside Victory Month) so any signed-in user can join a live or
-// recorded session regardless of book subscription state.
-const AudioRoomsCard = ({ onPress, t }) => {
-  const { fade, translateY } = useStaggerEntry(0);
-  // Real counts so the card reflects activity instead of static copy.
-  const { list: userRooms = [] } = useUserRooms();
-  const liveCount     = allLive(userRooms).length;
-  const recordedCount = allRecorded(userRooms).length;
-  return (
-    <Animated.View
-      style={{ opacity: fade, transform: [{ translateY }], paddingHorizontal: GUTTER, marginBottom: 22 }}
-    >
-      <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={s.audioCard}>
-        <LinearGradient
-          colors={['#1E3A8A', '#1A56DB', '#3B82F6']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={s.audioGradient}
-        >
-          {/* Decorative orbs for depth */}
-          <View style={[s.audioOrb, { top: -28, right: -20 }]} />
-          <View style={[s.audioOrb, { bottom: -32, left: -22, opacity: 0.4 }]} />
-
-          {/* Header row: live badge + animated-looking waveform decoration */}
-          <View style={s.audioHeadRow}>
-            <View style={s.audioLiveBadge}>
-              <View style={s.audioLiveDot} />
-              <Text style={s.audioLiveTxt}>{t('lib_audio_live', 'LIVE NOW')}</Text>
-            </View>
-            <View style={s.audioWave}>
-              {[6, 14, 10, 18, 12, 8, 16, 11].map((h, i) => (
-                <View key={i} style={[s.audioWaveBar, { height: h }]} />
-              ))}
-            </View>
-          </View>
-
-          {/* Body */}
-          <Text style={s.audioTitle}>
-            {t('lib_audio_title', 'Audio Prayer Rooms')}
-          </Text>
-          <Text style={s.audioSub} numberOfLines={2}>
-            {t('lib_audio_sub', 'Join a community of believers praying together — live or on demand.')}
-          </Text>
-
-          {/* Stats + CTA */}
-          <View style={s.audioFootRow}>
-            <View style={s.audioStats}>
-              <View style={s.audioStatPill}>
-                <Text style={s.audioStatVal}>{liveCount}</Text>
-                <Text style={s.audioStatLbl}>{t('lib_audio_live_count', 'live')}</Text>
-              </View>
-              <View style={s.audioStatPill}>
-                <Text style={s.audioStatVal}>{recordedCount}</Text>
-                <Text style={s.audioStatLbl}>{t('lib_audio_recorded', 'recorded')}</Text>
-              </View>
-            </View>
-            <View style={s.audioCta}>
-              <Text style={s.audioCtaTxt}>{t('lib_audio_open', 'Open rooms')}  →</Text>
-            </View>
-          </View>
-        </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -413,14 +344,6 @@ export default function LibraryScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* AUDIO PRAYER ROOMS — first thing the user sees on entry. Always
-            available regardless of book subscription so the wider community
-            can pray together. */}
-        <AudioRoomsCard
-          onPress={() => navigation.navigate('VictoryAudioRoomList')}
-          t={t}
-        />
-
         {/* SECTION DIVIDER — Books section header */}
         <View style={s.sectionDivider}>
           <Text style={[s.sectionTitle, { color: tk.textPrimary }]}>
@@ -512,44 +435,6 @@ const s = StyleSheet.create({
   },
   sectionTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5, marginBottom: 4 },
   sectionSub:   { fontSize: 13, fontWeight: '500', lineHeight: 18 },
-
-  // Audio Rooms hero card
-  audioCard: {
-    borderRadius: 22, overflow: 'hidden',
-    shadowColor: '#1A56DB', shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.30, shadowRadius: 20, elevation: 8,
-  },
-  audioGradient: { padding: 20, overflow: 'hidden' },
-  audioOrb: {
-    position: 'absolute', width: 120, height: 120,
-    borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  audioHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  audioLiveBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 999, backgroundColor: 'rgba(239, 68, 68, 0.85)',
-  },
-  audioLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
-  audioLiveTxt: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
-  audioWave:    { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 20 },
-  audioWaveBar: { width: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.65)' },
-  audioTitle:   { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5, lineHeight: 28 },
-  audioSub:     { color: 'rgba(255,255,255,0.86)', fontSize: 13, fontWeight: '600', lineHeight: 18, marginTop: 6, marginBottom: 16 },
-  audioFootRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  audioStats:   { flexDirection: 'row', gap: 8 },
-  audioStatPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  audioStatVal: { color: '#fff', fontSize: 13, fontWeight: '900' },
-  audioStatLbl: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '700' },
-  audioCta: {
-    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  audioCtaTxt: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 0.3 },
 
   // Featured card
   featuredCard: {

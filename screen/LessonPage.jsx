@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, Animated, ActivityIndicator,
-  Platform, Modal, Easing,
+  Platform, Modal, Easing, Image,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import AsyncStorage       from '@react-native-async-storage/async-storage';
@@ -144,6 +144,13 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
           <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} onScroll={onScroll}
             scrollEventThrottle={16} contentContainerStyle={[rm.body,{paddingBottom:140}]}
             onTouchStart={showCtrl}>
+            {!!part.part_image_url && (
+              <Image
+                source={{ uri: part.part_image_url }}
+                style={rm.partHeroImg}
+                resizeMode="cover"
+              />
+            )}
             <View style={rm.partHeader}>
               <View style={[rm.partNumBadge,{backgroundColor:accent+'18',borderColor:accent+'35'}]}>
                 <Text style={[rm.partNum,{color:accent}]}>{String(partIndex+1).padStart(2,'0')}</Text>
@@ -215,6 +222,7 @@ const rm = StyleSheet.create({
   tab:           { borderRadius:20, borderWidth:1.5, paddingHorizontal:14, paddingVertical:6 },
   tabText:       { fontSize:12, fontWeight:'800', letterSpacing:0.3 },
   body:          { paddingHorizontal:24, paddingTop:8 },
+  partHeroImg:   { width:'100%', aspectRatio:16/9, borderRadius:14, marginBottom:18 },
   partHeader:    { marginBottom:16 },
   partNumBadge:  { alignSelf:'flex-start', borderRadius:10, borderWidth:1.5, paddingHorizontal:12, paddingVertical:5, marginBottom:10 },
   partNum:       { fontSize:12, fontWeight:'900', letterSpacing:-0.2 },
@@ -488,6 +496,13 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
             </TouchableOpacity>
             {open && (
               <View style={[pt.body, { borderTopColor:tk.glassEdge }]}>
+                {!!part.part_image_url && (
+                  <Image
+                    source={{ uri: part.part_image_url }}
+                    style={pt.heroImg}
+                    resizeMode="cover"
+                  />
+                )}
                 {!!part.part_para1 && (
                   <View style={[pt.paraWrap, { borderLeftColor:accent }]}>
                     <RichVerseText text={part.part_para1} isDark={isDark}
@@ -521,6 +536,7 @@ const pt = StyleSheet.create({
   chevronBox: { width:34, height:34, borderRadius:10, justifyContent:'center', alignItems:'center', flexShrink:0 },
   chevron:    { fontSize:18, fontWeight:'700' },
   body:       { borderTopWidth:1, paddingHorizontal:16, paddingBottom:16, paddingTop:14 },
+  heroImg:    { width:'100%', aspectRatio:16/9, borderRadius:12, marginBottom:14 },
   paraWrap:   { borderLeftWidth:3, paddingLeft:12, marginBottom:14, paddingVertical:4 },
   para:       { fontSize:14, lineHeight:23 },
   readBtn:    { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, borderRadius:12, paddingVertical:12, marginTop:4 },
