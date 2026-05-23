@@ -816,6 +816,9 @@ const ExternalCheckoutStep = ({ email, plan, category, bookId, provider = 'payst
 // Stripe charges in USD (international cards). The selected provider is sent
 // to /api/payments/initialize, which branches to the right hosted-checkout URL.
 // ─────────────────────────────────────────────────────────────────────────────
+// `enabled: false` greys the card out and blocks the tap on the provider step.
+// Flip back to `true` to re-enable Flutterwave / Stripe once their flows are
+// ready — no other code change required.
 const PROVIDER_OPTIONS = [
   {
     id:        'paystack',
@@ -825,6 +828,7 @@ const PROVIDER_OPTIONS = [
     tagline:   'Cards · Bank · USSD · QR',
     blurb:     'Nigeria — pay in Naira. Most common option.',
     currency:  'NGN',
+    enabled:   true,
   },
   {
     id:        'flutterwave',
@@ -834,6 +838,7 @@ const PROVIDER_OPTIONS = [
     tagline:   'Cards · Bank Transfer · Mobile Money',
     blurb:     'Nigeria — pay in Naira via Flutterwave.',
     currency:  'NGN',
+    enabled:   false,
   },
   {
     id:        'stripe',
@@ -843,6 +848,7 @@ const PROVIDER_OPTIONS = [
     tagline:   'International cards · Apple Pay · Google Pay',
     blurb:     'Outside Nigeria — pay in USD.',
     currency:  'USD',
+    enabled:   false,
   },
 ];
 
@@ -858,41 +864,57 @@ const ProviderStep = ({ plan, onProceed, tk, t, isDark }) => {
         {t('pay_choose_provider_sub', 'Pick the payment provider that works for you. Nigerian users usually pick Paystack or Flutterwave; international users should pick Stripe.')}
       </Text>
 
-      {PROVIDER_OPTIONS.map((p) => (
-        <TouchableOpacity
-          key={p.id}
-          onPress={() => onProceed(p.id)}
-          activeOpacity={0.88}
-          style={{
-            marginBottom: 14, padding: 18,
-            borderRadius: 16, backgroundColor: tk.glassFill,
-            borderWidth: 1, borderColor: tk.glassEdge,
-            flexDirection: 'row', alignItems: 'center', gap: 14,
-          }}
-        >
-          <View style={{
-            width: 48, height: 48, borderRadius: 12,
-            backgroundColor: p.accent + '18',
-            justifyContent: 'center', alignItems: 'center',
-          }}>
-            <Text style={{ fontSize: 24 }}>{p.flag}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 16, fontWeight: '900', color: tk.textPrimary }}>{p.label}</Text>
-              <View style={{
-                paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
-                backgroundColor: p.accent + '22',
-              }}>
-                <Text style={{ fontSize: 10, fontWeight: '900', color: p.accent, letterSpacing: 0.6 }}>{p.currency}</Text>
-              </View>
+      {PROVIDER_OPTIONS.map((p) => {
+        const disabled = p.enabled === false;
+        return (
+          <TouchableOpacity
+            key={p.id}
+            onPress={disabled ? undefined : () => onProceed(p.id)}
+            activeOpacity={disabled ? 1 : 0.88}
+            disabled={disabled}
+            style={{
+              marginBottom: 14, padding: 18,
+              borderRadius: 16, backgroundColor: tk.glassFill,
+              borderWidth: 1, borderColor: tk.glassEdge,
+              flexDirection: 'row', alignItems: 'center', gap: 14,
+              opacity: disabled ? 0.45 : 1,
+            }}
+          >
+            <View style={{
+              width: 48, height: 48, borderRadius: 12,
+              backgroundColor: p.accent + '18',
+              justifyContent: 'center', alignItems: 'center',
+            }}>
+              <Text style={{ fontSize: 24 }}>{p.flag}</Text>
             </View>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: tk.textMuted, marginTop: 2 }}>{p.tagline}</Text>
-            <Text style={{ fontSize: 12, color: tk.textMuted, marginTop: 6 }}>{p.blurb}</Text>
-          </View>
-          <Text style={{ fontSize: 22, color: tk.textMuted }}>›</Text>
-        </TouchableOpacity>
-      ))}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: tk.textPrimary }}>{p.label}</Text>
+                <View style={{
+                  paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
+                  backgroundColor: p.accent + '22',
+                }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', color: p.accent, letterSpacing: 0.6 }}>{p.currency}</Text>
+                </View>
+                {disabled && (
+                  <View style={{
+                    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
+                    backgroundColor: tk.surfaceEl,
+                    borderWidth: 1, borderColor: tk.border,
+                  }}>
+                    <Text style={{ fontSize: 10, fontWeight: '900', color: tk.textMuted, letterSpacing: 0.6 }}>
+                      {t('pay_provider_coming_soon', 'COMING SOON')}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: tk.textMuted, marginTop: 2 }}>{p.tagline}</Text>
+              <Text style={{ fontSize: 12, color: tk.textMuted, marginTop: 6 }}>{p.blurb}</Text>
+            </View>
+            <Text style={{ fontSize: 22, color: tk.textMuted }}>{disabled ? '🔒' : '›'}</Text>
+          </TouchableOpacity>
+        );
+      })}
 
       {!!planNaira && (
         <Text style={{ marginTop: 8, fontSize: 12, color: tk.textMuted, textAlign: 'center' }}>
