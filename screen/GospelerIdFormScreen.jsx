@@ -228,14 +228,9 @@ export default function GospelerIdFormScreen({ navigation, route }) {
     if (pickingPhoto) return;
     setPickingPhoto(true);
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          t('gid_photo_perm_title', 'Permission needed'),
-          t('gid_photo_perm_msg', 'Allow photo library access to choose a profile picture.'),
-        );
-        return;
-      }
+      // Routes through the Android Photo Picker (and iOS PHPicker) — no
+      // gallery permission required, so we no longer ask for one.
+      // See Google Play "Photo and video permissions" policy.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
