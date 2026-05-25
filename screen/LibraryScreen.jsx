@@ -36,9 +36,23 @@ import { ICONS } from '../components/icons';
 // since the DB only stores absolute URLs and our placeholder books haven't
 // shipped real CDN-hosted covers yet.
 function normalizeBook(row) {
-  const fallback = BOOKS.find((b) => b.id === row.slug || b.id === row.id) || {};
+  // Case-insensitive slug match: the books table sometimes has a slug like
+  // 'Victory_Month_Prayer' or hyphen-style 'victory-month-prayer' that
+  // doesn't byte-match the lowercase local id. Without this the fallback
+  // lookup misses, requiresSubscription defaults to false, and a paid book
+  // (e.g. Victory Month Prayer) appears unlocked to Sunday-School-only
+  // subscribers. The card shows "Available" and the tap leaks into the
+  // gated screen before BookGuard catches it.
+  const slug = String(row.slug || row.id || '').toLowerCase();
+  const fallback = BOOKS.find((b) => String(b.id).toLowerCase() === slug) || {};
+  // Fail-closed: if we can't find a local config for this row, assume the
+  // book requires a subscription. Only an explicit `false` in local BOOKS
+  // (e.g. the legacy Sunday-School entry) bypasses the gate.
+  const requiresSubscription = typeof fallback.requiresSubscription === 'boolean'
+    ? fallback.requiresSubscription
+    : true;
   return {
-    id:                  row.slug || fallback.id,
+    id:                  slug || fallback.id,
     title:               row.title || fallback.title,
     subtitle:            row.subtitle || fallback.subtitle,
     description:         row.description || fallback.description,
@@ -47,11 +61,11 @@ function normalizeBook(row) {
     cover_emoji:         row.cover_emoji || fallback.cover_emoji || '📖',
     accent:              row.accent_color || fallback.accent || PALETTE.blue,
     available:           row.available !== false,
-    requiresSubscription:fallback.requiresSubscription || false,
+    requiresSubscription,
     pricing:             fallback.pricing || null,
     route:               row.route_screen === 'BookReader' ? 'BookReader' : (row.route_screen || fallback.route || 'HomeScreen'),
     routeParams:         row.route_screen === 'BookReader'
-                           ? { bookSlug: row.slug, bookTitle: row.title, accent: row.accent_color }
+                           ? { bookSlug: slug, bookTitle: row.title, accent: row.accent_color }
                            : (fallback.routeParams || undefined),
     entries_count:       parseInt(row.entries_count || 0, 10),
   };
