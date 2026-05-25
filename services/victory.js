@@ -31,10 +31,12 @@ import {
   VICTORY_VIGILS  as BUNDLED_VIGILS,
 } from '../data/victoryMonth';
 
-// Slug used in the backend `books.slug` column. Frontend code referring to the
-// book elsewhere uses `victory_month_prayer` (underscore form); the database
-// convention is kebab-case (matching `sunday-school`).
-export const VICTORY_BOOK_SLUG = 'victory-month-2026';
+// Slug used in the backend `books.slug` column. Aligned with the rest of
+// the system (subscribed_books, plan_id 'book_victory_month_prayer',
+// BookGuard, and the local BOOKS array in data/books.js) so there's a
+// single canonical name for the Victory Month Prayer SKU. The DB was
+// migrated from 'victory-month-2026' via backend/scripts/rename-victory-slug.js.
+export const VICTORY_BOOK_SLUG = 'victory_month_prayer';
 
 // Vigil entry_types stored in the DB. Anything not in this set is treated as a
 // day. Matches the comment in backend/server.js (book_entries CREATE TABLE).
