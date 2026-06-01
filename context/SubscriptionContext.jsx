@@ -32,8 +32,16 @@ const DEFAULT_PLANS = {
   all:    { plan_id:'all',    price_kobo: 100000, days: 300 },
 };
 
+// Marker stored once per email after we've asked the server to start that
+// user's free trial. Prevents re-POSTing start-trial on every launch — the
+// server is idempotent regardless, but this avoids a needless network call.
+const TRIAL_REQUESTED_PREFIX = 'gofamint_trial_requested_';
+
 const SubscriptionContext = createContext({
   isSubscribed:        false,
+  // True while the active subscription is the promotional free month (vs a
+  // paid plan). Drives the Library countdown banner copy.
+  isTrial:             false,
   // True only when the user holds a real Sunday-School plan ('single' or
   // 'all') — used by SubscriptionGuard so a Victory-Month-only buyer can't
   // walk into the SS flow.
@@ -65,6 +73,7 @@ export const useSubscription = () => useContext(SubscriptionContext);
 
 export const SubscriptionProvider = ({ children }) => {
   const [isSubscribed,        setIsSubscribed]        = useState(false);
+  const [isTrial,             setIsTrial]             = useState(false);
   const [daysRemaining,       setDaysRemaining]       = useState(null);
   const [isLoading,           setIsLoading]           = useState(true);
   const [hasChecked,          setHasChecked]          = useState(false);
@@ -110,6 +119,33 @@ export const SubscriptionProvider = ({ children }) => {
     return diffDays > 0 ? diffDays : 0;
   };
 
+  // ── One-time free-trial activation ─────────────────────────────────────────
+  // Asks the server to grant this email its 30-day all-access trial. The server
+  // is the gate (idempotent, abuse-resistant); we only POST once per email per
+  // device to avoid redundant calls. Safe to call before every status check —
+  // it no-ops server-side for anyone who already used a trial or is paid.
+  const maybeStartTrial = useCallback(async (em) => {
+    if (!em) return;
+    const flagKey = `${TRIAL_REQUESTED_PREFIX}${em.toLowerCase()}`;
+    try {
+      if (await AsyncStorage.getItem(flagKey)) return;
+      const res = await fetch(`${API_BASE_URL}/api/subscription/start-trial`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: em }),
+      });
+      // Mark requested regardless of granted/already-used so we don't retry
+      // forever; a real failure (network) leaves the flag unset to retry later.
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        await AsyncStorage.setItem(flagKey, '1');
+        console.log('[Trial] start-trial →', data.reason || 'ok', '| granted:', data.granted);
+      }
+    } catch (e) {
+      console.warn('[Trial] start-trial failed (will retry next launch):', e.message);
+    }
+  }, []);
+
   const checkSubscription = useCallback(async () => {
     setIsLoading(true);
     setServerError(false);
@@ -127,6 +163,7 @@ export const SubscriptionProvider = ({ children }) => {
       if (em !== lastCheckedEmail.current) {
         setHasChecked(false);
         setIsSubscribed(false);
+        setIsTrial(false);
         setExpiryDate(null);
         setDaysRemaining(null);
         setSubscribedCategory(null);
@@ -136,6 +173,7 @@ export const SubscriptionProvider = ({ children }) => {
 
       if (!em) {
         setIsSubscribed(false);
+        setIsTrial(false);
         setExpiryDate(null);
         setDaysRemaining(null);
         setHasChecked(true);
@@ -143,6 +181,10 @@ export const SubscriptionProvider = ({ children }) => {
         lastCheckedEmail.current = null;
         return;
       }
+
+      // Ensure this user has been offered their free trial before we read
+      // status, so a first-ever launch immediately reflects trial access.
+      await maybeStartTrial(em);
 
       // ── Query the server (the DB is the ONLY gate) ─────────────────────────
       try {
@@ -168,6 +210,7 @@ export const SubscriptionProvider = ({ children }) => {
           console.log('[Sub] DB check → email:', em, '| active:', active, '| expiry:', expiry, '| books:', books);
 
           setIsSubscribed(active);
+          setIsTrial(active && data.is_trial === true);
           setExpiryDate(active ? expiry : null);
           setDaysRemaining(active ? calculateDaysRemaining(expiry) : null);
           setSubscribedCategory(active ? (data.subscribed_category || 'adult') : null);
@@ -282,6 +325,7 @@ export const SubscriptionProvider = ({ children }) => {
           ]);
 
           setIsSubscribed(false);
+          setIsTrial(false);
           setHasChecked(false);
           setExpiryDate(null);
           setDaysRemaining(null);
@@ -362,6 +406,8 @@ export const SubscriptionProvider = ({ children }) => {
           : (bookId ? [...new Set([...subscribedBooks, bookId])] : subscribedBooks);
 
         setIsSubscribed(true);
+        // A real payment is never a trial — clears the trial banner immediately.
+        setIsTrial(false);
         setHasChecked(true);
         setExpiryDate(expiry);
         setDaysRemaining(calculateDaysRemaining(expiry));
@@ -418,12 +464,15 @@ export const SubscriptionProvider = ({ children }) => {
   const canAccessBook = (bookId) => {
     if (!bookId) return true;
     if (!isSubscribed) return false;
+    // 'all' wildcard (free trial / all-access grant) unlocks every book.
+    if (subscribedBooks.includes('all')) return true;
     return subscribedBooks.includes(String(bookId).toLowerCase());
   };
 
   return (
     <SubscriptionContext.Provider value={{
       isSubscribed,
+      isTrial,
       hasSundaySchool,
       isLoading,
       hasChecked,

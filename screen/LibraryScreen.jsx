@@ -124,6 +124,49 @@ function resolveCardState(book, canAccessBook, t) {
   };
 }
 
+// ── Free-trial countdown banner ───────────────────────────────────────────────
+// Shown only while the user's active subscription is the promotional free
+// month. Counts down the days left and routes to the Subscribe screen so they
+// can convert before access lapses. Colour escalates as the deadline nears.
+const TrialCountdownBanner = ({ daysRemaining, onSubscribe, t }) => {
+  const days = Math.max(0, Number(daysRemaining) || 0);
+  // Urgency tiers: calm blue early, amber in the final week, red on the last
+  // couple of days so the reminder gets visually louder as time runs out.
+  const tier = days <= 2 ? 'urgent' : days <= 7 ? 'soon' : 'calm';
+  const accent = tier === 'urgent' ? '#DC2626' : tier === 'soon' ? '#F59E0B' : BLUE;
+
+  const headline = days === 0
+    ? t('trial_last_day', 'Last day of your free month')
+    : days === 1
+      ? t('trial_one_day', '1 day left of your free month')
+      : t('trial_days_left', '{{n}} days left of your free month').replace('{{n}}', String(days));
+
+  return (
+    <View style={{ paddingHorizontal: GUTTER, marginBottom: 16 }}>
+      <View style={[s.trialBanner, { backgroundColor: accent + '14', borderColor: accent + '40' }]}>
+        <View style={[s.trialIcon, { backgroundColor: accent }]}>
+          <Text style={s.trialIconTxt}>{days}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.trialTitle, { color: accent }]} numberOfLines={1}>{headline}</Text>
+          <Text style={[s.trialSub, { color: accent + 'CC' }]} numberOfLines={2}>
+            {t('trial_sub', 'Enjoy full access to every book. Subscribe to keep it after your trial ends.')}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={onSubscribe}
+          activeOpacity={0.85}
+          style={[s.trialCta, { backgroundColor: accent }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('trial_subscribe', 'Subscribe')}
+        >
+          <Text style={s.trialCtaTxt}>{t('trial_subscribe', 'Subscribe')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 // ── Featured hero card (full width, 2:1 ratio) ────────────────────────────────
 const FeaturedCard = ({ book, onPress, t }) => {
   if (!book) return null;
@@ -235,7 +278,7 @@ const BookCard = ({ book, index, onPress, tk, isDark, t, canAccessBook }) => {
 export default function LibraryScreen({ navigation }) {
   const { isDark } = useTheme();
   const { t }      = useLanguage();
-  const { canAccessBook, isSubscribed } = useSubscription();
+  const { canAccessBook, isSubscribed, isTrial, daysRemaining } = useSubscription();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
 
@@ -358,6 +401,15 @@ export default function LibraryScreen({ navigation }) {
           </Text>
         </View>
 
+        {/* FREE-TRIAL COUNTDOWN — only while on the promotional free month */}
+        {isTrial && (
+          <TrialCountdownBanner
+            daysRemaining={daysRemaining}
+            onSubscribe={() => navigation.navigate('PaymentScreen', { fromLibrary: true })}
+            t={t}
+          />
+        )}
+
         {/* SECTION DIVIDER — Books section header */}
         <View style={s.sectionDivider}>
           <Text style={[s.sectionTitle, { color: tk.textPrimary }]}>
@@ -449,6 +501,24 @@ const s = StyleSheet.create({
   },
   sectionTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5, marginBottom: 4 },
   sectionSub:   { fontSize: 13, fontWeight: '500', lineHeight: 18 },
+
+  // Free-trial countdown banner
+  trialBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 16, borderWidth: 1,
+    paddingVertical: 12, paddingHorizontal: 14, gap: 12,
+  },
+  trialIcon: {
+    width: 44, height: 44, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  trialIconTxt: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+  trialTitle:   { fontSize: 14, fontWeight: '900', letterSpacing: -0.2, marginBottom: 2 },
+  trialSub:     { fontSize: 11.5, fontWeight: '600', lineHeight: 15 },
+  trialCta: {
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10,
+  },
+  trialCtaTxt: { color: '#fff', fontSize: 12.5, fontWeight: '900', letterSpacing: 0.2 },
 
   // Featured card
   featuredCard: {
