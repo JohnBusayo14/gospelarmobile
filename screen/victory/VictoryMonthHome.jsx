@@ -17,10 +17,11 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
   Dimensions, StatusBar, Animated, Modal, Platform, Pressable, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import AsyncStorage      from '@react-native-async-storage/async-storage';
 import { useTheme }      from '../../context/ThemeContext';
 import { useLanguage }   from '../../context/LanguageContext';
@@ -31,13 +32,35 @@ import { todayDayIndex } from '../../data/victoryMonth';
 import {
   useVictoryDays, useVictoryVigils, useVictoryMeta,
 } from '../../hooks/useVictoryContent';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BLUE, INDIGO, AMBER, EMERALD, RADII, AMBIENT_SHADOW, victoryTones, groupAccent } from './victoryTheme';
 import { RichVerseText } from '../../components/BibleVerseLink';
 import EmojiIcon from '../../components/EmojiIcon';
 
 const { width: W } = Dimensions.get('window');
 const STORAGE_KEY = 'vmp_completed_days';
+
+// Hero-carousel images. Drop your own files into frontend/assets/ and swap the
+// nulls for require('../../assets/<file>.png') — e.g.
+//   focus: require('../../assets/victory-focus.png'),
+// Until a card's image is set, the card renders a light placeholder block with
+// its icon centered (see HeroCarousel).
+const HERO_IMAGES = {
+  focus:     null,
+  scripture: null,
+  fasting:   null,
+};
+
+// Per-card light background tints — distinct shades from the primary blue family
+// so each slide reads differently as you swipe, while staying on-palette.
+const HERO_TINTS = {
+  focus:     BLUE[50],   // #EFF6FF
+  scripture: INDIGO[100], // #E0F2FE  (sky/secondary wash)
+  fasting:   BLUE[100],  // #DBEAFE
+};
+
+// Card width: full content width with the standard 20px page gutter on each
+// side, so one card fills the viewport and the next peeks slightly.
+const HERO_CARD_W = W - 40;
 
 export default function VictoryMonthHome({ navigation }) {
   const { isDark } = useTheme();
@@ -125,133 +148,36 @@ export default function VictoryMonthHome({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ── THEME RIBBON ───────────────────────────────────────────────── */}
-        {/* Rich royal-blue-to-indigo gradient. Same fancy treatment in both
-            modes — the depth of the colour carries the card on any backdrop,
-            and the text is always light so contrast stays high. */}
-        <View style={s.themeRibbonWrap}>
-          <LinearGradient
-            colors={['#1D4ED8', '#2563EB', '#4F46E5']} // BLUE 700 → BLUE 600 → INDIGO 600
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={[s.themeRibbon, {
-              borderColor: 'rgba(255,255,255,0.16)',
-            }]}
-          >
-            <Text style={[s.themeLabel, { color: 'rgba(219,234,254,0.95)' }]}>
-              {t('vmp_theme', 'THEME')}
-            </Text>
-            <Text
-              style={[s.themeText, { color: '#FFFFFF' }]}
-              numberOfLines={2}
-            >
-              {meta.theme}
-            </Text>
-            <Text style={[s.themeWindow, { color: 'rgba(219,234,254,0.85)' }]}>
-              {meta.window}
-            </Text>
-          </LinearGradient>
-        </View>
+        {/* ── TODAY HERO — 3-card swipeable carousel ─────────────────────── */}
+        <HeroCarousel
+          today={today}
+          dayNum={dayNum}
+          totalDays={TOTAL_DAYS}
+          isDark={isDark}
+          tones={tones}
+          tk={tk}
+          t={t}
+          navigation={navigation}
+        />
 
-        {/* ── TODAY HERO ─────────────────────────────────────────────────── */}
-        <View style={s.heroWrap}>
-          <View style={[s.heroCard, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
-            <View style={s.heroRow}>
-              <View style={[s.heroBadge, { backgroundColor: tones.todayBg }]}>
-                <Text style={[s.heroBadgeDay, { color: tones.todayFg }]}>{dayNum}</Text>
-                <Text style={[s.heroBadgeOf, { color: tones.todayFg }]}>
-                  / {TOTAL_DAYS}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.heroEyebrow, { color: tones.chipFg }]}>
-                  {t('vmp_today_focus', "TODAY'S FOCUS")}
-                </Text>
-                <Text style={[s.heroTitle, { color: tk.textPrimary }]} numberOfLines={3}>
-                  {today.focus}
-                </Text>
-              </View>
-            </View>
-
-            {!!today.scripture && (
-              <View style={[s.versePill, { backgroundColor: tones.versePillBg }]}>
-                <ICONS.Book color={tones.versePillFg} size={14} sw={2.25} />
-                <View style={{ flex: 1 }}>
-                  <RichVerseText text={today.scripture} isDark={isDark} lineHeight={18}
-                    style={[s.versePillTxt, { color: tones.versePillFg }]} />
-                </View>
-              </View>
-            )}
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate('VictoryDayScreen', { day: dayNum })}
-              activeOpacity={0.88}
-              style={[s.heroCta, { shadowColor: tones.ctaShadow }]}
-            >
-              <View style={[s.heroCtaInner, { backgroundColor: tones.ctaFrom }]}>
-                <Text style={s.heroCtaTxt}>{t('vmp_open_today', "Open today's prayer")}  →</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── PROGRESS STRIP ─────────────────────────────────────────────── */}
-        <View style={s.progressWrap}>
-          <View style={[s.progressCard, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.progressEye, { color: tones.chipFg }]}>{t('vmp_progress', 'YOUR PROGRESS')}</Text>
-              <Text style={[s.progressVal, { color: tk.textPrimary }]}>
-                {doneCount} <Text style={[s.progressOf, { color: tones.textMuted }]}>of {TOTAL_DAYS}</Text>
-              </Text>
-              <Text style={[s.progressSub, { color: tones.textMuted }]}>
-                {donePct}% complete · {TOTAL_DAYS - doneCount} {TOTAL_DAYS - doneCount === 1 ? 'day' : 'days'} to go
-              </Text>
-            </View>
-            <View style={[s.progressRing, { backgroundColor: tones.chipBg }]}>
-              <Text style={[s.progressRingVal, { color: tones.chipFg }]}>{donePct}%</Text>
-            </View>
-          </View>
-          <View style={[s.progressBar, { backgroundColor: tones.chipBg }]}>
-            <View
-              style={[s.progressBarFill, { width: `${donePct}%`, backgroundColor: BLUE[600] }]}
-            />
-          </View>
-        </View>
-
-        {/* ── 30-DAY GRID ────────────────────────────────────────────────── */}
-        {/* Tighter bottom margin here so "Explore" sits closer to the grid —
-            the two sections feel related (calendar → ways to use it). */}
-        <View style={[s.section, { marginBottom: 12 }]}>
+        {/* ── PROGRESS METER — animated semicircle speedometer ───────────── */}
+        <View style={[s.section, { marginBottom: 28 }]}>
           <SectionHead
-            title={t('vmp_30_days', '30 Days of Prayer')}
+            title={t('vmp_progress', 'Your progress')}
             action={t('vmp_browse_all', 'Browse all')}
             tk={tk}
             tones={tones}
             onAction={() => navigation.navigate('VictoryDayList')}
           />
-          <View style={s.daysGrid}>
-            {days.map((d) => {
-              const isToday = d.day === dayNum;
-              const isDone  = !!completed[d.day];
-              const bg      = isToday ? BLUE[600]
-                            : isDone  ? EMERALD[500]
-                            : tones.chipBg;
-              const fg      = (isToday || isDone) ? '#fff' : tones.chipFg;
-              return (
-                <TouchableOpacity
-                  key={d.day}
-                  onPress={() => navigation.navigate('VictoryDayScreen', { day: d.day })}
-                  activeOpacity={0.78}
-                  style={[s.dayTile, { backgroundColor: bg }]}
-                >
-                  <Text style={[s.dayTileNum, { color: fg }]}>{d.day}</Text>
-                  {isDone && !isToday && (
-                    <View style={s.dayTileCheck}>
-                      <ICONS.Check color="#fff" size={9} sw={2.8} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+          <View style={[s.meterCard, { backgroundColor: tones.glassFill, borderColor: tones.glassEdge, ...AMBIENT_SHADOW }]}>
+            <VictorySpeedometer
+              pct={donePct}
+              doneCount={doneCount}
+              total={TOTAL_DAYS}
+              tones={tones}
+              tk={tk}
+              t={t}
+            />
           </View>
         </View>
 
@@ -477,7 +403,7 @@ const nav = StyleSheet.create({
 const TOOLKIT_ITEMS = [
   { emoji: '🕯️', label: 'Fasting hub',         sub: 'Schedule consecrated time',   route: 'VictoryFastingHub',        gradient: [INDIGO[700], INDIGO[500]] },
   { emoji: '🔔', label: 'Prayer reminders',    sub: 'Build a daily rhythm',        route: 'VictoryReminders',         gradient: ['#0EA5E9', '#3B82F6'] },
-  { emoji: '🌿', label: 'Prayer categories',   sub: '9 spiritual focus areas',     route: 'VictoryCategories',        gradient: [EMERALD[500], '#14B8A6'] },
+  { emoji: '🌿', label: 'Prayer categories',   sub: '9 spiritual focus areas',     route: 'VictoryCategories',        gradient: [EMERALD[500], '#22C55E'] },
   { emoji: '🏆', label: 'Achievements',        sub: 'Badges, streaks, milestones', route: 'VictoryAchievementsScreen', gradient: [AMBER[500], '#DC2626'] },
 ];
 
@@ -588,6 +514,269 @@ const sheet = StyleSheet.create({
   rowChev:    { fontSize: 22, fontWeight: '700', marginLeft: 4 },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero carousel — 3 swipeable cards (Today's Focus · Today's Scripture ·
+// Fasting Hub). Paging ScrollView with snap + dot indicators. Each card has a
+// light primary-palette tint and an image slot (falls back to a placeholder
+// block with the card's icon until HERO_IMAGES are provided).
+// ─────────────────────────────────────────────────────────────────────────────
+const HeroCarousel = ({ today, dayNum, totalDays, isDark, tones, tk, t, navigation }) => {
+  const [index, setIndex] = useState(0);
+
+  const onScroll = (e) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / HERO_CARD_W);
+    if (i !== index) setIndex(i);
+  };
+
+  const openToday = () => navigation.navigate('VictoryDayScreen', { day: dayNum });
+
+  // Card descriptors. Body content differs per card; the shell (image slot +
+  // tint + CTA) is shared via HeroCard below.
+  const cards = [
+    {
+      key: 'focus',
+      icon: <ICONS.Calendar color={BLUE[700]} size={26} sw={2.25} />,
+      eyebrow: t('vmp_today_focus', "TODAY'S FOCUS"),
+      cta: t('vmp_open_today', "Open today's prayer"),
+      onPress: openToday,
+      body: (
+        <View style={s.heroRow}>
+          <View style={[s.heroBadge, { backgroundColor: tones.todayBg }]}>
+            <Text style={[s.heroBadgeDay, { color: tones.todayFg }]}>{dayNum}</Text>
+            <Text style={[s.heroBadgeOf, { color: tones.todayFg }]}>/ {totalDays}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.heroTitle, { color: tk.textPrimary }]} numberOfLines={3}>
+              {today.focus}
+            </Text>
+          </View>
+        </View>
+      ),
+    },
+    {
+      key: 'scripture',
+      icon: <ICONS.Book color={INDIGO[600]} size={26} sw={2.25} />,
+      eyebrow: t('vmp_today_scripture', "TODAY'S SCRIPTURE"),
+      cta: t('vmp_read_pray', 'Read & pray'),
+      onPress: openToday,
+      body: (
+        <View style={{ paddingVertical: 2 }}>
+          {today.scripture ? (
+            <RichVerseText
+              text={today.scripture}
+              isDark={isDark}
+              lineHeight={26}
+              style={[s.heroScripture, { color: tk.textPrimary }]}
+            />
+          ) : (
+            <Text style={[s.heroScripture, { color: tones.textMuted }]}>
+              {t('vmp_no_scripture', 'Scripture for today will appear here.')}
+            </Text>
+          )}
+        </View>
+      ),
+    },
+    {
+      key: 'fasting',
+      icon: <ICONS.Star color={BLUE[700]} size={26} sw={2.25} />,
+      eyebrow: t('vmp_consecrate', 'CONSECRATE'),
+      cta: t('vmp_open_fasting', 'Open fasting hub'),
+      onPress: () => navigation.navigate('VictoryFastingHub'),
+      body: (
+        <View style={{ paddingVertical: 2 }}>
+          <Text style={[s.heroTitle, { color: tk.textPrimary }]} numberOfLines={2}>
+            {t('vmp_fasting_card', 'Plan your fast')}
+          </Text>
+          <Text style={[s.heroSub, { color: tones.textMuted }]} numberOfLines={2}>
+            {t('vmp_fasting_sub', 'Schedule consecrated time and set reminders for the season.')}
+          </Text>
+        </View>
+      ),
+    },
+  ];
+
+  return (
+    <View style={{ marginBottom: 18 }}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        snapToInterval={HERO_CARD_W}
+        decelerationRate="fast"
+        disableIntervalMomentum
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+      >
+        {cards.map((c) => (
+          <HeroCard key={c.key} card={c} tones={tones} tk={tk} />
+        ))}
+      </ScrollView>
+
+      {/* Dot indicators */}
+      <View style={s.dotsRow}>
+        {cards.map((c, i) => (
+          <View
+            key={c.key}
+            style={[
+              s.dot,
+              i === index
+                ? [s.dotActive, { backgroundColor: BLUE[600] }]
+                : { backgroundColor: tones.chipBg },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// A single hero slide. Light tinted surface + image slot (or placeholder) +
+// eyebrow + body + gradient-style CTA pill.
+const HeroCard = ({ card, tones, tk }) => {
+  const img = HERO_IMAGES[card.key];
+  return (
+    <View style={{ width: HERO_CARD_W }}>
+      <View
+        style={[
+          s.heroCard,
+          { backgroundColor: HERO_TINTS[card.key], borderColor: tones.glassEdge, ...AMBIENT_SHADOW },
+        ]}
+      >
+        {/* Image slot — real image when provided, else a light placeholder. */}
+        {img ? (
+          <Image source={img} style={s.heroImage} resizeMode="cover" />
+        ) : (
+          <View style={[s.heroImagePlaceholder, { backgroundColor: tones.chipBg }]}>
+            {card.icon}
+          </View>
+        )}
+
+        <Text style={[s.heroEyebrow, { color: tones.chipFg }]}>{card.eyebrow}</Text>
+        {card.body}
+
+        <TouchableOpacity
+          onPress={card.onPress}
+          activeOpacity={0.88}
+          style={[s.heroCta, { shadowColor: tones.ctaShadow }]}
+        >
+          <View style={[s.heroCtaInner, { backgroundColor: tones.ctaFrom }]}>
+            <Text style={s.heroCtaTxt}>{card.cta}  →</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VictorySpeedometer — animated semicircle gauge. A 180° track arc with a
+// gradient progress arc that sweeps 0 → pct on mount (and whenever pct changes),
+// plus a marker dot riding the arc and a center readout. Uses react-native-svg;
+// the sweep is driven by a JS-driver Animated.Value (strokeDasharray + the
+// marker position can't run on the native driver).
+// ─────────────────────────────────────────────────────────────────────────────
+const SPEEDO_W = W - 40 - 36;          // card inner width (page gutter + card padding)
+const SPEEDO_SIZE = Math.min(SPEEDO_W, 300);
+const SPEEDO_STROKE = 18;
+
+// Polar point on the gauge arc for a given fraction (0..1) of the 180° sweep.
+// The sweep runs left→right across the top half: 180° (left) → 0° (right).
+function gaugePoint(cx, cy, r, frac) {
+  const angle = Math.PI * (1 - Math.max(0, Math.min(1, frac))); // π → 0
+  return { x: cx + r * Math.cos(angle), y: cy - r * Math.sin(angle) };
+}
+
+const VictorySpeedometer = ({ pct, doneCount, total, tones, tk, t }) => {
+  const size   = SPEEDO_SIZE;
+  const stroke = SPEEDO_STROKE;
+  const r      = (size - stroke) / 2;
+  const cx     = size / 2;
+  const cy     = size / 2;             // baseline of the semicircle
+  const arcLen = Math.PI * r;          // length of a 180° arc
+
+  const safePct = Math.max(0, Math.min(100, pct || 0));
+
+  // Animate the sweep fraction 0 → safePct/100. JS driver because we read the
+  // value back to position the marker and set strokeDasharray.
+  const anim = useRef(new Animated.Value(0)).current;
+  const [frac, setFrac] = useState(0);
+  useEffect(() => {
+    const id = anim.addListener(({ value }) => setFrac(value));
+    const handle = Animated.timing(anim, {
+      toValue: safePct / 100,
+      duration: 900,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    });
+    handle.start();
+    return () => {
+      try { handle.stop(); } catch { /* already done */ }
+      anim.removeListener(id);
+    };
+  }, [safePct, anim]);
+
+  const dash   = frac * arcLen;
+  const marker = gaugePoint(cx, cy, r, frac);
+
+  // Arc path: start at left end (180°), sweep over the top to the right end (0°).
+  const start = gaugePoint(cx, cy, r, 0);
+  const end   = gaugePoint(cx, cy, r, 1);
+  const arcPath = `M ${start.x} ${start.y} A ${r} ${r} 0 0 1 ${end.x} ${end.y}`;
+
+  // Semicircle only needs the top half — height is radius + stroke padding.
+  const svgH = cy + stroke / 2 + 2;
+  const animatedPctTxt = Math.round(frac * 100);
+
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <View style={{ width: size, height: svgH }}>
+        <Svg width={size} height={svgH}>
+          <Defs>
+            <SvgGrad id="speedo" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={BLUE[700]} />
+              <Stop offset="0.5" stopColor={BLUE[500]} />
+              <Stop offset="1" stopColor={INDIGO[500]} />
+            </SvgGrad>
+          </Defs>
+          {/* Track */}
+          <Path
+            d={arcPath}
+            stroke={tones.chipBg}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Progress */}
+          <Path
+            d={arcPath}
+            stroke="url(#speedo)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={`${dash} ${arcLen}`}
+          />
+          {/* Marker dot riding the arc tip */}
+          <Circle cx={marker.x} cy={marker.y} r={stroke / 2 + 3} fill="#fff" />
+          <Circle cx={marker.x} cy={marker.y} r={stroke / 2 - 1} fill={INDIGO[500]} />
+        </Svg>
+
+        {/* Center readout — overlaid at the base of the semicircle. */}
+        <View style={[s.meterCenter, { width: size }]}>
+          <Text style={[s.meterPct, { color: tk.textPrimary }]}>{animatedPctTxt}%</Text>
+          <Text style={[s.meterSub, { color: tones.textMuted }]}>
+            {doneCount} {t('vmp_of', 'of')} {total} {t('vmp_days', 'days')}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={[s.meterFoot, { color: tones.textMuted }]}>
+        {total - doneCount} {total - doneCount === 1 ? t('vmp_day', 'day') : t('vmp_days', 'days')} {t('vmp_to_go', 'to go')}
+      </Text>
+    </View>
+  );
+};
+
 // ── Re-usable bits ───────────────────────────────────────────────────────────
 const SectionHead = ({ title, action, onAction, tk, tones }) => (
   <View style={s.sectionHead}>
@@ -629,73 +818,55 @@ const s = StyleSheet.create({
   eyebrow:    { fontSize: 10, fontWeight: '900', letterSpacing: 2.4 },
   topTitle:   { fontSize: 14, fontWeight: '900', marginTop: 2 },
 
-  // Theme ribbon — narrow card, the "first breath" of the screen.
-  // Solid fill + 1px border for a clean, modern outline.
-  themeRibbonWrap: { paddingHorizontal: 20, marginTop: 8, marginBottom: 22 },
-  themeRibbon:     { padding: 16, borderRadius: RADII.lg, borderWidth: 1, ...AMBIENT_SHADOW },
-  themeLabel:      { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 6 },
-  themeText:       { fontSize: 17, fontWeight: '900', lineHeight: 23, letterSpacing: -0.3, marginBottom: 6 },
-  themeWindow:     { fontSize: 12, fontWeight: '700' },
-
-  // Hero card — asymmetric layout, big day number, gradient CTA
-  heroWrap:    { paddingHorizontal: 20, marginBottom: 24 },
-  heroCard:    { padding: 22, borderRadius: RADII.xl, borderWidth: 1 },
+  // Hero carousel — swipeable cards, each a light tinted surface with an
+  // image slot, eyebrow, body, and gradient CTA.
+  heroCard:    { padding: 20, borderRadius: RADII.xl, borderWidth: 1, marginRight: 0 },
   heroRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 14 },
   heroBadge:   {
-    width: 78, height: 78, borderRadius: RADII.lg,
+    width: 72, height: 72, borderRadius: RADII.lg,
     justifyContent: 'center', alignItems: 'center', paddingTop: 4,
   },
-  heroBadgeDay: { fontSize: 32, fontWeight: '900', letterSpacing: -1.2, lineHeight: 34 },
+  heroBadgeDay: { fontSize: 30, fontWeight: '900', letterSpacing: -1.2, lineHeight: 32 },
   heroBadgeOf:  { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginTop: -2, opacity: 0.85 },
-  heroEyebrow:  { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 6 },
+  heroEyebrow:  { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 },
   heroTitle:    { fontSize: 21, fontWeight: '900', lineHeight: 27, letterSpacing: -0.4 },
-  versePill:    {
-    flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill, marginBottom: 16,
+  heroSub:      { fontSize: 13, fontWeight: '600', lineHeight: 19, marginTop: 6 },
+  heroScripture:{ fontSize: 18, fontWeight: '800', lineHeight: 26, letterSpacing: -0.2 },
+  heroImage:    {
+    width: '100%', height: 120, borderRadius: RADII.lg, marginBottom: 14,
   },
-  versePillTxt: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, maxWidth: W - 120 },
+  heroImagePlaceholder: {
+    width: '100%', height: 120, borderRadius: RADII.lg, marginBottom: 14,
+    justifyContent: 'center', alignItems: 'center',
+  },
   heroCta:      {
     borderRadius: RADII.pill, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1, shadowRadius: 22, elevation: 6,
+    shadowOpacity: 1, shadowRadius: 22, elevation: 6, marginTop: 16,
   },
   heroCtaInner: {
     paddingVertical: 15, borderRadius: RADII.pill, alignItems: 'center',
   },
   heroCtaTxt:   { color: '#fff', fontSize: 14.5, fontWeight: '900', letterSpacing: 0.3 },
 
-  // Progress card + bar
-  progressWrap: { paddingHorizontal: 20, marginBottom: 28 },
-  progressCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    padding: 16, borderRadius: RADII.lg, marginBottom: 10,
-    borderWidth: 1,
+  // Carousel dot indicators
+  dotsRow:   { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 14 },
+  dot:       { width: 7, height: 7, borderRadius: 999 },
+  dotActive: { width: 20 },
+
+  // Progress meter (semicircle speedometer)
+  meterCard:   { padding: 18, borderRadius: RADII.lg, borderWidth: 1, alignItems: 'center' },
+  meterCenter: {
+    position: 'absolute', bottom: 6, alignItems: 'center', justifyContent: 'center',
   },
-  progressEye:  { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 4 },
-  progressVal:  { fontSize: 28, fontWeight: '900', letterSpacing: -1, lineHeight: 30 },
-  progressOf:   { fontSize: 16, fontWeight: '700' },
-  progressSub:  { fontSize: 12, fontWeight: '600', marginTop: 4 },
-  progressRing: { width: 60, height: 60, borderRadius: 999, justifyContent: 'center', alignItems: 'center' },
-  progressRingVal: { fontSize: 14, fontWeight: '900', letterSpacing: -0.2 },
-  progressBar:  { height: 8, borderRadius: 4, overflow: 'hidden' },
-  progressBarFill: { height: 8, borderRadius: 4 },
+  meterPct:    { fontSize: 40, fontWeight: '900', letterSpacing: -1.5, lineHeight: 44 },
+  meterSub:    { fontSize: 13, fontWeight: '700', marginTop: 2 },
+  meterFoot:   { fontSize: 12, fontWeight: '600', marginTop: 10 },
 
   // Section heading row
   section:       { paddingHorizontal: 20, marginBottom: 28 },
   sectionHead:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   sectionTitle:  { fontSize: 18, fontWeight: '900', letterSpacing: -0.3 },
   sectionAction: { fontSize: 13, fontWeight: '800' },
-
-  // 30-day calendar grid
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dayTile: {
-    width: (W - 40 - 8 * 5) / 6, aspectRatio: 1, borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center', position: 'relative',
-  },
-  dayTileNum:   { fontSize: 14, fontWeight: '900', letterSpacing: -0.3 },
-  dayTileCheck: {
-    position: 'absolute', top: 4, right: 4, width: 14, height: 14, borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.32)', justifyContent: 'center', alignItems: 'center',
-  },
 
   // Explore 2×2 grid — icon stacked over label + sub for a compact tile
   exploreGrid: {
