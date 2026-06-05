@@ -17,10 +17,11 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground,
   Dimensions, StatusBar, Animated, Modal, Platform, Pressable, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import AsyncStorage      from '@react-native-async-storage/async-storage';
 import { useTheme }      from '../../context/ThemeContext';
@@ -33,34 +34,50 @@ import {
   useVictoryDays, useVictoryVigils, useVictoryMeta,
 } from '../../hooks/useVictoryContent';
 import { BLUE, INDIGO, AMBER, EMERALD, RADII, AMBIENT_SHADOW, victoryTones, groupAccent } from './victoryTheme';
-import { RichVerseText } from '../../components/BibleVerseLink';
 import EmojiIcon from '../../components/EmojiIcon';
 
 const { width: W } = Dimensions.get('window');
 const STORAGE_KEY = 'vmp_completed_days';
 
 // Hero-carousel images. Drop your own files into frontend/assets/ and swap the
-// nulls for require('../../assets/<file>.png') — e.g.
-//   focus: require('../../assets/victory-focus.png'),
-// Until a card's image is set, the card renders a light placeholder block with
-// its icon centered (see HeroCarousel).
+// nulls for require('../../assets/<file>.png'). The "prayer" card below is the
+// renamed scripture slide; its photo blends over PRAYER_BLEND (#FF6700).
+//
+// ⚠️ Add the praying-hands photo as frontend/assets/prayer-hands.jpg, then
+//    set prayer: require('../../assets/prayer-hands.jpg') here. Until the file
+//    exists it stays null and the card shows the solid #FF6700 background only
+//    (Metro fails to bundle a require() pointing at a missing file).
 const HERO_IMAGES = {
-  focus:     null,
-  scripture: null,
-  fasting:   null,
+  focus:   null,
+  prayer:  null,   // ← set to require('../../assets/prayer-hands.jpg') once added
+  fasting: null,
 };
 
-// Per-card light background tints — distinct shades from the primary blue family
-// so each slide reads differently as you swipe, while staying on-palette.
+// Brand accent backgrounds for the redesigned cards.
+const PRAYER_BLEND   = '#FF6700';   // prayer card background, photo blends over it
+const FAST_CARD_BG   = '#F72585';   // "Plan your fast" card background
+
+// Per-card background tints. Focus stays a light primary wash; the prayer and
+// fasting cards use their bold brand colors.
 const HERO_TINTS = {
-  focus:     BLUE[50],   // #EFF6FF
-  scripture: INDIGO[100], // #E0F2FE  (sky/secondary wash)
-  fasting:   BLUE[100],  // #DBEAFE
+  focus:   BLUE[50],       // #EFF6FF
+  prayer:  PRAYER_BLEND,   // #FF6700
+  fasting: FAST_CARD_BG,   // #F72585
 };
 
 // Card width: full content width with the standard 20px page gutter on each
 // side, so one card fills the viewport and the next peeks slightly.
 const HERO_CARD_W = W - 40;
+
+// Meter color ramp — interpolates red → amber → green across 0–100% so the
+// gauge reads "low / mid / full" at a glance. Returns a {from, to} gradient
+// pair for the progress arc.
+function meterColors(pct) {
+  const p = Math.max(0, Math.min(100, pct));
+  if (p < 34)  return { from: '#EF4444', to: '#F97316' };   // red → orange
+  if (p < 67)  return { from: '#F59E0B', to: '#FACC15' };   // amber → yellow
+  return { from: '#22C55E', to: '#16A34A' };                // green → deep green
+}
 
 export default function VictoryMonthHome({ navigation }) {
   const { isDark } = useTheme();
@@ -120,32 +137,48 @@ export default function VictoryMonthHome({ navigation }) {
         contentContainerStyle={{ paddingBottom: NAV_HEIGHT + 24 }}
         style={{ opacity: fade, transform: [{ translateY }] }}
       >
-        {/* ── TOP BAR ─────────────────────────────────────────────────────── */}
-        <View style={s.topbar}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Library')}
-            activeOpacity={0.75}
-            accessibilityLabel="Library"
-            style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
+        {/* ── HEADER — modern gradient banner ──────────────────────────────── */}
+        <View style={s.headerWrap}>
+          <LinearGradient
+            colors={isDark ? ['#0B1220', '#10213F', '#0B1220'] : [BLUE[700], BLUE[600], INDIGO[600]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.headerCard}
           >
-            <ICONS.BookStack color={tones.chipFg} size={18} sw={2.25} />
-          </TouchableOpacity>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[s.eyebrow, { color: tones.chipFg }]}>
-              {t('vmp_caps', 'VICTORY MONTH')}
-            </Text>
-            <Text style={[s.topTitle, { color: tk.textPrimary }]} numberOfLines={1}>
-              {meta.year}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('VictoryAbout')}
-            activeOpacity={0.75}
-            accessibilityLabel={t('vmp_about_eyebrow', 'About this guide')}
-            style={[s.iconBtn, { backgroundColor: tones.chipBg }]}
-          >
-            <Text style={[s.iconBtnTxt, { color: tones.chipFg }]}>i</Text>
-          </TouchableOpacity>
+            {/* Soft decorative orbs for depth */}
+            <View style={[s.headerOrb, s.headerOrbA]} />
+            <View style={[s.headerOrb, s.headerOrbB]} />
+
+            <View style={s.headerTopRow}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Library')}
+                activeOpacity={0.8}
+                accessibilityLabel="Library"
+                style={s.headerIconBtn}
+              >
+                <ICONS.BookStack color="#FFFFFF" size={18} sw={2.25} />
+              </TouchableOpacity>
+
+              <View style={s.headerPill}>
+                <View style={s.headerDot} />
+                <Text style={s.headerPillTxt}>{t('vmp_caps', 'VICTORY MONTH')}</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('VictoryAbout')}
+                activeOpacity={0.8}
+                accessibilityLabel={t('vmp_about_eyebrow', 'About this guide')}
+                style={s.headerIconBtn}
+              >
+                <Text style={s.headerIconTxt}>i</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={s.headerYear}>{meta.year}</Text>
+            {!!meta.theme && (
+              <Text style={s.headerTheme} numberOfLines={2}>{meta.theme}</Text>
+            )}
+          </LinearGradient>
         </View>
 
         {/* ── TODAY HERO — 3-card swipeable carousel ─────────────────────── */}
@@ -153,7 +186,6 @@ export default function VictoryMonthHome({ navigation }) {
           today={today}
           dayNum={dayNum}
           totalDays={TOTAL_DAYS}
-          isDark={isDark}
           tones={tones}
           tk={tk}
           t={t}
@@ -520,7 +552,7 @@ const sheet = StyleSheet.create({
 // light primary-palette tint and an image slot (falls back to a placeholder
 // block with the card's icon until HERO_IMAGES are provided).
 // ─────────────────────────────────────────────────────────────────────────────
-const HeroCarousel = ({ today, dayNum, totalDays, isDark, tones, tk, t, navigation }) => {
+const HeroCarousel = ({ today, dayNum, totalDays, tones, tk, t, navigation }) => {
   const [index, setIndex] = useState(0);
 
   const onScroll = (e) => {
@@ -535,7 +567,6 @@ const HeroCarousel = ({ today, dayNum, totalDays, isDark, tones, tk, t, navigati
   const cards = [
     {
       key: 'focus',
-      icon: <ICONS.Calendar color={BLUE[700]} size={26} sw={2.25} />,
       eyebrow: t('vmp_today_focus', "TODAY'S FOCUS"),
       cta: t('vmp_open_today', "Open today's prayer"),
       onPress: openToday,
@@ -554,40 +585,37 @@ const HeroCarousel = ({ today, dayNum, totalDays, isDark, tones, tk, t, navigati
       ),
     },
     {
-      key: 'scripture',
-      icon: <ICONS.Book color={INDIGO[600]} size={26} sw={2.25} />,
-      eyebrow: t('vmp_today_scripture', "TODAY'S SCRIPTURE"),
-      cta: t('vmp_read_pray', 'Read & pray'),
+      // Prayer card — full-bleed praying-hands photo blended over #FF6700.
+      // No scripture verse box: just an invitation to pray today.
+      key: 'prayer',
+      photo: true,
+      eyebrow: t('vmp_pray_today', 'PRAY TODAY'),
+      cta: t('vmp_enter_prayer', 'Enter prayer'),
       onPress: openToday,
       body: (
         <View style={{ paddingVertical: 2 }}>
-          {today.scripture ? (
-            <RichVerseText
-              text={today.scripture}
-              isDark={isDark}
-              lineHeight={26}
-              style={[s.heroScripture, { color: tk.textPrimary }]}
-            />
-          ) : (
-            <Text style={[s.heroScripture, { color: tones.textMuted }]}>
-              {t('vmp_no_scripture', 'Scripture for today will appear here.')}
-            </Text>
-          )}
+          <Text style={[s.heroTitle, s.heroTitleOnPhoto]} numberOfLines={2}>
+            {t('vmp_pray_title', 'A moment with God')}
+          </Text>
+          <Text style={[s.heroSub, s.heroSubOnPhoto]} numberOfLines={2}>
+            {t('vmp_pray_sub', 'Still your heart and pray over today’s focus.')}
+          </Text>
         </View>
       ),
     },
     {
+      // Fasting card — bold #F72585 surface, no big icon, light text.
       key: 'fasting',
-      icon: <ICONS.Star color={BLUE[700]} size={26} sw={2.25} />,
+      solid: FAST_CARD_BG,
       eyebrow: t('vmp_consecrate', 'CONSECRATE'),
       cta: t('vmp_open_fasting', 'Open fasting hub'),
       onPress: () => navigation.navigate('VictoryFastingHub'),
       body: (
         <View style={{ paddingVertical: 2 }}>
-          <Text style={[s.heroTitle, { color: tk.textPrimary }]} numberOfLines={2}>
+          <Text style={[s.heroTitle, s.heroTitleOnPhoto]} numberOfLines={2}>
             {t('vmp_fasting_card', 'Plan your fast')}
           </Text>
-          <Text style={[s.heroSub, { color: tones.textMuted }]} numberOfLines={2}>
+          <Text style={[s.heroSub, s.heroSubOnPhoto]} numberOfLines={2}>
             {t('vmp_fasting_sub', 'Schedule consecrated time and set reminders for the season.')}
           </Text>
         </View>
@@ -631,39 +659,70 @@ const HeroCarousel = ({ today, dayNum, totalDays, isDark, tones, tk, t, navigati
   );
 };
 
-// A single hero slide. Light tinted surface + image slot (or placeholder) +
-// eyebrow + body + gradient-style CTA pill.
+// A single hero slide. Three flavors:
+//   • photo  — full-bleed image blended over PRAYER_BLEND (#FF6700)
+//   • solid  — a bold brand color fill (e.g. fasting card #F72585)
+//   • tint   — a light primary wash (the Focus card)
+// Photo/solid cards use light text; the tint card uses the theme text colors.
 const HeroCard = ({ card, tones, tk }) => {
-  const img = HERO_IMAGES[card.key];
+  const onColor = card.photo || card.solid;   // dark-on-light vs light text
+  const eyebrowColor = onColor ? 'rgba(255,255,255,0.92)' : tones.chipFg;
+
+  const Inner = (
+    <>
+      <Text style={[s.heroEyebrow, { color: eyebrowColor }]}>{card.eyebrow}</Text>
+      {card.body}
+
+      <TouchableOpacity onPress={card.onPress} activeOpacity={0.88} style={s.heroCta}>
+        <View
+          style={[
+            s.heroCtaInner,
+            onColor
+              ? { backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)' }
+              : { backgroundColor: tones.ctaFrom },
+          ]}
+        >
+          <Text style={s.heroCtaTxt}>{card.cta}  →</Text>
+        </View>
+      </TouchableOpacity>
+    </>
+  );
+
+  // Photo card — image blends over the orange. If the asset isn't wired yet,
+  // fall back to the solid orange so the build still runs.
+  if (card.photo) {
+    const img = HERO_IMAGES[card.key];
+    return (
+      <View style={{ width: HERO_CARD_W }}>
+        <View style={[s.heroCard, s.heroCardPhoto, { backgroundColor: PRAYER_BLEND, ...AMBIENT_SHADOW }]}>
+          {img && (
+            <ImageBackground source={img} resizeMode="cover" style={StyleSheet.absoluteFill}>
+              {/* Orange wash blended over the photo for brand cohesion. */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: PRAYER_BLEND, opacity: 0.55 }]} />
+            </ImageBackground>
+          )}
+          <View style={s.heroCardContent}>{Inner}</View>
+        </View>
+      </View>
+    );
+  }
+
+  // Solid brand-color card (fasting).
+  if (card.solid) {
+    return (
+      <View style={{ width: HERO_CARD_W }}>
+        <View style={[s.heroCard, { backgroundColor: card.solid, ...AMBIENT_SHADOW }]}>
+          {Inner}
+        </View>
+      </View>
+    );
+  }
+
+  // Default light-tint card (focus).
   return (
     <View style={{ width: HERO_CARD_W }}>
-      <View
-        style={[
-          s.heroCard,
-          { backgroundColor: HERO_TINTS[card.key], borderColor: tones.glassEdge, ...AMBIENT_SHADOW },
-        ]}
-      >
-        {/* Image slot — real image when provided, else a light placeholder. */}
-        {img ? (
-          <Image source={img} style={s.heroImage} resizeMode="cover" />
-        ) : (
-          <View style={[s.heroImagePlaceholder, { backgroundColor: tones.chipBg }]}>
-            {card.icon}
-          </View>
-        )}
-
-        <Text style={[s.heroEyebrow, { color: tones.chipFg }]}>{card.eyebrow}</Text>
-        {card.body}
-
-        <TouchableOpacity
-          onPress={card.onPress}
-          activeOpacity={0.88}
-          style={[s.heroCta, { shadowColor: tones.ctaShadow }]}
-        >
-          <View style={[s.heroCtaInner, { backgroundColor: tones.ctaFrom }]}>
-            <Text style={s.heroCtaTxt}>{card.cta}  →</Text>
-          </View>
-        </TouchableOpacity>
+      <View style={[s.heroCard, { backgroundColor: HERO_TINTS[card.key], borderColor: tones.glassEdge, borderWidth: 1, ...AMBIENT_SHADOW }]}>
+        {Inner}
       </View>
     </View>
   );
@@ -719,6 +778,11 @@ const VictorySpeedometer = ({ pct, doneCount, total, tones, tk, t }) => {
   const dash   = frac * arcLen;
   const marker = gaugePoint(cx, cy, r, frac);
 
+  // Responsive color — red at low fill, amber mid, green when full. Keyed off
+  // the animated fraction so the arc shifts hue as it sweeps.
+  const animatedPctTxt = Math.round(frac * 100);
+  const ramp = meterColors(animatedPctTxt);
+
   // Arc path: start at left end (180°), sweep over the top to the right end (0°).
   const start = gaugePoint(cx, cy, r, 0);
   const end   = gaugePoint(cx, cy, r, 1);
@@ -726,7 +790,6 @@ const VictorySpeedometer = ({ pct, doneCount, total, tones, tk, t }) => {
 
   // Semicircle only needs the top half — height is radius + stroke padding.
   const svgH = cy + stroke / 2 + 2;
-  const animatedPctTxt = Math.round(frac * 100);
 
   return (
     <View style={{ alignItems: 'center' }}>
@@ -734,9 +797,8 @@ const VictorySpeedometer = ({ pct, doneCount, total, tones, tk, t }) => {
         <Svg width={size} height={svgH}>
           <Defs>
             <SvgGrad id="speedo" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={BLUE[700]} />
-              <Stop offset="0.5" stopColor={BLUE[500]} />
-              <Stop offset="1" stopColor={INDIGO[500]} />
+              <Stop offset="0" stopColor={ramp.from} />
+              <Stop offset="1" stopColor={ramp.to} />
             </SvgGrad>
           </Defs>
           {/* Track */}
@@ -758,7 +820,7 @@ const VictorySpeedometer = ({ pct, doneCount, total, tones, tk, t }) => {
           />
           {/* Marker dot riding the arc tip */}
           <Circle cx={marker.x} cy={marker.y} r={stroke / 2 + 3} fill="#fff" />
-          <Circle cx={marker.x} cy={marker.y} r={stroke / 2 - 1} fill={INDIGO[500]} />
+          <Circle cx={marker.x} cy={marker.y} r={stroke / 2 - 1} fill={ramp.to} />
         </Svg>
 
         {/* Center readout — overlaid at the base of the semicircle. */}
@@ -809,18 +871,40 @@ const ExploreBox = ({ icon, tint, label, sub, onPress, tk, tones }) => (
 );
 
 const s = StyleSheet.create({
-  topbar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8,
+  // Modern gradient header banner
+  headerWrap:  { paddingHorizontal: 16, paddingTop: 6, marginBottom: 22 },
+  headerCard:  {
+    borderRadius: RADII.xl, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 22,
+    overflow: 'hidden',
+    shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28, shadowRadius: 22, elevation: 8,
   },
-  iconBtn:    { width: 42, height: 42, borderRadius: RADII.pill, justifyContent: 'center', alignItems: 'center' },
-  iconBtnTxt: { fontSize: 16, fontWeight: '900', fontStyle: 'italic' },
-  eyebrow:    { fontSize: 10, fontWeight: '900', letterSpacing: 2.4 },
-  topTitle:   { fontSize: 14, fontWeight: '900', marginTop: 2 },
+  headerOrb:   { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
+  headerOrbA:  { width: 160, height: 160, top: -70, right: -40 },
+  headerOrbB:  { width: 110, height: 110, bottom: -50, left: -30, backgroundColor: 'rgba(255,255,255,0.07)' },
+  headerTopRow:{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerIconBtn: {
+    width: 40, height: 40, borderRadius: RADII.pill,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+  },
+  headerIconTxt: { fontSize: 16, fontWeight: '900', fontStyle: 'italic', color: '#FFFFFF' },
+  headerPill:  {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADII.pill,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+  },
+  headerDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
+  headerPillTxt:{ fontSize: 10, fontWeight: '900', letterSpacing: 2.2, color: '#FFFFFF' },
+  headerYear:   { fontSize: 38, fontWeight: '900', letterSpacing: -1.5, color: '#FFFFFF', marginTop: 16 },
+  headerTheme:  { fontSize: 13, fontWeight: '700', lineHeight: 19, color: 'rgba(255,255,255,0.88)', marginTop: 4 },
 
-  // Hero carousel — swipeable cards, each a light tinted surface with an
-  // image slot, eyebrow, body, and gradient CTA.
-  heroCard:    { padding: 20, borderRadius: RADII.xl, borderWidth: 1, marginRight: 0 },
+  // Hero carousel — swipeable cards (focus tint / prayer photo / fasting solid).
+  heroCard:    { padding: 20, borderRadius: RADII.xl, minHeight: 188, justifyContent: 'center' },
+  heroCardPhoto: { overflow: 'hidden', justifyContent: 'flex-end' },
+  heroCardContent: { /* sits above the photo wash */ },
   heroRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 14 },
   heroBadge:   {
     width: 72, height: 72, borderRadius: RADII.lg,
@@ -830,23 +914,14 @@ const s = StyleSheet.create({
   heroBadgeOf:  { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, marginTop: -2, opacity: 0.85 },
   heroEyebrow:  { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 },
   heroTitle:    { fontSize: 21, fontWeight: '900', lineHeight: 27, letterSpacing: -0.4 },
+  heroTitleOnPhoto: { color: '#FFFFFF' },
   heroSub:      { fontSize: 13, fontWeight: '600', lineHeight: 19, marginTop: 6 },
-  heroScripture:{ fontSize: 18, fontWeight: '800', lineHeight: 26, letterSpacing: -0.2 },
-  heroImage:    {
-    width: '100%', height: 120, borderRadius: RADII.lg, marginBottom: 14,
-  },
-  heroImagePlaceholder: {
-    width: '100%', height: 120, borderRadius: RADII.lg, marginBottom: 14,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  heroCta:      {
-    borderRadius: RADII.pill, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1, shadowRadius: 22, elevation: 6, marginTop: 16,
-  },
+  heroSubOnPhoto: { color: 'rgba(255,255,255,0.92)' },
+  heroCta:      { borderRadius: RADII.pill, marginTop: 16, alignSelf: 'flex-start' },
   heroCtaInner: {
-    paddingVertical: 15, borderRadius: RADII.pill, alignItems: 'center',
+    paddingVertical: 13, paddingHorizontal: 22, borderRadius: RADII.pill, alignItems: 'center',
   },
-  heroCtaTxt:   { color: '#fff', fontSize: 14.5, fontWeight: '900', letterSpacing: 0.3 },
+  heroCtaTxt:   { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
 
   // Carousel dot indicators
   dotsRow:   { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 14 },
