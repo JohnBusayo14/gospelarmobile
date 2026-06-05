@@ -46,7 +46,7 @@ const STORAGE_KEY = 'vmp_completed_days';
 //      const HEADER_IMAGE = require('../../assets/prayer-hands.jpg');
 //    Until the file exists this stays null and the header falls back to the
 //    plain blue gradient (Metro can't bundle a require() to a missing file).
-const HEADER_IMAGE = null;   // ← set to require('../../assets/prayer-hands.jpg') once added
+const HEADER_IMAGE = require('../../assets/prayer-hands.jpg');
 
 // Meter color ramp — interpolates red → amber → green across 0–100% so the
 // gauge reads "low / mid / full" at a glance. Returns a {from, to} gradient
