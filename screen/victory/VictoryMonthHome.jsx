@@ -125,8 +125,8 @@ export default function VictoryMonthHome({ navigation }) {
             )}
             <LinearGradient
               colors={isDark
-                ? ['rgba(11,18,32,0.78)', 'rgba(16,33,63,0.90)', 'rgba(11,18,32,0.96)']
-                : ['rgba(29,78,216,0.74)', 'rgba(37,99,235,0.82)', 'rgba(2,132,199,0.92)']}
+                ? ['rgba(11,18,32,0.55)', 'rgba(16,33,63,0.70)', 'rgba(11,18,32,0.82)']
+                : ['rgba(29,78,216,0.45)', 'rgba(37,99,235,0.55)', 'rgba(2,132,199,0.70)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
