@@ -42,9 +42,9 @@ const { width: W } = Dimensions.get('window');
 
 // Synthetic participant strip — avatars + initials, used by the bottom bar.
 const PARTICIPANTS = [
-  { name: 'Tola',     emoji: '🙏', accent: '#1A56DB' },
-  { name: 'Bola',     emoji: '✝️', accent: '#4F46E5' },
-  { name: 'Grace',    emoji: '✨', accent: '#10B981' },
+  { name: 'Tola',     emoji: '🙏', accent: '#2563EB' },
+  { name: 'Bola',     emoji: '✝️', accent: '#0EA5E9' },
+  { name: 'Grace',    emoji: '✨', accent: '#22C55E' },
   { name: 'Pst Sam',  emoji: '🎙️', accent: '#F59E0B' },
   { name: 'Daniel',   emoji: '🔥', accent: '#DC2626' },
   { name: 'Esther',   emoji: '🌿', accent: '#0F766E' },
@@ -561,7 +561,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
                   <ControlBtn
                     emoji={muted ? '🔇' : '🎙️'}
                     label={muted ? 'Muted' : 'Speaking'}
-                    bg={muted ? 'rgba(255,255,255,0.18)' : '#10B981'}
+                    bg={muted ? 'rgba(255,255,255,0.18)' : '#22C55E'}
                     onPress={() => setMuted((m) => !m)}
                   />
                   <ControlBtn
@@ -573,7 +573,7 @@ export default function VictoryAudioRoom({ route, navigation }) {
                   <ControlBtn
                     emoji="💬"
                     label={showChat ? 'Hide chat' : 'Chat'}
-                    bg={showChat ? '#4F46E5' : 'rgba(255,255,255,0.18)'}
+                    bg={showChat ? '#0EA5E9' : 'rgba(255,255,255,0.18)'}
                     onPress={() => setShowChat((v) => !v)}
                   />
                   <ControlBtn

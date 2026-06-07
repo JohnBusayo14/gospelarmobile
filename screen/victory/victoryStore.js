@@ -402,7 +402,7 @@ export const addUserRoom = async (room) => {
     scheduled_at: room.scheduled_at || null,
     participants_simulated: Math.max(1, Math.floor(8 + Math.random() * 40)),
     ambient:      room.ambient || 'piano',
-    accent:       room.accent  || '#1A56DB',
+    accent:       room.accent  || '#2563EB',
     gradient:     Array.isArray(room.gradient) && room.gradient.length >= 2
                     ? room.gradient
                     : DEFAULT_GRADIENT,

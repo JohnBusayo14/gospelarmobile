@@ -1,22 +1,26 @@
 // screen/victory/victoryTheme.js
 // ─────────────────────────────────────────────────────────────────────────────
 // Local design tokens for the Victory Month book.
-// Adapted from the DESIGN.md spec ("Glassmorphic Clinical Warmth") but
-// retuned for a blue, devotional aesthetic instead of the medical palette:
-//   • Blue primary instead of teal       (#1A56DB → #3B82F6)
-//   • Indigo complement for accent CTAs  (#4F46E5)
-//   • Amber tertiary for "today" highlights
-//   • Surfaces are organic, no 1px borders — boundaries via tonal shifts
-//   • Generous radii (16–32px) for a soft, devotional feel
-//   • Ambient shadows (40–60px blur, low opacity) for soft lift
+//
+// 2026-06 palette — a clean, modern 7-role system with blue as primary:
+//   Primary    #2563EB   (BLUE ramp, 600 level)
+//   Secondary  #0EA5E9   (SKY ramp + the INDIGO accent slot)
+//   Success    #22C55E   (EMERALD)
+//   Warning    #F59E0B   (AMBER)
+//   Error      #EF4444   (ROSE)
+//   Background #F8FAFC   (light pageBg)
+//   Text       #1E293B   (light textStrong)
+// The historic export names (INDIGO/ROSE/EMERALD) are kept so the 20 victory
+// screens keep compiling without a sweep — only the values moved.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Primary blue ramp — the spine of the Victory Month visual identity.
+// Anchored on the brand primary #2563EB at the 600 (CTA) level.
 export const BLUE = {
-  900: '#0B2A6B',   // deep night sky
-  800: '#1E3A8A',   // ink
+  900: '#1E3A8A',   // deepest night sky
+  800: '#1E40AF',   // ink
   700: '#1D4ED8',   // primary deep
-  600: '#1A56DB',   // primary (CTAs)
+  600: '#2563EB',   // primary (CTAs) — brand anchor
   500: '#3B82F6',   // primary bright
   400: '#60A5FA',   // primary soft
   300: '#93C5FD',   // washed
@@ -25,51 +29,53 @@ export const BLUE = {
   50:  '#EFF6FF',   // background wash
 };
 
-// Indigo accent — used for "Vigil" group and secondary CTA gradients.
+// Secondary accent — used for "Vigil" group + secondary CTA gradients.
+// Anchored on the secondary #0EA5E9 (sky). Kept under the INDIGO name for
+// back-compat with existing call sites.
 export const INDIGO = {
-  700: '#4338CA',
-  600: '#4F46E5',
-  500: '#6366F1',
-  100: '#E0E7FF',
-  50:  '#EEF2FF',
+  700: '#0369A1',
+  600: '#0284C7',
+  500: '#0EA5E9',   // secondary
+  100: '#E0F2FE',
+  50:  '#F0F9FF',
 };
 
-// Sky accent — used for soft glassmorphic orbs in the background.
+// Sky accent — same secondary hue, used for soft highlights / orbs.
 export const SKY = {
-  500: '#0EA5E9',
+  500: '#0EA5E9',   // secondary
   100: '#E0F2FE',
 };
 
-// Tertiary amber — sparingly used for "today" / "pending" highlights.
+// Warning amber — "today" / "pending" highlights.
 export const AMBER = {
   600: '#D97706',
-  500: '#F59E0B',
+  500: '#F59E0B',   // warning
   100: '#FEF3C7',
   50:  '#FFFBEB',
 };
 
-// Calm coral — for "mark as prayed" celebration / urgent moments.
-// Never harsh red — keeps the devotional tone.
+// Error red — for destructive / urgent moments.
 export const ROSE = {
-  500: '#F43F5E',
-  100: '#FFE4E6',
+  500: '#EF4444',   // error
+  100: '#FEE2E2',
 };
 
-// Emerald — for "completed" / success states.
+// Success green — for "completed" / success states.
 export const EMERALD = {
-  600: '#059669',
-  500: '#10B981',
-  100: '#D1FAE5',
+  600: '#16A34A',
+  500: '#22C55E',   // success
+  100: '#DCFCE7',
 };
 
-// Group → accent mapping for the vigil cards. Keeps the palette varied
-// while staying inside the blue family.
+// Group → accent mapping for the vigil cards. Built from the 7-role palette:
+// Family on primary blue, Youth on secondary sky, Women on error red, Men on
+// success green, General on warning amber — so the five read distinctly.
 export const GROUP_ACCENTS = {
-  Family:  { fg: '#1A56DB', bg: '#EFF6FF', deep: '#1E3A8A' },
-  Youth:   { fg: '#4F46E5', bg: '#EEF2FF', deep: '#3730A3' },
-  Women:   { fg: '#DB2777', bg: '#FCE7F3', deep: '#9D174D' },
-  Men:     { fg: '#0F766E', bg: '#CCFBF1', deep: '#134E4A' },
-  General: { fg: '#7C3AED', bg: '#EDE9FE', deep: '#5B21B6' },
+  Family:  { fg: '#2563EB', bg: '#EFF6FF', deep: '#1E3A8A' },   // primary
+  Youth:   { fg: '#0EA5E9', bg: '#E0F2FE', deep: '#0369A1' },   // secondary
+  Women:   { fg: '#EF4444', bg: '#FEE2E2', deep: '#991B1B' },   // error
+  Men:     { fg: '#22C55E', bg: '#DCFCE7', deep: '#166534' },   // success
+  General: { fg: '#F59E0B', bg: '#FEF3C7', deep: '#92400E' },   // warning
 };
 
 // Get the right group accent (falls back to indigo for unknown groups).
@@ -85,14 +91,14 @@ export const groupAccent = (group) =>
 // kept (glassFill / glassEdge) so the 16 victory screens keep compiling
 // without a sweep — the underlying values are just no longer translucent.
 export const victoryTones = (isDark) => ({
-  // Page background — a plain, single colour. Slightly cool-grey in light
-  // mode so white cards sit visibly on top; near-black in dark mode.
-  pageBg:      isDark ? '#0A0F1A' : '#F4F6FB',
+  // Page background — the palette Background #F8FAFC in light mode so white
+  // cards sit visibly on top; near-black in dark mode.
+  pageBg:      isDark ? '#0A0F1A' : '#F8FAFC',
 
   // Hero / primary CTA gradient pair — used by the Open Today button.
   ctaFrom:     BLUE[700],
   ctaTo:       BLUE[500],
-  ctaShadow:   'rgba(26, 86, 219, 0.30)',
+  ctaShadow:   'rgba(37, 99, 235, 0.30)',   // #2563EB primary glow
 
   // "Today" pill / highlight — saturated enough to read at a glance.
   todayBg:     isDark ? 'rgba(59, 130, 246, 0.18)' : BLUE[100],
@@ -112,10 +118,8 @@ export const victoryTones = (isDark) => ({
   glassFill:   isDark ? '#121826' : '#FFFFFF',
   glassEdge:   isDark ? '#1F2A40' : '#E5E7EB',
 
-  // Stronger muted text — the global tk.textMuted (#A3A3A3 / #6B7280) reads
-  // as washed-out against the new solid cards. Victory screens should
-  // prefer this for secondary copy where readability matters.
-  textStrong:  isDark ? '#F3F4F6' : '#111827',
+  // Primary body text — the palette Text #1E293B (slate) in light mode.
+  textStrong:  isDark ? '#F3F4F6' : '#1E293B',
   textMuted:   isDark ? '#9CA3AF' : '#475569',
 
   // Background orb tints — kept on the tone object for back-compat with any

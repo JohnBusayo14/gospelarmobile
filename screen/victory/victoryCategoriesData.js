@@ -13,7 +13,7 @@ export const CATEGORIES = [
     name: 'Family Vigil',
     blurb: 'Pray together as a household',
     emoji: '🏡',
-    accent:    '#1A56DB',
+    accent:    '#2563EB',
     accentBg:  '#EFF6FF',
     gradient: ['#1E3A8A', '#3B82F6'],
     starters: [
@@ -29,9 +29,9 @@ export const CATEGORIES = [
     name: 'Youth Vigil',
     blurb: 'Fire for the next generation',
     emoji: '🔥',
-    accent:    '#4F46E5',
+    accent:    '#0EA5E9',
     accentBg:  '#EEF2FF',
-    gradient: ['#3730A3', '#6366F1'],
+    gradient: ['#0369A1', '#38BDF8'],
     starters: [
       { id:'yv-1', title:'Purity in Christ',              scripture:'1 Timothy 4:12',    body:'Father, let our youth be examples in speech, conduct, love, faith and purity. Set us apart from every form of compromise.' },
       { id:'yv-2', title:'Destiny Unlocked',              scripture:'Jeremiah 29:11',    body:'Reveal Your plans for our lives — plans of welfare and not evil, to give us a future and a hope.' },
@@ -111,7 +111,7 @@ export const CATEGORIES = [
     emoji: '⚔️',
     accent:    '#0F766E',
     accentBg:  '#CCFBF1',
-    gradient: ['#134E4A', '#14B8A6'],
+    gradient: ['#134E4A', '#22C55E'],
     starters: [
       { id:'dl-1', title:'Bondage Broken',                scripture:'Galatians 5:1',     body:'It is for freedom that Christ has set me free. Every chain on my mind, body and destiny — break by fire.' },
       { id:'dl-2', title:'Soul Ties Severed',             scripture:'1 Corinthians 6:17',body:'I sever every ungodly soul tie. I am joined to the Lord and one spirit with Him.' },
@@ -125,9 +125,9 @@ export const CATEGORIES = [
     name: 'Personal Prayer',
     blurb: 'Your own walk with God',
     emoji: '✨',
-    accent:    '#10B981',
+    accent:    '#22C55E',
     accentBg:  '#D1FAE5',
-    gradient: ['#065F46', '#10B981'],
+    gradient: ['#065F46', '#22C55E'],
     starters: [
       { id:'pp-1', title:'Closer Walk',                   scripture:'Psalm 27:4',        body:'One thing I have desired — to dwell in Your house and behold Your beauty. Draw me near, Lord.' },
       { id:'pp-2', title:'Hearing His Voice',             scripture:'John 10:27',        body:'I am Your sheep — I hear Your voice. Sharpen my discernment; quiet the noise.' },

@@ -90,7 +90,7 @@ export const AUDIO_ROOMS = [
     scheduled_at: null,
     participants_simulated: 96,
     ambient: 'piano',
-    accent: '#1A56DB',
+    accent: '#2563EB',
     gradient: ['#1E3A8A', '#3B82F6'],
   },
   {
@@ -106,8 +106,8 @@ export const AUDIO_ROOMS = [
     scheduled_at: null,
     participants_simulated: 142,
     ambient: 'piano',
-    accent: '#4F46E5',
-    gradient: ['#3730A3', '#6366F1'],
+    accent: '#0EA5E9',
+    gradient: ['#0369A1', '#38BDF8'],
   },
   {
     id: 'rec-deliverance',
@@ -123,7 +123,7 @@ export const AUDIO_ROOMS = [
     participants_simulated: 78,
     ambient: 'strings',
     accent: '#0F766E',
-    gradient: ['#134E4A', '#14B8A6'],
+    gradient: ['#134E4A', '#22C55E'],
   },
   {
     id: 'rec-personal',
@@ -138,8 +138,8 @@ export const AUDIO_ROOMS = [
     scheduled_at: null,
     participants_simulated: 64,
     ambient: 'piano',
-    accent: '#10B981',
-    gradient: ['#065F46', '#10B981'],
+    accent: '#22C55E',
+    gradient: ['#065F46', '#22C55E'],
   },
 ];
 
@@ -172,10 +172,10 @@ export const ROOM_GRADIENTS = [
   { id: 'fire',     accent: '#DC2626', gradient: ['#7F1D1D', '#DC2626'] },
   { id: 'dawn',     accent: '#F59E0B', gradient: ['#92400E', '#F59E0B'] },
   { id: 'ocean',    accent: '#0EA5E9', gradient: ['#0C4A6E', '#0EA5E9'] },
-  { id: 'royal',    accent: '#1A56DB', gradient: ['#1E3A8A', '#3B82F6'] },
-  { id: 'indigo',   accent: '#4F46E5', gradient: ['#3730A3', '#6366F1'] },
-  { id: 'forest',   accent: '#0F766E', gradient: ['#134E4A', '#14B8A6'] },
-  { id: 'meadow',   accent: '#10B981', gradient: ['#065F46', '#10B981'] },
+  { id: 'royal',    accent: '#2563EB', gradient: ['#1E3A8A', '#3B82F6'] },
+  { id: 'indigo',   accent: '#0EA5E9', gradient: ['#0369A1', '#38BDF8'] },
+  { id: 'forest',   accent: '#0F766E', gradient: ['#134E4A', '#22C55E'] },
+  { id: 'meadow',   accent: '#22C55E', gradient: ['#065F46', '#22C55E'] },
 ];
 
 // Categories the create-room form offers as chips.

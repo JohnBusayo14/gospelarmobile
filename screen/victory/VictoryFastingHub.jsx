@@ -129,7 +129,7 @@ export default function VictoryFastingHub({ navigation }) {
             {awaitingFinish.map((f) => (
               <LinearGradient
                 key={f.id}
-                colors={[EMERALD[500], '#14B8A6']}
+                colors={[EMERALD[500], '#22C55E']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={[s.endedBanner, AMBIENT_SHADOW]}
               >

@@ -62,7 +62,7 @@ export const TIER_COLOURS = {
   bronze:   { ring: '#C77B3F', glow: '#F5D5B0', text: '#7C3F12' },
   silver:   { ring: '#94A3B8', glow: '#E2E8F0', text: '#475569' },
   gold:     { ring: '#F59E0B', glow: '#FEF3C7', text: '#92400E' },
-  sapphire: { ring: '#1A56DB', glow: '#DBEAFE', text: '#1E40AF' },
+  sapphire: { ring: '#2563EB', glow: '#DBEAFE', text: '#1E40AF' },
   diamond:  { ring: '#3B82F6', glow: '#E0F2FE', text: '#0C4A6E' },
 };
 
