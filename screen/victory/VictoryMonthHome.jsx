@@ -128,8 +128,8 @@ export default function VictoryMonthHome({ navigation }) {
             {/* Blue gradient blend over the photo. */}
             <LinearGradient
               colors={isDark
-                ? ['rgba(11,18,32,0.55)', 'rgba(16,33,63,0.70)', 'rgba(11,18,32,0.82)']
-                : ['rgba(29,78,216,0.45)', 'rgba(37,99,235,0.55)', 'rgba(2,132,199,0.70)']}
+                ? ['rgba(11,18,32,0.72)', 'rgba(16,33,63,0.84)', 'rgba(11,18,32,0.92)']
+                : ['rgba(29,78,216,0.72)', 'rgba(37,99,235,0.80)', 'rgba(2,132,199,0.88)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
