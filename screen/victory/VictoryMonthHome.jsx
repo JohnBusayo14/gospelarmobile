@@ -17,7 +17,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground,
   Dimensions, StatusBar, Animated, Modal, Platform, Pressable, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -118,11 +118,14 @@ export default function VictoryMonthHome({ navigation }) {
       >
         {/* ── HEADER — image background blended with blue, + today's focus ─── */}
         <View style={s.headerWrap}>
-          <View style={s.headerCard}>
-            {/* Photo background (when wired) under a blue gradient blend. */}
-            {HEADER_IMAGE && (
-              <Image source={HEADER_IMAGE} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            )}
+          <ImageBackground
+            source={HEADER_IMAGE}
+            resizeMode="cover"
+            style={s.headerCard}
+            imageStyle={{ borderRadius: RADII.xl }}
+            onError={(e) => console.warn('[VictoryHeader] image failed:', e?.nativeEvent?.error)}
+          >
+            {/* Blue gradient blend over the photo. */}
             <LinearGradient
               colors={isDark
                 ? ['rgba(11,18,32,0.55)', 'rgba(16,33,63,0.70)', 'rgba(11,18,32,0.82)']
@@ -186,7 +189,7 @@ export default function VictoryMonthHome({ navigation }) {
                 <Text style={s.headerCtaTxt}>{t('vmp_open_today', "Open today's prayer")}  →</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ImageBackground>
         </View>
 
         {/* ── PROGRESS METER — animated semicircle speedometer ───────────── */}
@@ -727,7 +730,7 @@ const s = StyleSheet.create({
   headerDayNum:   { fontSize: 26, fontWeight: '900', letterSpacing: -1, lineHeight: 28, color: '#FFFFFF' },
   headerDayOf:    { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, marginTop: -1, color: 'rgba(255,255,255,0.85)' },
   headerFocusEyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 5, color: 'rgba(255,255,255,0.85)' },
-  headerFocusTitle:   { fontSize: 18, fontWeight: '900', lineHeight: 24, letterSpacing: -0.3, color: '#FFFFFF' },
+  headerFocusTitle:   { fontSize: 18, fontWeight: '500', lineHeight: 24, letterSpacing: -0.3, color: '#FFFFFF' },
   headerCta:    {
     marginTop: 18, alignSelf: 'flex-start',
     paddingVertical: 13, paddingHorizontal: 22, borderRadius: RADII.pill,
