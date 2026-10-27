@@ -546,22 +546,42 @@ const pt = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // QUESTION CARD
 // ─────────────────────────────────────────────────────────────────────────────
-const QuestionCard = ({ question, index, tk }) => (
-  <View style={[qc.card, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
-    <View style={[qc.numBox, { backgroundColor:BLUE_LIGHT }]}>
-      <Text style={{ fontSize:18 }}>💬</Text>
-      <Text style={[qc.num, { color:BLUE }]}>{index+1}</Text>
+// Questions are plain strings or { text, answer? }. When an answer is present
+// it stays hidden until tapped so the class can discuss first.
+const QuestionCard = ({ question, index, tk, t }) => {
+  const [showAnswer, setShowAnswer] = useState(false);
+  const text   = typeof question==='string' ? question : question?.text || '';
+  const answer = typeof question==='string' ? '' : question?.answer || '';
+  return (
+    <View style={[qc.card, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
+      <View style={[qc.numBox, { backgroundColor:BLUE_LIGHT }]}>
+        <Text style={{ fontSize:18 }}>💬</Text>
+        <Text style={[qc.num, { color:BLUE }]}>{index+1}</Text>
+      </View>
+      <View style={qc.body}>
+        <Text style={[qc.text, { color:tk.textPrimary }]}>{text}</Text>
+        {!!answer && (
+          <TouchableOpacity onPress={()=>setShowAnswer(v=>!v)} activeOpacity={0.75}>
+            <Text style={[qc.toggle, { color:BLUE }]}>
+              {showAnswer ? t('lesson_hide_answer', 'Hide answer') : t('lesson_show_answer', 'Show suggested answer')}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {!!answer && showAnswer && (
+          <Text style={[qc.answer, { color:tk.textMuted }]}>{answer}</Text>
+        )}
+      </View>
     </View>
-    <Text style={[qc.text, { color:tk.textPrimary }]}>
-      {typeof question==='string' ? question : question?.text || ''}
-    </Text>
-  </View>
-);
+  );
+};
 const qc = StyleSheet.create({
   card:     { flexDirection:'row', alignItems:'center', borderRadius:14, borderWidth:1, overflow:'hidden', marginBottom:10, shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:.04, shadowRadius:6, elevation:1 },
-  numBox:   { width:56, paddingVertical:16, alignItems:'center', flexShrink:0 },
+  numBox:   { width:56, paddingVertical:16, alignItems:'center', flexShrink:0, alignSelf:'stretch', justifyContent:'center' },
   num:      { fontSize:11, fontWeight:'900', marginTop:2 },
-  text:     { flex:1, fontSize:14, lineHeight:22, fontWeight:'500', paddingVertical:16, paddingRight:14 },
+  body:     { flex:1, paddingVertical:16, paddingRight:14 },
+  text:     { fontSize:14, lineHeight:22, fontWeight:'500' },
+  toggle:   { fontSize:12, fontWeight:'700', marginTop:8 },
+  answer:   { fontSize:13, lineHeight:20, marginTop:6 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -835,7 +855,7 @@ export default function LessonPage({ route, navigation }) {
               {questionsOpen && (
                 <View style={{ marginTop:10 }}>
                   {c.questions.map((q, i) => (
-                    <QuestionCard key={i} question={q} index={i} tk={tk}/>
+                    <QuestionCard key={i} question={q} index={i} tk={tk} t={t}/>
                   ))}
                 </View>
               )}
