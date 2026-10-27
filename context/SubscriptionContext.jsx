@@ -12,10 +12,10 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
 
-// Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api.gospelar.com
+// Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api2.gospelar.com
 // (CNAME → Railway); override in frontend/.env for local development.
 export const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.gospelar.com')
+  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api2.gospelar.com')
     .replace(/\/$/, '');
 
 // Render's free plan can take 30–60s to wake from sleep. Generous timeouts

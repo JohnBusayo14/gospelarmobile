@@ -13,7 +13,7 @@ import { cacheFirst } from './cache';
 // gospelar.com domain (CNAME → Railway). The Railway-generated host stays
 // reachable but the custom domain insulates the app from any future migration.
 export const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.gospelar.com')
+  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api2.gospelar.com')
     .replace(/\/$/, '');
 
 // Render's free plan spins the dyno down after 15 min of inactivity, so the
