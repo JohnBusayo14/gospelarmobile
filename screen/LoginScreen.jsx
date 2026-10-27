@@ -10,7 +10,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, ScrollView, Dimensions,
+  KeyboardAvoidingView, ScrollView, useWindowDimensions,
   Animated, StatusBar, ActivityIndicator, Platform, Alert, Pressable,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
@@ -21,11 +21,10 @@ import { API_BASE_URL }   from '../services/api';
 import { useTheme }       from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useLanguage }     from '../context/LanguageContext';
-import { getTokens } from '../theme/tokens';
+import { getTokens, type, space, heroSize } from '../theme/tokens';
 import { usePressScale } from '../hooks/useFluidAnim';
 import { ICONS }      from '../components/icons';
 
-const { width, height } = Dimensions.get('window');
 const API = API_BASE_URL;
 
 const ACCENT = '#2563EB';
@@ -113,6 +112,8 @@ export default function LoginScreen({ navigation }) {
   const { t }       = useLanguage();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const signInBtn = usePressScale();
+  const { width, height } = useWindowDimensions();
+  const hero = heroSize(width, height);
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -283,7 +284,7 @@ export default function LoginScreen({ navigation }) {
           <LinearGradient
             colors={
               isDark
-                ? ['#0F1117', '#1A1D27', '#0F1117']
+                ? [tk.bg, tk.surface, tk.bg]
                 : ['#EFF6FF', '#DBEAFE', '#FFFFFF']
             }
             style={s.hero}
@@ -292,8 +293,14 @@ export default function LoginScreen({ navigation }) {
               source={require('../assets/lottie/Unlocked.json')}
               autoPlay
               loop
-              style={s.lottie}
+              style={{ width: hero, height: hero }}
             />
+            <Text style={[type.h2, s.heroTitle, { color: tk.textPrimary }]}>
+              {t('login_welcome_back', 'Welcome back')}
+            </Text>
+            <Text style={[type.sub, s.heroSub, { color: tk.textSec }]}>
+              {t('login_welcome_sub', 'Sign in to continue your learning journey')}
+            </Text>
           </LinearGradient>
 
           {/* ── Form card ──────────────────────────────────────────────────── */}
@@ -315,6 +322,9 @@ export default function LoginScreen({ navigation }) {
                 <View style={[
                   s.statusBanner,
                   statusBanner.kind === 'rejected' ? s.statusBannerRejected : s.statusBannerPending,
+                  isDark && (statusBanner.kind === 'rejected'
+                    ? { backgroundColor: '#EF44441F', borderColor: '#EF444440' }
+                    : { backgroundColor: '#F59E0B1F', borderColor: '#F59E0B40' }),
                 ]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     {statusBanner.kind === 'rejected'
@@ -322,14 +332,18 @@ export default function LoginScreen({ navigation }) {
                       : <ICONS.Hourglass   color="#92400E" size={18} sw={2.25} />}
                     <Text style={[
                       s.statusTitle,
-                      { color: statusBanner.kind === 'rejected' ? '#991B1B' : '#92400E' },
+                      { color: statusBanner.kind === 'rejected'
+                          ? (isDark ? '#FCA5A5' : '#991B1B')
+                          : (isDark ? '#FCD34D' : '#92400E') },
                     ]}>
                       {statusBanner.title}
                     </Text>
                   </View>
                   <Text style={[
                     s.statusBody,
-                    { color: statusBanner.kind === 'rejected' ? '#7F1D1D' : '#78350F' },
+                    { color: statusBanner.kind === 'rejected'
+                        ? (isDark ? '#FECACA' : '#7F1D1D')
+                        : (isDark ? '#FDE68A' : '#78350F') },
                   ]}>
                     {statusBanner.message}
                   </Text>
@@ -347,9 +361,13 @@ export default function LoginScreen({ navigation }) {
 
               {/* Form-level error banner */}
               {!!errors.form && (
-                <View style={[s.formError, { flexDirection:'row', alignItems:'center', gap:8 }]}>
+                <View style={[
+                  s.formError,
+                  { flexDirection:'row', alignItems:'center', gap:8 },
+                  isDark && { backgroundColor: '#EF44441F', borderColor: '#EF444440' },
+                ]}>
                   <ICONS.AlertTriangle color="#EF4444" size={16} sw={2.25} />
-                  <Text style={s.formErrorTxt}>{errors.form}</Text>
+                  <Text style={[s.formErrorTxt, { flex: 1 }, isDark && { color: '#FCA5A5' }]}>{errors.form}</Text>
                 </View>
               )}
 
@@ -454,9 +472,10 @@ const s = StyleSheet.create({
   safe:        { flex: 1 },
   hero:        {
     alignItems: 'center', justifyContent: 'center',
-    paddingTop: 16, paddingBottom: 8, paddingHorizontal: 24,
+    paddingTop: space.xl, paddingBottom: space['2xl'], paddingHorizontal: 24,
   },
-  lottie:      { width: width * 0.7, height: width * 0.7 },
+  heroTitle:   { marginTop: space.sm, textAlign: 'center' },
+  heroSub:     { marginTop: space.xs, textAlign: 'center' },
   formWrap:    { paddingHorizontal: 20, paddingBottom: 16 },
   card:        {
     borderRadius: 24, borderWidth: 1, padding: 24,

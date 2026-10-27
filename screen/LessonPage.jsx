@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, Animated, ActivityIndicator,
-  Platform, Modal, Easing, Image,
+  Platform, Modal, Easing, Image, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import AsyncStorage       from '@react-native-async-storage/async-storage';
@@ -25,7 +25,6 @@ const { width, height } = Dimensions.get('window');
 
 const BLUE       = '#1A56DB';
 const BLUE_MID   = '#3B82F6';
-const BLUE_LIGHT = '#EFF6FF';
 
 // Blue-only accent palette
 const ACCENTS = [BLUE, BLUE_MID, '#1D4ED8', '#2563EB', '#1E40AF', '#3B82F6'];
@@ -116,8 +115,9 @@ const ReadModeModal = ({ visible, parts, initialIndex=0, lessonTitle, accent, on
         </View>
         <Animated.View pointerEvents={showControls?'auto':'none'}
           style={[rm.topBar, { backgroundColor:rt.bg, opacity:controlFade }]}>
-          <TouchableOpacity onPress={onClose} style={[rm.iconBtn,{backgroundColor:rt.surface}]} activeOpacity={0.7}>
-            <Text style={{ fontSize:14, fontWeight:'700', color:rt.text }}>✕</Text>
+          <TouchableOpacity onPress={onClose} style={[rm.iconBtn,{backgroundColor:rt.surface}]} activeOpacity={0.7}
+            hitSlop={6} accessibilityRole="button" accessibilityLabel={t('btn_close', 'Close')}>
+            <ICONS.X color={rt.text} size={18} />
           </TouchableOpacity>
           <View style={rm.topCenter}>
             <Text style={[rm.topTitle,{color:rt.text}]} numberOfLines={1}>{lessonTitle}</Text>
@@ -247,7 +247,8 @@ const rm = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // CENTER MODAL — modern overlay for verse / hymns / background
 // ─────────────────────────────────────────────────────────────────────────────
-const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }) => {
+const ContentModal = ({ visible, onClose, title, Icon, icon, tk, isDark, children, t }) => {
+  const { height: winH } = useWindowDimensions();
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   // Track the in-flight parallel so toggling visible (or unmount mid-flight)
@@ -274,15 +275,18 @@ const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
       <Animated.View style={[cm.overlay, { opacity:fadeAnim }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose}/>
-        <Animated.View style={[cm.card, { backgroundColor:tk.glassFill, transform:[{scale:scaleAnim}] }]}>
+        <Animated.View style={[cm.card, { maxHeight:winH*0.80, backgroundColor:tk.glassFill, transform:[{scale:scaleAnim}] }]}>
           {/* Header */}
           <View style={[cm.header, { borderBottomColor:tk.glassEdge }]}>
-            <View style={[cm.iconBox, { backgroundColor:BLUE_LIGHT }]}>
-              <Text style={{ fontSize:26 }}>{icon}</Text>
+            <View style={[cm.iconBox, { backgroundColor:tk.chipBg }]}>
+              {Icon
+                ? <Icon color={BLUE_MID} size={22} />
+                : <Text style={{ fontSize:26 }}>{icon}</Text>}
             </View>
             <Text style={[cm.title, { color:tk.textPrimary }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={[cm.closeBtn, { backgroundColor:tk.surfaceEl }]} activeOpacity={0.75}>
-              <Text style={[cm.closeX, { color:tk.textPrimary }]}>✕</Text>
+            <TouchableOpacity onPress={onClose} style={[cm.closeBtn, { backgroundColor:tk.surfaceEl }]} activeOpacity={0.75}
+              hitSlop={8} accessibilityRole="button" accessibilityLabel={t ? t('btn_close', 'Close') : 'Close'}>
+              <ICONS.X color={tk.textPrimary} size={16} />
             </TouchableOpacity>
           </View>
           {/* Body */}
@@ -302,7 +306,7 @@ const ContentModal = ({ visible, onClose, title, icon, tk, isDark, children, t }
 };
 const cm = StyleSheet.create({
   overlay:  { flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'center', alignItems:'center', paddingHorizontal:20 },
-  card:     { width:'100%', maxWidth:440, borderRadius:24, maxHeight:height*0.80, overflow:'hidden', shadowColor:'#000', shadowOffset:{width:0,height:16}, shadowOpacity:.20, shadowRadius:32, elevation:20 },
+  card:     { width:'100%', maxWidth:440, borderRadius:24, overflow:'hidden', shadowColor:'#000', shadowOffset:{width:0,height:16}, shadowOpacity:.20, shadowRadius:32, elevation:20 },
   header:   { flexDirection:'row', alignItems:'center', gap:12, padding:18, borderBottomWidth:1 },
   iconBox:  { width:44, height:44, borderRadius:13, justifyContent:'center', alignItems:'center', flexShrink:0 },
   title:    { flex:1, fontSize:17, fontWeight:'900' },
@@ -348,8 +352,8 @@ const LessonHeroCard = ({
               <Text style={hc.numBig}>{String(content.lesson_number||1).padStart(2,'0')}</Text>
             </View>
             {!!content.lesson_date && (
-              <View style={[hc.datePill, { backgroundColor:BLUE_LIGHT }]}>
-                <Text style={{ fontSize:13 }}>🗓</Text>
+              <View style={[hc.datePill, { backgroundColor:tk.chipBg }]}>
+                <ICONS.Calendar color={BLUE} size={14} />
                 <Text style={[hc.dateText, { color:BLUE }]}>{content.lesson_date}</Text>
               </View>
             )}
@@ -359,21 +363,21 @@ const LessonHeroCard = ({
           <View style={[hc.divider, { backgroundColor:tk.glassEdge }]}/>
           <View style={hc.bottomRow}>
             {!!content.memoryVerse_bible_passage && (
-              <View style={[hc.passagePill, { backgroundColor:BLUE_LIGHT }]}>
-                <Text style={{ fontSize:13 }}>📜</Text>
+              <View style={[hc.passagePill, { backgroundColor:tk.chipBg }]}>
+                <ICONS.Book color={BLUE} size={14} />
                 <RichVerseText text={content.memoryVerse_bible_passage} isDark={isDark} lineHeight={18}
                   style={[hc.passageTxt, { color:BLUE }]} />
               </View>
             )}
             {quizDone ? (
               <View style={[hc.quizBtn, { backgroundColor:'#10B981' }]}>
-                <Text style={{ fontSize:14 }}>✅</Text>
+                <ICONS.CheckCircle color="#fff" size={15} />
                 <Text style={hc.quizBtnTxt}>{t('btn_done', 'Done')}</Text>
               </View>
             ) : (
               <TouchableOpacity onPress={onQuiz} activeOpacity={0.85}
                 style={[hc.quizBtn, { backgroundColor:BLUE }]}>
-                <Text style={{ fontSize:14 }}>⚡</Text>
+                <ICONS.Zap color="#fff" size={15} />
                 <Text style={hc.quizBtnTxt}>{t('lesson_quiz_short', 'Quiz')}</Text>
               </TouchableOpacity>
             )}
@@ -491,7 +495,7 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
                 </Text>
               </View>
               <Animated.View style={[pt.chevronBox, { backgroundColor:accent+'18', transform:[{rotate:spin}] }]}>
-                <Text style={[pt.chevron, { color:accent }]}>⌄</Text>
+                <ICONS.ChevronDown color={accent} size={18} />
               </Animated.View>
             </TouchableOpacity>
             {open && (
@@ -517,7 +521,7 @@ const PartCard = ({ part, index, allParts, lessonTitle, tk, isDark, t = (k,f)=>f
                 )}
                 <TouchableOpacity onPress={() => setReadMode(true)} activeOpacity={0.85}
                   style={[pt.readBtn, { backgroundColor:accent }]}>
-                  <Text style={{ fontSize:18 }}>📖</Text>
+                  <ICONS.Book color="#fff" size={18} />
                   <Text style={pt.readBtnText}>{t('lesson_read_fullscreen', 'Read Full Screen')}</Text>
                 </TouchableOpacity>
               </View>
@@ -554,8 +558,7 @@ const QuestionCard = ({ question, index, tk, t }) => {
   const answer = typeof question==='string' ? '' : question?.answer || '';
   return (
     <View style={[qc.card, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
-      <View style={[qc.numBox, { backgroundColor:BLUE_LIGHT }]}>
-        <Text style={{ fontSize:18 }}>💬</Text>
+      <View style={[qc.numBox, { backgroundColor:tk.chipBg }]}>
         <Text style={[qc.num, { color:BLUE }]}>{index+1}</Text>
       </View>
       <View style={qc.body}>
@@ -577,7 +580,7 @@ const QuestionCard = ({ question, index, tk, t }) => {
 const qc = StyleSheet.create({
   card:     { flexDirection:'row', alignItems:'center', borderRadius:14, borderWidth:1, overflow:'hidden', marginBottom:10, shadowColor:'#000', shadowOffset:{width:0,height:1}, shadowOpacity:.04, shadowRadius:6, elevation:1 },
   numBox:   { width:56, paddingVertical:16, alignItems:'center', flexShrink:0, alignSelf:'stretch', justifyContent:'center' },
-  num:      { fontSize:11, fontWeight:'900', marginTop:2 },
+  num:      { fontSize:18, fontWeight:'900' },
   body:     { flex:1, paddingVertical:16, paddingRight:14 },
   text:     { fontSize:14, lineHeight:22, fontWeight:'500' },
   toggle:   { fontSize:12, fontWeight:'700', marginTop:8 },
@@ -729,8 +732,8 @@ export default function LessonPage({ route, navigation }) {
         title={t('lesson_memory_verse', 'Memory Verse')} Icon={ICONS.Quote} tk={tk} isDark={isDark} t={t}>
         <Text style={[s.modalVerse, { color:tk.textPrimary }]}>"{c.memory_verse}"</Text>
         {!!c.memoryVerse_bible_passage && (
-          <View style={[s.modalPassage, { backgroundColor:BLUE_LIGHT, borderColor:BLUE+'30' }]}>
-            <Text style={{ fontSize:18 }}>📖</Text>
+          <View style={[s.modalPassage, { backgroundColor:tk.chipBg, borderColor:BLUE+'30' }]}>
+            <ICONS.Book color={BLUE_MID} size={18} />
             <View style={{ flex: 1 }}>
               <RichVerseText text={c.memoryVerse_bible_passage} isDark={isDark} lineHeight={20}
                 style={[s.modalPassageTxt, { color:BLUE }]} />
@@ -754,8 +757,9 @@ export default function LessonPage({ route, navigation }) {
       {/* ── TOP BAR ── */}
       <View style={[s.topbar, { backgroundColor:tk.pageBg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75}
+          hitSlop={6} accessibilityRole="button" accessibilityLabel={t('btn_back', 'Back')}
           style={[s.iconBtn, { backgroundColor:tk.surfaceEl }]}>
-          <Text style={{ fontSize:20, color:tk.textPrimary }}>←</Text>
+          <ICONS.ArrowLeft color={tk.textPrimary} size={20} />
         </TouchableOpacity>
         <View style={s.topCenter}>
           <Text style={[s.pageTitle, { color:tk.textPrimary }]}>
@@ -768,14 +772,15 @@ export default function LessonPage({ route, navigation }) {
             prefillLesson: lesson?.title || `Lesson ${String(lessonNum).padStart(2,'0')}`,
             prefillNumber: lessonNum,
           })}
-          activeOpacity={0.75} style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
-          <Text style={{ fontSize:20 }}>📝</Text>
+          hitSlop={6} accessibilityRole="button" accessibilityLabel={t('tab_notes', 'Notes')}
+          activeOpacity={0.75} style={[s.iconBtn, { backgroundColor:tk.chipBg }]}>
+          <ICONS.Notes color={BLUE_MID} size={20} />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={s.loadingBox}>
-          <Text style={{ fontSize:44, marginBottom:16 }}>📖</Text>
+          <View style={{ marginBottom:16 }}><ICONS.Book color={BLUE_MID} size={40} /></View>
           <ActivityIndicator color={BLUE} size="large"/>
           <Text style={[s.loadingTxt, { color:tk.textMuted }]}>{t('lesson_loading', 'Loading lesson…')}</Text>
         </View>
@@ -843,14 +848,14 @@ export default function LessonPage({ route, navigation }) {
             <View style={s.section}>
               <TouchableOpacity onPress={()=>setQuestionsOpen(v=>!v)} activeOpacity={0.75}
                 style={[s.collapseHeader, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
-                <Text style={{ fontSize:22 }}>💬</Text>
+                <ICONS.Users color={tk.textPrimary} size={20} />
                 <Text style={[s.collapseTitle, { color:tk.textPrimary }]}>{t('lesson_discussion_questions', 'Discussion Questions')}</Text>
-                <View style={[s.collapseBadge, { backgroundColor:BLUE_LIGHT }]}>
+                <View style={[s.collapseBadge, { backgroundColor:tk.chipBg }]}>
                   <Text style={[s.collapseBadgeTxt, { color:BLUE }]}>{c.questions.length}</Text>
                 </View>
-                <Text style={[s.collapseChevron, { color:tk.textMuted }]}>
-                  {questionsOpen ? '⌃' : '⌄'}
-                </Text>
+                <View style={{ transform:[{ rotate: questionsOpen ? '180deg' : '0deg' }] }}>
+                  <ICONS.ChevronDown color={tk.textMuted} size={18} />
+                </View>
               </TouchableOpacity>
               {questionsOpen && (
                 <View style={{ marginTop:10 }}>
@@ -867,8 +872,8 @@ export default function LessonPage({ route, navigation }) {
             <SectionHeader title={t('lesson_test_yourself', 'Test Yourself')} Icon={ICONS.Zap} tk={tk}/>
             <View style={[s.quizCard, { backgroundColor:tk.glassFill, borderColor:tk.glassEdge }]}>
                     <View style={s.quizBody}>
-                    <View style={[s.quizIcon, { backgroundColor:BLUE_LIGHT }]}>
-                      <Text style={{ fontSize:36 }}>⚡</Text>
+                    <View style={[s.quizIcon, { backgroundColor:tk.chipBg }]}>
+                      <ICONS.Zap color={BLUE_MID} size={30} />
                     </View>
                     <View style={{ flex:1 }}>
                       <Text style={[s.quizTitle, { color:tk.textPrimary }]}>
@@ -881,13 +886,13 @@ export default function LessonPage({ route, navigation }) {
                   </View>
                   {quizDone ? (
                     <View style={[s.quizBtn, { backgroundColor:'#10B981' }]}>
-                      <Text style={{ fontSize:18 }}>✅</Text>
+                      <ICONS.CheckCircle color="#fff" size={18} />
                       <Text style={s.quizBtnTxt}>{t('lesson_quiz_completed', 'Quiz Completed')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity onPress={()=>setQuizVisible(true)} activeOpacity={0.85}
                       style={[s.quizBtn, { backgroundColor:BLUE }]}>
-                      <Text style={{ fontSize:18 }}>⚡</Text>
+                      <ICONS.Zap color="#fff" size={18} />
                       <Text style={s.quizBtnTxt}>{t('lesson_start_quiz', 'Start Quiz')} →</Text>
                     </TouchableOpacity>
                   )}
@@ -914,7 +919,7 @@ export default function LessonPage({ route, navigation }) {
           })}
           activeOpacity={0.88}
           style={[s.fab, { backgroundColor:BLUE }]}>
-          <Text style={s.fabIcon}>📖</Text>
+          <ICONS.Book color="#fff" size={20} />
           <Text style={s.fabLabel}>{t('lesson_daily_reading', 'Daily\nReading')}</Text>
         </TouchableOpacity>
       )}

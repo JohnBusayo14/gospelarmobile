@@ -28,7 +28,6 @@ const { width } = require('react-native').Dimensions.get('window');
 // Brand-blue accent kept for Sunday-school content (banners, links).
 // Surface/text/etc. now come from the centralized tokens (theme/tokens.js).
 const BLUE       = PALETTE.blue;
-const BLUE_LIGHT = '#EFF6FF';
 
 // ── Age group definitions with human icons ────────────────────────────────────
 // Age-group images — one photo per category
@@ -93,7 +92,7 @@ const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
             </Text>
           )}
         </View>
-        <View style={[qc.badge, { backgroundColor:BLUE_LIGHT }]}>
+        <View style={[qc.badge, { backgroundColor:tk.chipBg }]}>
           <Text style={[qc.badgeBig, { color:BLUE }]}>{quarterInfo.lesson_count || 13}</Text>
           <Text style={[qc.badgeSub, { color:BLUE }]}>{t('lessons', 'Lessons')}</Text>
         </View>
@@ -105,8 +104,10 @@ const QuarterCard = ({ cat, quarterInfo, tk, onPress, onAnthemPress, t }) => {
         <TouchableOpacity
           onPress={onAnthemPress}
           activeOpacity={0.7}
+          hitSlop={6}
+          accessibilityRole="button"
           accessibilityLabel={t('home_anthem_a11y', 'Open Sunday School anthem')}
-          style={[qc.anthemBtn, { backgroundColor: BLUE_LIGHT }]}>
+          style={[qc.anthemBtn, { backgroundColor: tk.chipBg }]}>
           <ICONS.Music color={BLUE} size={18} sw={2.25} />
         </TouchableOpacity>
         <View style={[qc.startBtn, { backgroundColor:BLUE }]}>
@@ -175,8 +176,11 @@ const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
         </View>
       )}
       {locked && (
-        <View style={[ag.lockedPill, { backgroundColor: tk.surfaceEl, borderColor: tk.glassEdge }]}>
-          <Text style={[ag.lockedPillTxt, { color: tk.textMuted }]}>{t('home_locked_pill', '🔒  Locked')}</Text>
+        <View style={[ag.lockedPill, { backgroundColor: tk.surfaceEl, borderColor: tk.glassEdge, flexDirection:'row', alignItems:'center', gap:4 }]}>
+          <ICONS.Lock color={tk.textMuted} size={10} sw={2.25} />
+          <Text style={[ag.lockedPillTxt, { color: tk.textMuted }]}>
+            {t('home_locked_pill', 'Locked').replace('🔒', '').trim()}
+          </Text>
         </View>
       )}
     </TouchableOpacity>
@@ -204,7 +208,7 @@ const ag = StyleSheet.create({
 const LessonRow = ({ lesson, tk, onPress, isLast }) => (
   <TouchableOpacity onPress={onPress} activeOpacity={0.7}
     style={[lr.row, { borderBottomColor:tk.glassEdge, borderBottomWidth:isLast?0:1 }]}>
-    <View style={[lr.iconBox, { backgroundColor:BLUE_LIGHT }]}>
+    <View style={[lr.iconBox, { backgroundColor:tk.chipBg }]}>
       <ICONS.Book color={BLUE} size={20} sw={2.25} />
     </View>
     <View style={lr.mid}>
@@ -215,7 +219,7 @@ const LessonRow = ({ lesson, tk, onPress, isLast }) => (
         {lesson.lessonDate || lesson.scripture || `Lesson ${lesson.lessonNumber || ''}`}
       </Text>
     </View>
-    <View style={[lr.numBadge, { backgroundColor:BLUE_LIGHT }]}>
+    <View style={[lr.numBadge, { backgroundColor:tk.chipBg }]}>
       <Text style={[lr.num, { color:BLUE }]}>
         {String(lesson.lessonNumber || lesson.lesson_number || '').padStart(2,'0') || 'L'}
       </Text>
@@ -367,10 +371,10 @@ export default function Homescreen({ navigation }) {
   // "Library" tile — Settings is no longer reachable from Sunday School; it
   // lives on the Library home so it's centralised for all books.
   const QUICK_ACCESS = [
-    { icon:'📝', label:t('notes','Notes'),           sub:t('notes_sub','Your class notes'),         bg:'#EFF6FF', onPress:()=>navigation.navigate('Notes') },
-    { icon:'📚', label:t('lessons','Lessons'),       sub:t('lessons_sub','Browse all units'),       bg:'#F5F3FF', onPress:()=>navigation.navigate(safeRoute, { category: cat }) },
-    { icon:'🏛️', label:t('library','Library'),       sub:t('library_sub','Switch books · settings'),bg:'#ECFDF5', onPress:()=>navigation.navigate('Library') },
-    { icon:'🌅', label:t('devotional','Devotional'), sub:t('devotional_sub','Daily reading plan'),  bg:'#FFF7ED', locked:true,
+    { Icon:ICONS.Notes,     color:'#2563EB', label:t('notes','Notes'),           sub:t('notes_sub','Your class notes'),         bg:'#EFF6FF', onPress:()=>navigation.navigate('Notes') },
+    { Icon:ICONS.Lessons,   color:'#7C3AED', label:t('lessons','Lessons'),       sub:t('lessons_sub','Browse all units'),       bg:'#F5F3FF', onPress:()=>navigation.navigate(safeRoute, { category: cat }) },
+    { Icon:ICONS.BookStack, color:'#10B981', label:t('library','Library'),       sub:t('library_sub','Switch books · settings'),bg:'#ECFDF5', onPress:()=>navigation.navigate('Library') },
+    { Icon:ICONS.Sun,       color:'#F97316', label:t('devotional','Devotional'), sub:t('devotional_sub','Daily reading plan'),  bg:'#FFF7ED', locked:true,
       onPress:()=>Alert.alert(t('devotional','Devotional'), t('home_coming_soon','This feature is coming soon.')) },
   ];
 
@@ -402,14 +406,16 @@ export default function Homescreen({ navigation }) {
             {/* Back to the Library so the user can switch books without
                 fully logging out + relaunching the app. */}
             <TouchableOpacity onPress={() => navTo('Library')} activeOpacity={0.75}
-              accessibilityLabel="Library"
-              style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
+              hitSlop={4} accessibilityRole="button"
+              accessibilityLabel={t('library', 'Library')}
+              style={[s.iconBtn, { backgroundColor:tk.chipBg }]}>
               <ICONS.BookStack color={BLUE} size={18} sw={2.25} />
             </TouchableOpacity>
             {userRole === 'teacher' && (
               <TouchableOpacity onPress={() => navTo('TeacherDashboard')} activeOpacity={0.75}
+                hitSlop={4} accessibilityRole="button"
                 accessibilityLabel="Teacher dashboard"
-                style={[s.iconBtn, { backgroundColor:BLUE_LIGHT }]}>
+                style={[s.iconBtn, { backgroundColor:tk.chipBg }]}>
                 <ICONS.Classes color={BLUE} size={18} sw={2.25} />
               </TouchableOpacity>
             )}
@@ -495,7 +501,7 @@ export default function Homescreen({ navigation }) {
               </View>
             ) : displayedLessons.length === 0 ? (
               <View style={s.emptyBox}>
-                <Text style={{ fontSize:36, marginBottom:10 }}>📖</Text>
+                <View style={{ marginBottom:10 }}><ICONS.Book color={tk.textMuted} size={32} /></View>
                 <Text style={[s.emptyText, { color:tk.textMuted }]}>
                   {t('home_no_recent', 'No recently visited lessons yet.')}
                 </Text>
@@ -541,8 +547,8 @@ export default function Homescreen({ navigation }) {
                   borderColor:     tk.glassEdge,
                   opacity:         item.locked ? 0.55 : 1,
                 }]}>
-                <View style={[s.qaIcon, { backgroundColor: isDark ? tk.surfaceEl : item.bg }]}>
-                  <Text style={{ fontSize:26 }}>{item.icon}</Text>
+                <View style={[s.qaIcon, { backgroundColor: isDark ? item.color + '22' : item.bg }]}>
+                  <item.Icon color={item.color} size={24} sw={2.25} />
                   {item.locked && (
                     <View style={s.qaLockOverlay}>
                       <ICONS.Lock color="#fff" size={14} sw={2.25} />

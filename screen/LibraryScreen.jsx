@@ -170,8 +170,8 @@ const TrialCountdownBanner = ({ daysRemaining, onSubscribe, t }) => {
 
 // ── Featured hero card (full width, 2:1 ratio) ────────────────────────────────
 const FeaturedCard = ({ book, onPress, t }) => {
-  if (!book) return null;
   const { fade, translateY } = useStaggerEntry(0);
+  if (!book) return null;
 
   // Pick whichever cover source is available; fall back to the book's accent
   // colour so we never render a broken image area.
@@ -183,8 +183,9 @@ const FeaturedCard = ({ book, onPress, t }) => {
       <View>
         <Text style={s.featuredTitle} numberOfLines={2}>{book.title}</Text>
         <Text style={s.featuredSubtitle} numberOfLines={1}>{book.subtitle}</Text>
-        <View style={s.featuredCta}>
-          <Text style={s.featuredCtaTxt}>{t('lib_open_book', 'Open book')}  →</Text>
+        <View style={[s.featuredCta, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+          <Text style={s.featuredCtaTxt}>{t('lib_open_book', 'Open book')}</Text>
+          <ICONS.ArrowRight color="#fff" size={14} sw={2.5} />
         </View>
       </View>
     </View>
@@ -384,7 +385,9 @@ export default function LibraryScreen({ navigation }) {
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings')}
             activeOpacity={0.75}
-            accessibilityLabel="Settings"
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings', 'Settings')}
             style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}
           >
             <ICONS.Settings color={tk.textPrimary} size={18} sw={2.25} />

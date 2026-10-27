@@ -7,7 +7,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, ScrollView, Dimensions,
+  KeyboardAvoidingView, ScrollView, useWindowDimensions,
   Animated, StatusBar, ActivityIndicator, Platform, Pressable, Alert,
 } from 'react-native';
 import { SafeAreaView }   from 'react-native-safe-area-context';
@@ -17,11 +17,10 @@ import LottieView         from 'lottie-react-native';
 import { API_BASE_URL }   from '../services/api';
 import { useTheme }       from '../context/ThemeContext';
 import { useLanguage }    from '../context/LanguageContext';
-import { getTokens } from '../theme/tokens';
+import { getTokens, type, space, heroSize } from '../theme/tokens';
 import { usePressScale } from '../hooks/useFluidAnim';
 import { ICONS }      from '../components/icons';
 
-const { width } = Dimensions.get('window');
 const API    = API_BASE_URL;
 const ACCENT = '#2563EB';
 
@@ -101,6 +100,8 @@ export default function RegisterScreen({ navigation }) {
   const { t }      = useLanguage();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const regBtn = usePressScale();
+  const { width, height } = useWindowDimensions();
+  const hero = heroSize(width, height);
 
   const [role,       setRole]       = useState('student');  // 'student' | 'teacher'
   const [fullName,   setFullName]   = useState('');
@@ -314,15 +315,21 @@ export default function RegisterScreen({ navigation }) {
         >
           {/* ── Hero (Lottie) ── */}
           <LinearGradient
-            colors={isDark ? ['#0F1117','#1A1D27','#0F1117'] : ['#ECFDF5','#D1FAE5','#FFFFFF']}
+            colors={isDark ? [tk.bg, tk.surface, tk.bg] : ['#ECFDF5','#D1FAE5','#FFFFFF']}
             style={s.hero}
           >
             <LottieView
               source={require('../assets/lottie/security.json')}
               autoPlay
               loop
-              style={s.lottie}
+              style={{ width: hero, height: hero }}
             />
+            <Text style={[type.h2, s.heroTitle, { color: tk.textPrimary }]}>
+              {t('register_title', 'Create account')}
+            </Text>
+            <Text style={[type.sub, s.heroSub, { color: tk.textSec }]}>
+              {t('register_sub', "Join thousands learning God's word daily")}
+            </Text>
           </LinearGradient>
 
           {/* ── Form ── */}
@@ -331,26 +338,34 @@ export default function RegisterScreen({ navigation }) {
 
               {/* Form error */}
               {!!errors.form && (
-                <View style={s.formError}>
-                  <Text style={s.formErrorTxt}>⚠  {errors.form}</Text>
+                <View style={[
+                  s.formError,
+                  isDark && { backgroundColor: '#EF44441F', borderColor: '#EF444440' },
+                ]}>
+                  <ICONS.AlertTriangle color="#EF4444" size={16} sw={2.25} />
+                  <Text style={[s.formErrorTxt, isDark && { color: '#FCA5A5' }]}>{errors.form}</Text>
                 </View>
               )}
 
               {/* Role selector */}
               <Text style={{ fontSize:11, fontWeight:'800', letterSpacing:1.5, color:tk.textMuted, marginBottom:10 }}>{t('register_i_am_a', 'I AM A')}</Text>
               <View style={{ flexDirection:'row', marginBottom:20, gap:10 }}>
-                {[{key:'student',icon:'🎓',label:t('register_role_student','Student')},{key:'teacher',icon:'📋',label:t('register_role_teacher','Teacher')}].map(r => (
+                {[{key:'student',Icon:ICONS.User,label:t('register_role_student','Student')},{key:'teacher',Icon:ICONS.Classes,label:t('register_role_teacher','Teacher')}].map(r => (
                   <TouchableOpacity
                     key={r.key}
                     onPress={() => setRole(r.key)}
                     activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: role===r.key }}
                     style={{
                       flex:1, borderRadius:14, borderWidth:2, paddingVertical:14, alignItems:'center',
                       backgroundColor: role===r.key ? ACCENT+'15' : tk.surface,
                       borderColor: role===r.key ? ACCENT : tk.border,
                     }}
                   >
-                    <Text style={{ fontSize:22, marginBottom:4 }}>{r.icon}</Text>
+                    <View style={{ marginBottom:6 }}>
+                      <r.Icon color={role===r.key ? ACCENT : tk.textMuted} size={22} />
+                    </View>
                     <Text style={{ fontSize:13, fontWeight:'800', letterSpacing:0.5, textTransform:'uppercase',
                       color: role===r.key ? ACCENT : tk.textSec }}>
                       {r.label}
@@ -453,7 +468,9 @@ export default function RegisterScreen({ navigation }) {
                 error={errors.confirm}
                 rightElement={
                   <TouchableOpacity onPress={() => setShowConf(v=>!v)} activeOpacity={0.7} style={{ padding:4 }}>
-                    <Text style={{ fontSize:16 }}>{showConf ? '🙈' : '👁️'}</Text>
+                    {showConf
+                      ? <ICONS.EyeOff color={tk.textMuted} size={18} sw={2.25} />
+                      : <ICONS.Eye    color={tk.textMuted} size={18} sw={2.25} />}
                   </TouchableOpacity>
                 }
               />
@@ -499,12 +516,13 @@ export default function RegisterScreen({ navigation }) {
 
 const s = StyleSheet.create({
   safe:        { flex:1 },
-  hero:        { alignItems:'center', justifyContent:'center', paddingTop:12, paddingBottom:8, paddingHorizontal:24 },
-  lottie:      { width: width * 0.65, height: width * 0.65 },
+  hero:        { alignItems:'center', justifyContent:'center', paddingTop:space.xl, paddingBottom:space['2xl'], paddingHorizontal:24 },
+  heroTitle:   { marginTop:space.sm, textAlign:'center' },
+  heroSub:     { marginTop:space.xs, textAlign:'center' },
   formWrap:    { paddingHorizontal:20, paddingBottom:16 },
   card:        { borderRadius:24, borderWidth:1, padding:24, shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:0.06, shadowRadius:12, elevation:3 },
-  formError:   { backgroundColor:'#FEF2F2', borderRadius:12, padding:12, marginBottom:16, borderWidth:1, borderColor:'#FECACA' },
-  formErrorTxt:{ fontSize:13.5, color:'#DC2626', fontWeight:'600' },
+  formError:   { flexDirection:'row', alignItems:'center', gap:8, backgroundColor:'#FEF2F2', borderRadius:12, padding:12, marginBottom:16, borderWidth:1, borderColor:'#FECACA' },
+  formErrorTxt:{ flex:1, fontSize:13.5, color:'#DC2626', fontWeight:'600' },
   btnWrap:     { borderRadius:16, overflow:'hidden', marginBottom:16 },
   btn:         { paddingVertical:17, alignItems:'center', justifyContent:'center' },
   btnTxt:      { color:'#fff', fontSize:16, fontWeight:'900', letterSpacing:0.3 },

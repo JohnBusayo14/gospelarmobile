@@ -107,6 +107,11 @@ export const radii = {
   sm: 8, md: 12, lg: 16, xl: 20, '2xl': 24, full: 9999,
 };
 
+// Edge length for auth-screen hero art: ~140 on small phones, capped at 200 so
+// the form stays above the fold.
+export const heroSize = (w, h) =>
+  Math.round(Math.min(Math.max(Math.min(w * 0.42, h * 0.22), 132), 200));
+
 // Standard card style — soft surface, no border in dark, hair border in light.
 // Components do: <View style={[card(tk), { padding: 18 }]}>
 export const card = (tk) => ({
