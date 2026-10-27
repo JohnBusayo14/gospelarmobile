@@ -27,6 +27,7 @@ import { useTheme }        from '../context/ThemeContext';
 import { useLanguage }     from '../context/LanguageContext';
 import AsyncStorage        from '@react-native-async-storage/async-storage';
 import { ICONS }           from './icons';
+import { SUBSCRIPTIONS_ENABLED } from '../config/features';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -436,7 +437,7 @@ export default function SubscriptionGuard({ children, navigation }) {
 
   const { isDark } = useTheme();
   const { t }      = useLanguage();
-  useEffect(() => { if (!hasChecked) recheck(); }, [hasChecked]);
+  useEffect(() => { if (SUBSCRIPTIONS_ENABLED && !hasChecked) recheck(); }, [hasChecked]);
 
   // When the guard determines the user doesn't have a Sunday-School plan,
   // send them straight to PaymentScreen. We use `replace` so the gated screen
@@ -444,10 +445,13 @@ export default function SubscriptionGuard({ children, navigation }) {
   // returns the user to the gated screen, the guard fires again, and they
   // ping-pong. PaymentScreen's own back arrow now navigates to Library.
   useEffect(() => {
-    if (hasChecked && !isLoading && !hasAccess && !serverError) {
+    if (SUBSCRIPTIONS_ENABLED && hasChecked && !isLoading && !hasAccess && !serverError) {
       (navigation?.replace || navigation?.navigate)?.call(navigation, 'PaymentScreen');
     }
   }, [hasChecked, isLoading, hasAccess, serverError, navigation]);
+
+  // Paywall switched off — let everyone straight in, no status check wait.
+  if (!SUBSCRIPTIONS_ENABLED) return children;
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (!hasChecked || (isLoading && !hasAccess)) {

@@ -24,6 +24,7 @@ import AsyncStorage      from '@react-native-async-storage/async-storage';
 import { useTheme }      from '../context/ThemeContext';
 import { useLanguage }   from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { SUBSCRIPTIONS_ENABLED } from '../config/features';
 import { getTokens, PALETTE } from '../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../hooks/useFluidAnim';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -96,7 +97,7 @@ function resolveCardState(book, canAccessBook, t) {
       showLock: false,
     };
   }
-  if (book.requiresSubscription) {
+  if (book.requiresSubscription && SUBSCRIPTIONS_ENABLED) {
     if (canAccessBook(book.id)) {
       return {
         state: 'subscribed',
@@ -342,7 +343,7 @@ export default function LibraryScreen({ navigation }) {
     // user has no general subscription yet, route them straight to the
     // Subscribe page (with a back arrow) instead of bouncing through the
     // HomeScreen + SubscriptionGuard ping-pong.
-    if (book.route === 'HomeScreen' && !isSubscribed) {
+    if (SUBSCRIPTIONS_ENABLED && book.route === 'HomeScreen' && !isSubscribed) {
       navigation.navigate('PaymentScreen', { fromLibrary: true });
       return;
     }

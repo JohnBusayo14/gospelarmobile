@@ -11,6 +11,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
+import { SUBSCRIPTIONS_ENABLED } from '../config/features';
 
 // Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api2.gospelar.com
 // (CNAME → Railway); override in frontend/.env for local development.
@@ -126,6 +127,9 @@ export const SubscriptionProvider = ({ children }) => {
   // it no-ops server-side for anyone who already used a trial or is paid.
   const maybeStartTrial = useCallback(async (em) => {
     if (!em) return;
+    // Subscriptions are switched off: don't burn the user's one-time trial
+    // while nothing is gated — it starts when the paywall is re-enabled.
+    if (!SUBSCRIPTIONS_ENABLED) return;
     const flagKey = `${TRIAL_REQUESTED_PREFIX}${em.toLowerCase()}`;
     try {
       if (await AsyncStorage.getItem(flagKey)) return;
@@ -447,6 +451,7 @@ export const SubscriptionProvider = ({ children }) => {
   // ended up with subscribed_category='adult' because of a DB column default,
   // so we double-gate on plan_type here.
   const canAccessCategory = (categoryId) => {
+    if (!SUBSCRIPTIONS_ENABLED) return true;
     if (!isSubscribed) return false;
     if (!isSundaySchoolPlan(planType)) return false;
     if (planType === 'all' || subscribedCategory === 'all') return true;
@@ -456,13 +461,14 @@ export const SubscriptionProvider = ({ children }) => {
   // Derived: true iff the user holds a Sunday-School plan that's currently
   // active. SubscriptionGuard reads this to decide whether to let the user
   // into HomeScreen / Lessons / Devotional, etc.
-  const hasSundaySchool = isSubscribed && isSundaySchoolPlan(planType);
+  const hasSundaySchool = !SUBSCRIPTIONS_ENABLED || (isSubscribed && isSundaySchoolPlan(planType));
 
   // ── Synchronous per-book access check ─────────────────────────────────────
   // Empty/undefined bookId → true (caller didn't specify a book; nothing to gate).
   // Server-authoritative variant: GET /api/subscription/can-access-book/:email/:bookId
   const canAccessBook = (bookId) => {
     if (!bookId) return true;
+    if (!SUBSCRIPTIONS_ENABLED) return true;
     if (!isSubscribed) return false;
     // 'all' wildcard (free trial / all-access grant) unlocks every book.
     if (subscribedBooks.includes('all')) return true;
@@ -471,8 +477,9 @@ export const SubscriptionProvider = ({ children }) => {
 
   return (
     <SubscriptionContext.Provider value={{
+      subscriptionsEnabled: SUBSCRIPTIONS_ENABLED,
       isSubscribed,
-      isTrial,
+      isTrial: SUBSCRIPTIONS_ENABLED && isTrial,
       hasSundaySchool,
       isLoading,
       hasChecked,

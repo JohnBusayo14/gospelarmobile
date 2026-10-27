@@ -19,6 +19,7 @@ import AsyncStorage       from '@react-native-async-storage/async-storage';
 import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { SUBSCRIPTIONS_ENABLED } from '../config/features';
 import { useLanguage }     from '../context/LanguageContext';
 import { getTokens } from '../theme/tokens';
 import { useScreenEntry } from '../hooks/useFluidAnim';
@@ -288,12 +289,12 @@ export default function AccountScreen({ navigation }) {
         </View>
 
         {/* ── Action buttons ── */}
-        {!isExpired && !isAll && (
+        {SUBSCRIPTIONS_ENABLED && !isExpired && !isAll && (
           <ActionBtn gradient={['#7C3AED','#5B21B6']} iconPath={IC.upgrade}
             label={t('account_upgrade_label', 'Upgrade to All Categories')} sub={t('account_upgrade_sub', 'Unlock every age group · ₦1,000')}
             shadowColor="#7C3AED" onPress={() => navigation.navigate('PaymentScreen')} />
         )}
-        {(isExpired || daysLeft <= 30) && (
+        {SUBSCRIPTIONS_ENABLED && (isExpired || daysLeft <= 30) && (
           <ActionBtn
             gradient={isExpired ? ['#EF4444','#B91C1C'] : [BLUE,BLUE_DARK]}
             iconPath={isExpired ? IC.lock : IC.zap}
@@ -304,7 +305,7 @@ export default function AccountScreen({ navigation }) {
             shadowColor={isExpired ? '#EF4444' : BLUE}
             onPress={() => navigation.navigate('PaymentScreen')} />
         )}
-        {!isSubscribed && (
+        {SUBSCRIPTIONS_ENABLED && !isSubscribed && (
           <ActionBtn gradient={[BLUE,BLUE_DARK]} iconPath={IC.star}
             label={t('account_subscribe_now', 'Subscribe Now')} sub={t('account_subscribe_sub', 'From ₦500 · Choose your category')}
             shadowColor={BLUE} onPress={() => navigation.navigate('PaymentScreen')} />
