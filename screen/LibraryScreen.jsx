@@ -405,6 +405,23 @@ export default function LibraryScreen({ navigation }) {
           </Text>
         </View>
 
+        {/* FIND A CHURCH — public directory with location filter + Google Maps */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ChurchDirectory')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          style={{ flexDirection:'row', alignItems:'center', gap:12, marginHorizontal:20, marginBottom:14, padding:14, borderRadius:16, backgroundColor: tk.surfaceEl }}
+        >
+          <View style={{ width:40, height:40, borderRadius:12, backgroundColor: BLUE + '18', alignItems:'center', justifyContent:'center' }}>
+            <ICONS.Landmark color={BLUE} size={20} sw={2} />
+          </View>
+          <View style={{ flex:1 }}>
+            <Text style={{ fontSize:15, fontWeight:'800', color: tk.textPrimary }}>{t('dir_title', 'Find a Church')}</Text>
+            <Text style={{ fontSize:12, color: tk.textMuted, marginTop:1 }}>{t('dir_entry_sub', 'Browse registered churches by location')}</Text>
+          </View>
+          <ICONS.ChevronRight color={tk.textMuted} size={18} sw={2.25} />
+        </TouchableOpacity>
+
         {/* FREE-TRIAL COUNTDOWN — only while on the promotional free month */}
         {isTrial && (
           <TrialCountdownBanner
