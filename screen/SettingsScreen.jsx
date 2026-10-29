@@ -243,9 +243,13 @@ export default function SettingsScreen({ navigation, route }) {
   const [devHour,     setDevHour]     = useState(DEFAULTS?.devotional?.hour || 6);
   const [devMinute,   setDevMinute]   = useState(DEFAULTS?.devotional?.minute || 0);
   const [notifPerm,   setNotifPerm]   = useState(false);
+  // Role the server returned at sign-in. Only decides whether the Admin menu
+  // is shown — every admin endpoint re-checks the role server-side.
+  const [userRole,    setUserRole]    = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    try { setUserRole(await AsyncStorage.getItem('userRole')); } catch {}
     try {
       const em = await AsyncStorage.getItem('userEmail');
       if (!em) { setLoading(false); return; }
@@ -357,9 +361,34 @@ export default function SettingsScreen({ navigation, route }) {
                 ? t('vmp_prayer_library_sub', 'Browse all 31 days')
                 : t('lesson_library_sub', 'Browse all Sunday School lessons')}
               tk={tk}
-              onPress={() => navigation.navigate(isVictory ? 'VictoryMonthHome' : 'HomeScreen')}
+              onPress={() => navigation.navigate(isVictory ? 'VictoryMonthHome' : 'HomeScreen')}/>
+            <Row Icon={ICONS.Video}
+              label={t('vid_library_title', 'Video Library')}
+              sub={t('vid_entry_sub', 'Watch Bible stories, lessons and worship')}
+              tk={tk}
+              onPress={() => navigation.navigate('VideoLibrary')}
               noBorder/>
           </Card>
+
+          {/* ADMIN — administrators only. */}
+          {userRole === 'admin' && (
+            <>
+              <SectionHead title={t('set_admin', 'Admin').toUpperCase()} Icon={ICONS.ShieldCheck} tk={tk}/>
+              <Card tk={tk}>
+                <Row Icon={ICONS.Upload}
+                  label={t('vid_admin_title', 'Manage Videos')}
+                  sub={t('vid_admin_row_sub', 'Upload, publish and edit Sunday School videos')}
+                  tk={tk}
+                  onPress={() => navigation.navigate('VideoAdmin')}/>
+                <Row Icon={ICONS.Plus}
+                  label={t('vid_new', 'New video')}
+                  sub={t('vid_new_row_sub', 'Upload a video from this phone')}
+                  tk={tk}
+                  onPress={() => navigation.navigate('VideoEdit')}
+                  noBorder/>
+              </Card>
+            </>
+          )}
 
           {/* ── IDENTITY ────────────────────────────────────────────────────
               Single entry point into the Gospeler ID hub. The hub itself
