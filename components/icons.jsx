@@ -468,6 +468,72 @@ export const ICONS = {
       <Circle cx="12" cy="13" r="4" />
     </Glyph>
   ),
+  // Video library — library entry, player controls, admin upload.
+  Video: (p) => (
+    <Glyph {...p}>
+      <Polygon points="23 7 16 12 23 17 23 7" />
+      <Rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </Glyph>
+  ),
+  Play: (p) => (
+    <Glyph {...p}>
+      <Polygon points="6 3 20 12 6 21 6 3" />
+    </Glyph>
+  ),
+  Pause: (p) => (
+    <Glyph {...p}>
+      <Rect x="6" y="4" width="4" height="16" />
+      <Rect x="14" y="4" width="4" height="16" />
+    </Glyph>
+  ),
+  Upload: (p) => (
+    <Glyph {...p}>
+      <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <Polyline points="17 8 12 3 7 8" />
+      <Line x1="12" y1="3" x2="12" y2="15" />
+    </Glyph>
+  ),
+  Volume: (p) => (
+    <Glyph {...p}>
+      <Polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <Path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <Path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </Glyph>
+  ),
+  VolumeOff: (p) => (
+    <Glyph {...p}>
+      <Polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <Line x1="23" y1="9" x2="17" y2="15" />
+      <Line x1="17" y1="9" x2="23" y2="15" />
+    </Glyph>
+  ),
+  Maximize: (p) => (
+    <Glyph {...p}>
+      <Polyline points="15 3 21 3 21 9" />
+      <Polyline points="9 21 3 21 3 15" />
+      <Line x1="21" y1="3" x2="14" y2="10" />
+      <Line x1="3" y1="21" x2="10" y2="14" />
+    </Glyph>
+  ),
+  Rewind: (p) => (
+    <Glyph {...p}>
+      <Polygon points="11 19 2 12 11 5 11 19" />
+      <Polygon points="22 19 13 12 22 5 22 19" />
+    </Glyph>
+  ),
+  FastForward: (p) => (
+    <Glyph {...p}>
+      <Polygon points="13 19 22 12 13 5 13 19" />
+      <Polygon points="2 19 11 12 2 5 2 19" />
+    </Glyph>
+  ),
+  Image: (p) => (
+    <Glyph {...p}>
+      <Rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <Circle cx="8.5" cy="8.5" r="1.5" />
+      <Polyline points="21 15 16 10 5 21" />
+    </Glyph>
+  ),
 
   // ── Domain icons added so we can replace lingering emoji in screens ──────
   // Lucide-shape paths so the visual language stays consistent with the rest.

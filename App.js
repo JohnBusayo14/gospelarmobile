@@ -79,6 +79,11 @@ import AdBanner          from './components/AdBanner';
 import TeacherDashboard   from './screen/teacher/TeacherDashboard';
 import TeacherMarkSheet   from './screen/teacher/TeacherMarkSheet';
 import TeacherClassDetail from './screen/teacher/TeacherClassDetail';
+// ── Sunday School video library ───────────────────────────────────────────────
+import VideoLibraryScreen from './screen/videos/VideoLibraryScreen';
+import VideoPlayerScreen  from './screen/videos/VideoPlayerScreen';
+import VideoAdminScreen   from './screen/videos/VideoAdminScreen';
+import VideoEditScreen    from './screen/videos/VideoEditScreen';
 import SplashScreen from './screen/SplashScreen';
 import OnboardingScreen from './screen/OnboardingScreen';
 
@@ -398,6 +403,15 @@ function AppNavigator() {
       <Stack.Screen name="DeleteAccount"  component={DeleteAccountScreen} />
       <Stack.Screen name="About"          component={AboutScreen} />
       <Stack.Screen name="SundaySchoolAnthem" component={SundaySchoolAnthemScreen} />
+
+      {/* Video library — any signed-in user, not subscription-guarded. Every
+          endpoint behind these screens requires a valid session token, and
+          the admin ones require role='admin' server-side; the screens
+          themselves don't grant anything. */}
+      <Stack.Screen name="VideoLibrary" component={VideoLibraryScreen} />
+      <Stack.Screen name="VideoPlayer"  component={VideoPlayerScreen} />
+      <Stack.Screen name="VideoAdmin"   component={VideoAdminScreen} />
+      <Stack.Screen name="VideoEdit"    component={VideoEditScreen} />
 
       {/* Teacher screens */}
       <Stack.Screen name="TeacherDashboard"   component={TeacherDashboard} />

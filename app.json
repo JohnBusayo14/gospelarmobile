@@ -75,10 +75,11 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Gospelar needs access to your photos so you can upload a profile picture for your Gospeler ID card."
+          "photosPermission": "Gospelar needs access to your photos so you can upload a profile picture for your Gospeler ID card, and so administrators can upload Sunday School videos and thumbnails."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video"
     ],
     "extra": {
       "eas": {
