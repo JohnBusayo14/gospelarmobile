@@ -68,6 +68,18 @@ export const BOOKS = [
     ],
   },
   {
+    id:          'hymn_book',
+    title:       'Gospel Hymn Book',
+    subtitle:    'Search & sing every hymn',
+    description: 'The complete Gospel Hymn Book — search by number, title or words and sing along with every verse and chorus.',
+    cover:       require('../assets/hymn-book.png'),
+    accent:      '#6D28D9',
+    available:   true,
+    requiresSubscription: false,
+    route:       'HymnBook',
+    routeParams: undefined,
+  },
+  {
     id:          'teacher_manual',
     title:       'Teacher Manual',
     subtitle:    'Lesson plans + class notes',

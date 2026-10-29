@@ -174,6 +174,18 @@ export const fetchHymns = async (numbers) => {
   });
 };
 
+// The whole Gospel Hymn Book. The API has no list endpoint, so request every
+// number up to HYMN_BOOK_MAX in one call (~240 KB); unknown numbers are dropped.
+const HYMN_BOOK_MAX = 1000;
+export const fetchHymnBook = () =>
+  cacheFirst('hymns:book', async () => {
+    const numbers = Array.from({ length: HYMN_BOOK_MAX }, (_, i) => i + 1).join(',');
+    const { data } = await client.get('/api/hymns', { params: { numbers } });
+    return (Array.isArray(data) ? data : [])
+      .filter((h) => h && Number.isFinite(h.number))
+      .sort((a, b) => a.number - b.number);
+  });
+
 // ─────────────────────────────────────────────────────────────────────────────
 // QUIZ ENDPOINTS (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
