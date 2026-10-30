@@ -16,6 +16,7 @@ import AsyncStorage      from '@react-native-async-storage/async-storage';
 import { useTheme }      from '../context/ThemeContext';
 import { useLanguage }   from '../context/LanguageContext';
 import { fetchPreviewLessons } from '../services/api';
+import { useComingSoonCategories } from '../services/comingSoon';
 import { API_BASE_URL, useSubscription } from '../context/SubscriptionContext';
 import AppTabBar from '../components/AppTabBar';
 import { ICONS } from '../components/icons';
@@ -135,7 +136,7 @@ const qc = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // AGE GROUP CARD — circular image (or emoji fallback) + label + active state
 // ─────────────────────────────────────────────────────────────────────────────
-const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
+const AgeGroupCard = ({ item, active, locked, comingSoon, onPress, tk, t, index = 0 }) => {
   const imgSrc = CATEGORY_IMAGES[item.id];
   const label    = t(`cat_${item.id}`,       item.label);
   const ageRange = t(`cat_${item.id}_range`, item.ageRange);
@@ -173,6 +174,11 @@ const AgeGroupCard = ({ item, active, locked, onPress, tk, t, index = 0 }) => {
       {active && !locked && (
         <View style={[ag.activePill, { backgroundColor:'rgba(255,255,255,0.22)' }]}>
           <Text style={ag.activePillTxt}>{t('home_selected', 'Selected')}</Text>
+        </View>
+      )}
+      {comingSoon && !locked && (
+        <View style={[ag.lockedPill, { backgroundColor: item.color + '1f', borderColor: item.color + '55' }]}>
+          <Text style={[ag.lockedPillTxt, { color: active ? '#fff' : item.color }]}>{t('class_coming_soon', 'Coming soon')}</Text>
         </View>
       )}
       {locked && (
@@ -261,6 +267,7 @@ const sh = StyleSheet.create({
 export default function Homescreen({ navigation }) {
   const { isDark }  = useTheme();
   const { t, lang } = useLanguage();
+  const comingSoonCats = useComingSoonCategories(lang);
   const { canAccessCategory, planType, subscribedCategory, isSubscribed } = useSubscription();
   const tk = useMemo(() => ({ ...getTokens(isDark), ...bookTones(isDark) }), [isDark]);
   const { fade, translateY } = useScreenEntry();
@@ -457,6 +464,7 @@ export default function Homescreen({ navigation }) {
                   index={i}
                   active={categoryId === c.id}
                   locked={locked}
+                  comingSoon={comingSoonCats.has(c.id)}
                   onPress={() => {
                     if (locked) {
                       const subbedCat = CATEGORIES.find(x => x.id === subscribedCategory);

@@ -1231,6 +1231,8 @@ export const EN = {
   cunits_browse_units: 'Browse Units →',
   cunits_childrens_class: 'Children\'s Class',
   cunits_coming_soon: 'Content may be coming soon.',
+  class_coming_soon: 'Coming soon',
+  class_coming_soon_msg: '{label} lessons are coming soon. We\'re preparing new content for this class — please check back later.',
   cunits_daily_devotional: 'Daily Devotional',
   cunits_default_theme: 'Demonstration of the Christian Life',
   cunits_default_theme_sub: 'Exposition on the Book of Philemon',

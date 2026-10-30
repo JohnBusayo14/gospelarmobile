@@ -443,9 +443,11 @@ export default function CombinedUnitsPage({ route, navigation }) {
             </View>
           ) : units.length === 0 ? (
             <View style={s.emptyBox}>
-              <Text style={{ fontSize: 48, marginBottom: 12 }}>📭</Text>
-              <Text style={[s.emptyTxt, { color: tk.textMuted }]}>{t('cunits_no_units_for', 'No units found for {label}.').replace('{label}', catMeta.label)}</Text>
-              <Text style={[s.emptyHint, { color: tk.textMuted }]}>{t('cunits_coming_soon', 'Content may be coming soon.')}</Text>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>🌱</Text>
+              <Text style={[s.emptyTxt, { color: tk.textPrimary }]}>{t('class_coming_soon', 'Coming soon')}</Text>
+              <Text style={[s.emptyHint, { color: tk.textMuted }]}>
+                {t('class_coming_soon_msg', "{label} lessons are coming soon. We're preparing new content for this class — please check back later.").replace('{label}', catMeta.label)}
+              </Text>
             </View>
           ) : (
             units.map((unit, i) => (
@@ -540,7 +542,7 @@ const s = StyleSheet.create({
   retryTxt:  { color:'#fff', fontWeight:'700', fontSize:14 },
   emptyBox:  { paddingVertical:40, alignItems:'center', gap:8 },
   emptyTxt:  { fontSize:14, fontWeight:'600', textAlign:'center' },
-  emptyHint: { fontSize:12, textAlign:'center' },
+  emptyHint: { fontSize:13, lineHeight:20, textAlign:'center', paddingHorizontal:24 },
   qGrid:     { flexDirection:'row', flexWrap:'wrap', gap:12 },
   qItem:     { width:(width-54)/2, borderRadius:18, borderWidth:1, padding:18, shadowColor:'#000', shadowOffset:{width:0,height:2}, shadowOpacity:.05, shadowRadius:8, elevation:1 },
   qIcon:     { width:52, height:52, borderRadius:16, justifyContent:'center', alignItems:'center', marginBottom:12, position:'relative' },

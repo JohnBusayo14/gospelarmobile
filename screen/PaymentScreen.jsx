@@ -17,6 +17,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { API_BASE_URL } from '../services/api';
+import { useComingSoonCategories } from '../services/comingSoon';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, StatusBar, ActivityIndicator,
@@ -137,6 +138,11 @@ const PlanStep = ({ onProceed, tk, t, plans, isDark }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [error,            setError]            = useState('');
   const { fade, translateY } = useScreenEntry();
+  // Classes with no published content can't be bought on their own yet.
+  const comingSoon = useComingSoonCategories('en');
+  useEffect(() => {
+    if (selectedCategory && comingSoon.has(selectedCategory)) setSelectedCategory(null);
+  }, [comingSoon, selectedCategory]);
 
   const proceed = () => {
     if (!selectedPlan) {
@@ -260,16 +266,19 @@ const PlanStep = ({ onProceed, tk, t, plans, isDark }) => {
             <View style={ps.catGrid}>
               {CATEGORIES.map(cat => {
                 const active = selectedCategory === cat.id;
+                const soon   = comingSoon.has(cat.id);
                 const tintBg = isDark ? cat.color + '22' : cat.color + '0e';
                 return (
                   <TouchableOpacity
                     key={cat.id}
                     activeOpacity={0.88}
+                    disabled={soon}
                     onPress={() => { setSelectedCategory(cat.id); setError(''); }}
                     style={[ps.catCard, {
                       backgroundColor: active ? tintBg : tk.surface,
                       borderColor:     active ? cat.color : tk.border,
                       borderWidth:     active ? 2 : 1,
+                      opacity:         soon ? 0.55 : 1,
                     }]}
                   >
                     <View style={[ps.catEmojiCircle, {
@@ -281,8 +290,8 @@ const PlanStep = ({ onProceed, tk, t, plans, isDark }) => {
                     <Text style={[ps.catLabel, { color: tk.textPrimary }]} numberOfLines={1}>
                       {cat.label}
                     </Text>
-                    <Text style={[ps.catDesc, { color: tk.textMuted }]} numberOfLines={1}>
-                      {cat.desc}
+                    <Text style={[ps.catDesc, { color: soon ? cat.color : tk.textMuted }]} numberOfLines={1}>
+                      {soon ? t('class_coming_soon', 'Coming soon') : cat.desc}
                     </Text>
                     {active && (
                       <View style={[ps.catCheck, { backgroundColor: cat.color }]}>
