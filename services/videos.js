@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import axios from 'axios';
+import { withApiFailover } from './apiFailover';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -37,6 +38,7 @@ const client = axios.create({
   timeout: REQUEST_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 });
+withApiFailover(client);
 
 client.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem('userToken');

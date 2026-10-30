@@ -5,15 +5,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import axios from 'axios';
+import { PRIMARY_API, withApiFailover } from './apiFailover';
 import { cacheFirst } from './cache';
 
 // Configurable per-environment via Expo's EXPO_PUBLIC_* env-var convention.
 // Set EXPO_PUBLIC_API_BASE_URL in frontend/.env (or your CI/EAS env) to point
-// at a different host. Default is the production backend on the custom
-// gospelar.com domain (CNAME → Railway). The Railway-generated host stays
-// reachable but the custom domain insulates the app from any future migration.
+// at a different host. Default is api.gospelar.com; services/apiFailover.js
+// switches to api2.gospelar.com (same backend) whenever the primary is down.
 export const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api2.gospelar.com')
+  (process.env.EXPO_PUBLIC_API_BASE_URL || PRIMARY_API)
     .replace(/\/$/, '');
 
 // Render's free plan spins the dyno down after 15 min of inactivity, so the
@@ -30,6 +30,7 @@ const client = axios.create({
   timeout: REQUEST_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 });
+withApiFailover(client);
 
 // ── Generic error normaliser ──────────────────────────────────────────────────
 const toError = (err) =>

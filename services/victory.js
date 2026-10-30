@@ -23,6 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import axios from 'axios';
+import { withApiFailover } from './apiFailover';
 import { API_BASE_URL } from './api';
 import { cacheFirst }   from './cache';
 import {
@@ -49,6 +50,7 @@ const client = axios.create({
   timeout: 60_000,
   headers: { 'Content-Type': 'application/json' },
 });
+withApiFailover(client);
 
 // ── DB row → frontend shape mappers ─────────────────────────────────────────
 // Kept tiny + pure so the screens render identically whether the row came

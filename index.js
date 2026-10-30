@@ -1,3 +1,5 @@
+// Must stay the first import: routes API calls across api / api2.gospelar.com.
+import './services/apiFailover';
 import { registerRootComponent } from 'expo';
 
 import App from './App';

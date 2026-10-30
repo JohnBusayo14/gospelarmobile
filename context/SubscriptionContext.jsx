@@ -12,11 +12,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
 import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { PRIMARY_API } from '../services/apiFailover';
 
-// Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api2.gospelar.com
-// (CNAME → Railway); override in frontend/.env for local development.
+// Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api.gospelar.com;
+// services/apiFailover.js falls back to api2.gospelar.com automatically.
+// Override in frontend/.env for local development.
 export const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api2.gospelar.com')
+  (process.env.EXPO_PUBLIC_API_BASE_URL || PRIMARY_API)
     .replace(/\/$/, '');
 
 // Render's free plan can take 30–60s to wake from sleep. Generous timeouts
