@@ -104,7 +104,7 @@ const HymnView = ({ hymn, accent, tk, t }) => {
         <View style={hv.titleBody}>
           <View style={[hv.numPill, { backgroundColor: accent }]}>
             <Text style={hv.numPillTxt}>
-              {t('hymn_ghb_number', 'G.H.B. No. {n}').replace('{n}', String(hymn.number))}
+              {hymn.label || t('hymn_ghb_number', 'G.H.B. No. {n}').replace('{n}', String(hymn.number))}
             </Text>
           </View>
           <Text style={[type.h2, { color: tk.textPrimary }]}>{hymn.title}</Text>
@@ -148,7 +148,9 @@ const hv = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main modal
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HymnModal({ hymnRef, visible, onClose, isDark }) {
+// `loadHymn` (optional) loads one hymn from another hymnal instead of G.H.B.;
+// `bookTitle` then replaces the "Gospel Hymn Book" heading.
+export default function HymnModal({ hymnRef, visible, onClose, isDark, loadHymn, bookTitle }) {
   const { t }   = useLanguage();
   const tk      = getTokens(isDark === true);
   const numbers = parseHymnRef(hymnRef || '');
@@ -161,8 +163,23 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark }) {
   useEffect(() => {
     if (!visible) return;
     setPageIdx(0);
-    if (numbers.length > 0) fetchHymns(numbers);
+    if (loadHymn) fetchOne();
+    else if (numbers.length > 0) fetchHymns(numbers);
   }, [visible, hymnRef]);
+
+  const fetchOne = async () => {
+    setPhase('loading');
+    setHymns([]);
+    setErrMsg('');
+    try {
+      setHymns([(await loadHymn()) || null]);
+      setPhase('done');
+    } catch (e) {
+      setErrMsg(e.message || t('hymn_could_not_connect', 'Could not connect to server. Check your network.'));
+      setPhase('error');
+    }
+  };
+  const retry = () => (loadHymn ? fetchOne() : fetchHymns(numbers));
 
   const fetchHymns = async (nums) => {
     setPhase('loading');
@@ -191,7 +208,7 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[type.h3, { color: tk.textPrimary }]} numberOfLines={1}>
-          {t('hymn_gospel_hymn_book', 'Gospel Hymn Book')}
+          {bookTitle || t('hymn_gospel_hymn_book', 'Gospel Hymn Book')}
         </Text>
         {!!hymnRef && (
           <Text style={[type.caption, { color: tk.textMuted, marginTop: 2 }]} numberOfLines={1}>
@@ -275,7 +292,7 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark }) {
       {phase === 'error' && (
         <StateView Icon={ICONS.Music} title={t('hymn_load_error', 'Could not load hymn')} sub={errMsg} tk={tk}>
           <TouchableOpacity
-            onPress={() => fetchHymns(numbers)}
+            onPress={retry}
             activeOpacity={0.75}
             accessibilityRole="button"
             style={[s.retryBtn, { backgroundColor: accent }]}

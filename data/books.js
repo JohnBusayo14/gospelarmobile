@@ -80,6 +80,18 @@ export const BOOKS = [
     routeParams: undefined,
   },
   {
+    id:          'church_hymnal',
+    title:       'Church Hymnal',
+    subtitle:    'Hymns by category',
+    description: 'The church hymnal — browse hymns by category or search by number, title or words.',
+    cover:       require('../assets/church-hymnal.png'),
+    accent:      '#15803D',
+    available:   true,
+    requiresSubscription: false,
+    route:       'HymnBook',
+    routeParams: { bookSlug: 'church_hymnal', bookTitle: 'Church Hymnal' },
+  },
+  {
     id:          'teacher_manual',
     title:       'Teacher Manual',
     subtitle:    'Lesson plans + class notes',
