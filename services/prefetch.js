@@ -171,9 +171,11 @@ export async function prefetchAllForOffline({ langs, onProgress, signal } = {}) 
 
   // ── 7. Hymns referenced by any lesson ────────────────────────────────────
   if (hymnNumbers.size) {
-    total += 1;
-    try { await fetchHymns([...hymnNumbers]); } catch { errors += 1; }
-    tick(`Hymns (${hymnNumbers.size})`);
+    for (const lang of useLangs) {
+      total += 1;
+      try { await fetchHymns([...hymnNumbers], lang); } catch { errors += 1; }
+      tick(`Hymns (${hymnNumbers.size}, ${lang})`);
+    }
   }
 
   return { ok: errors === 0, downloaded: done, errors };

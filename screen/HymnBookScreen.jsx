@@ -68,7 +68,7 @@ const categoryLabel = (slug) =>
 export default function HymnBookScreen({ navigation, route }) {
   const { bookSlug, bookTitle } = route?.params || {};
   const { isDark } = useTheme();
-  const { t }      = useLanguage();
+  const { t, lang } = useLanguage();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
   const title = bookTitle || t('hymnbook_title', 'Gospel Hymn Book');
@@ -90,14 +90,14 @@ export default function HymnBookScreen({ navigation, route }) {
           .sort((a, b) => a.number - b.number);
         setHymns(rows);
       } else {
-        const list = await fetchHymnBook();
+        const list = await fetchHymnBook(lang);
         setHymns(Array.isArray(list) ? list : []);
       }
       setPhase('done');
     } catch {
       setPhase('error');
     }
-  }, [bookSlug]);
+  }, [bookSlug, lang]);
   useEffect(() => { load(); }, [load]);
 
   const categories = useMemo(() => {
@@ -109,7 +109,9 @@ export default function HymnBookScreen({ navigation, route }) {
   const indexed = useMemo(
     () => hymns.map((h) => {
       const preview = bookSlug ? [categoryLabel(h.type), h.ref].filter(Boolean).join(' · ') : firstVerse(h);
-      return { hymn: h, preview, titleKey: fold(h.title), verseKey: fold(preview) };
+      // A translated hymn is also found by its English title.
+      const titles = [h.title, h.original?.title].filter(Boolean).join(' ');
+      return { hymn: h, preview, titleKey: fold(titles), verseKey: fold(preview) };
     }),
     [hymns, bookSlug],
   );

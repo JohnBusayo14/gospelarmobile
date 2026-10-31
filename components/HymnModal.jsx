@@ -81,8 +81,42 @@ const st = StyleSheet.create({
   sub:        { textAlign: 'center', marginBottom: space.xl },
 });
 
+// Translated hymns carry `translation` and the English text in `original`.
+// The note says whether the words are the sung hymnal version or a
+// meaning-only translation; the toggle switches to the English.
+const TranslationBar = ({ translation, showOriginal, onToggle, accent, tk, t }) => {
+  const note = translation.source === 'hymnal'
+    ? (translation.source_ref || t('hymn_from_hymnal', 'From the hymnal'))
+    : t('hymn_translation_note', 'Translated for reading — not the sung hymnal version.');
+  return (
+    <View style={[tb.wrap, { backgroundColor: tk.surface, borderColor: tk.border }]}>
+      <Text style={[tb.note, { color: tk.textMuted }]}>{note}</Text>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        style={[tb.btn, { borderColor: accent }]}
+      >
+        <Text style={[tb.btnTxt, { color: accent }]}>
+          {showOriginal ? t('hymn_show_translation', 'Show translation') : t('hymn_show_english', 'Show English')}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+const tb = StyleSheet.create({
+  wrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: radii.md, borderWidth: 1, padding: space.md, marginBottom: space.lg, gap: space.md },
+  note:   { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  btn:    { minHeight: 36, borderRadius: radii.full, borderWidth: 1, paddingHorizontal: space.md, justifyContent: 'center' },
+  btnTxt: { fontSize: 12.5, fontWeight: '800' },
+});
+
 // ─── Single hymn view ─────────────────────────────────────────────────────────
-const HymnView = ({ hymn, accent, tk, t }) => {
+const HymnView = ({ hymn: shown, accent, tk, t }) => {
+  const [showOriginal, setShowOriginal] = useState(false);
+  useEffect(() => { setShowOriginal(false); }, [shown]);
+  const hymn = shown && showOriginal && shown.original ? { ...shown, ...shown.original } : shown;
+
   if (!hymn) {
     return (
       <StateView
@@ -113,6 +147,17 @@ const HymnView = ({ hymn, accent, tk, t }) => {
           )}
         </View>
       </View>
+
+      {!!hymn.translation && !!hymn.original && (
+        <TranslationBar
+          translation={hymn.translation}
+          showOriginal={showOriginal}
+          onToggle={() => setShowOriginal((v) => !v)}
+          accent={accent}
+          tk={tk}
+          t={t}
+        />
+      )}
 
       <View style={[hv.intro, { backgroundColor: accent + '10', borderColor: accent + '30' }]}>
         <ICONS.Quote color={accent} size={16} />
@@ -151,7 +196,7 @@ const hv = StyleSheet.create({
 // `loadHymn` (optional) loads one hymn from another hymnal instead of G.H.B.;
 // `bookTitle` then replaces the "Gospel Hymn Book" heading.
 export default function HymnModal({ hymnRef, visible, onClose, isDark, loadHymn, bookTitle }) {
-  const { t }   = useLanguage();
+  const { t, lang } = useLanguage();
   const tk      = getTokens(isDark === true);
   const numbers = parseHymnRef(hymnRef || '');
 
@@ -165,7 +210,7 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark, loadHymn,
     setPageIdx(0);
     if (loadHymn) fetchOne();
     else if (numbers.length > 0) fetchHymns(numbers);
-  }, [visible, hymnRef]);
+  }, [visible, hymnRef, lang]);
 
   const fetchOne = async () => {
     setPhase('loading');
@@ -186,7 +231,7 @@ export default function HymnModal({ hymnRef, visible, onClose, isDark, loadHymn,
     setHymns([]);
     setErrMsg('');
     try {
-      const data = await fetchHymnsApi(nums);
+      const data = await fetchHymnsApi(nums, lang);
       setHymns(nums.map((n) =>
         Array.isArray(data) ? data.find((h) => h && h.number === n) || null : null,
       ));

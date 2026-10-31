@@ -152,12 +152,17 @@ export const fetchLessonByNumber = async (lessonNumber, lang = 'en', category = 
 // HYMN ENDPOINTS (cached for offline)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Hymns come back in the reader's language where a Yorùbá/Igbo/Hausa version
+// exists (with the English kept in `original`); English cache keys are unchanged.
+const hymnLang = (lang) => (lang && lang !== 'en' ? lang : null);
+const hymnKey  = (key, lang) => (hymnLang(lang) ? `${key}:${lang}` : key);
+
 /**
  * GET /api/hymns/:number — fetch a single hymn by GHB number.
  */
-export const fetchHymn = async (number) =>
-  cacheFirst(`hymn:${number}`, async () => {
-    const { data } = await client.get(`/api/hymns/${number}`);
+export const fetchHymn = async (number, lang) =>
+  cacheFirst(hymnKey(`hymn:${number}`, lang), async () => {
+    const { data } = await client.get(`/api/hymns/${number}`, { params: { lang: hymnLang(lang) || undefined } });
     return data;
   });
 
@@ -165,12 +170,12 @@ export const fetchHymn = async (number) =>
  * GET /api/hymns?numbers=75,433 — fetch multiple hymns at once.
  * Returns an array in DB order (caller should map back to requested order).
  */
-export const fetchHymns = async (numbers) => {
+export const fetchHymns = async (numbers, lang) => {
   const nums = (Array.isArray(numbers) ? numbers : []).filter((n) => n).map(Number);
   if (!nums.length) return [];
   const sorted = [...nums].sort((a, b) => a - b);
-  return cacheFirst(`hymns:${sorted.join(',')}`, async () => {
-    const { data } = await client.get('/api/hymns', { params: { numbers: nums.join(',') } });
+  return cacheFirst(hymnKey(`hymns:${sorted.join(',')}`, lang), async () => {
+    const { data } = await client.get('/api/hymns', { params: { numbers: nums.join(','), lang: hymnLang(lang) || undefined } });
     return data;
   });
 };
@@ -178,10 +183,10 @@ export const fetchHymns = async (numbers) => {
 // The whole Gospel Hymn Book. The API has no list endpoint, so request every
 // number up to HYMN_BOOK_MAX in one call (~240 KB); unknown numbers are dropped.
 const HYMN_BOOK_MAX = 1000;
-export const fetchHymnBook = () =>
-  cacheFirst('hymns:book', async () => {
+export const fetchHymnBook = (lang) =>
+  cacheFirst(hymnKey('hymns:book', lang), async () => {
     const numbers = Array.from({ length: HYMN_BOOK_MAX }, (_, i) => i + 1).join(',');
-    const { data } = await client.get('/api/hymns', { params: { numbers } });
+    const { data } = await client.get('/api/hymns', { params: { numbers, lang: hymnLang(lang) || undefined } });
     return (Array.isArray(data) ? data : [])
       .filter((h) => h && Number.isFinite(h.number))
       .sort((a, b) => a.number - b.number);
