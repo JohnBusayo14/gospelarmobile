@@ -15,7 +15,7 @@ import { silentReadingCheckIn } from '../services/reading';
 import { useReadingTimer } from '../hooks/useReadingTimer';
 import { buildTheme }     from '../theme/colors';
 import QuizModal          from '../components/QuizModal';
-import BibleVerseLink, { RichVerseText } from '../components/BibleVerseLink';
+import BibleVerseLink, { RichVerseText, stripFormatting } from '../components/BibleVerseLink';
 import HymnModal          from '../components/HymnModal';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
@@ -552,7 +552,7 @@ const pt = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // Questions are plain strings or { text, answer? }. When an answer is present
 // it stays hidden until tapped so the class can discuss first.
-const QuestionCard = ({ question, index, tk, t }) => {
+const QuestionCard = ({ question, index, tk, t, isDark }) => {
   const [showAnswer, setShowAnswer] = useState(false);
   const text   = typeof question==='string' ? question : question?.text || '';
   const answer = typeof question==='string' ? '' : question?.answer || '';
@@ -562,7 +562,7 @@ const QuestionCard = ({ question, index, tk, t }) => {
         <Text style={[qc.num, { color:BLUE }]}>{index+1}</Text>
       </View>
       <View style={qc.body}>
-        <Text style={[qc.text, { color:tk.textPrimary }]}>{text}</Text>
+        <RichVerseText text={text} isDark={isDark} style={[qc.text, { color:tk.textPrimary }]} lineHeight={22}/>
         {!!answer && (
           <TouchableOpacity onPress={()=>setShowAnswer(v=>!v)} activeOpacity={0.75}>
             <Text style={[qc.toggle, { color:BLUE }]}>
@@ -571,7 +571,7 @@ const QuestionCard = ({ question, index, tk, t }) => {
           </TouchableOpacity>
         )}
         {!!answer && showAnswer && (
-          <Text style={[qc.answer, { color:tk.textMuted }]}>{answer}</Text>
+          <RichVerseText text={answer} isDark={isDark} style={[qc.answer, { color:tk.textMuted }]} lineHeight={20}/>
         )}
       </View>
     </View>
@@ -730,7 +730,8 @@ export default function LessonPage({ route, navigation }) {
       {/* ── CONTENT MODALS (center overlay) ── */}
       <ContentModal visible={verseModal} onClose={()=>setVerseModal(false)}
         title={t('lesson_memory_verse', 'Memory Verse')} Icon={ICONS.Quote} tk={tk} isDark={isDark} t={t}>
-        <Text style={[s.modalVerse, { color:tk.textPrimary }]}>"{c.memory_verse}"</Text>
+        <RichVerseText text={`"${c.memory_verse}"`} isDark={isDark}
+          style={[s.modalVerse, { color:tk.textPrimary }]} lineHeight={28}/>
         {!!c.memoryVerse_bible_passage && (
           <View style={[s.modalPassage, { backgroundColor:tk.chipBg, borderColor:BLUE+'30' }]}>
             <ICONS.Book color={BLUE_MID} size={18} />
@@ -806,7 +807,7 @@ export default function LessonPage({ route, navigation }) {
                 contentContainerStyle={s.overviewScroll}>
                 {!!c.memory_verse && (
                   <OverviewCard Icon={ICONS.Quote} title={t('lesson_memory_verse', 'Memory Verse')}
-                    preview={`"${c.memory_verse.slice(0,60)}${c.memory_verse.length>60?'…':'"'}`}
+                    preview={`"${stripFormatting(c.memory_verse).slice(0,60)}${stripFormatting(c.memory_verse).length>60?'…':'"'}`}
                     accent="#1A56DB"
                     onPress={()=>setVerseModal(true)} tk={tk} t={t}/>
                 )}
@@ -818,13 +819,13 @@ export default function LessonPage({ route, navigation }) {
                 )}
                 {!!c.lesson_background && (
                   <OverviewCard Icon={ICONS.Landmark} title={t('lesson_background_short', 'Background')}
-                    preview={c.lesson_background.slice(0,70)+'…'}
+                    preview={stripFormatting(c.lesson_background).slice(0,70)+'…'}
                     accent="#10B981"
                     onPress={()=>setBackgroundModal(true)} tk={tk} t={t}/>
                 )}
                 {!!c.lesson_conclusion && (
                   <OverviewCard Icon={ICONS.Target} title={t('lesson_conclusion_short', 'Conclusion')}
-                    preview={c.lesson_conclusion.slice(0,70)+'…'}
+                    preview={stripFormatting(c.lesson_conclusion).slice(0,70)+'…'}
                     accent="#F97316"
                     onPress={()=>setConclusionModal(true)} tk={tk} t={t}/>
                 )}
@@ -860,7 +861,7 @@ export default function LessonPage({ route, navigation }) {
               {questionsOpen && (
                 <View style={{ marginTop:10 }}>
                   {c.questions.map((q, i) => (
-                    <QuestionCard key={i} question={q} index={i} tk={tk} t={t}/>
+                    <QuestionCard key={i} question={q} index={i} tk={tk} t={t} isDark={isDark}/>
                   ))}
                 </View>
               )}

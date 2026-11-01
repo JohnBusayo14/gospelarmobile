@@ -10,6 +10,7 @@ import { useTheme }    from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { buildTheme, BRAND } from '../theme/colors';
 import { fetchLessonsByUnit } from '../services/api';
+import { stripFormatting } from '../components/BibleVerseLink';
 import useApi from '../hooks/useApi';
 import { SkeletonList, ErrorState, EmptyState } from '../components/FetchStates';
 
@@ -100,7 +101,7 @@ const LessonRow = ({ lesson, index, onPress, isDark, t }) => {
             {!!lesson.content.memory_verse && (
               <View style={[s.verseBar, { borderLeftColor: accent }]}>
                 <Text style={[s.verseText, { color: isDark ? '#475569' : '#94A3B8' }]} numberOfLines={1}>
-                  "{lesson.content.memory_verse}"
+                  "{stripFormatting(lesson.content.memory_verse)}"
                 </Text>
               </View>
             )}

@@ -202,37 +202,78 @@ export function parseVerseRefs(text = '') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RichVerseText — renders a paragraph with inline tappable verse references.
+// Light formatting written by the dashboard's text toolbar:
+//   **bold**   *italic*   __underline__   and lines starting "- " as bullets.
+// A marker only counts when it hugs text ("2 * 3 * 4" stays as typed), and
+// markers can nest ("**bold and *italic***").
+// ─────────────────────────────────────────────────────────────────────────────
+const FORMAT_PATTERN =
+  /\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*(?!\*)|__(?=\S)([\s\S]+?)(?<=\S)__(?!_)|\*(?=[^\s*])([\s\S]+?)(?<=[^\s*])\*/g;
+
+const bulletize = (text) => String(text).replace(/^[ \t]*[-*][ \t]+/gm, '•  ');
+
+function parseFormatting(text, marks = {}, out = []) {
+  const re = new RegExp(FORMAT_PATTERN.source, 'g');
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index), ...marks });
+    if (m[1] != null)      parseFormatting(m[1], { ...marks, bold: true }, out);
+    else if (m[2] != null) parseFormatting(m[2], { ...marks, underline: true }, out);
+    else                   parseFormatting(m[3], { ...marks, italic: true }, out);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push({ text: text.slice(last), ...marks });
+  return out;
+}
+
+/** Plain text with the formatting markers removed — for previews and snippets. */
+export function stripFormatting(text = '') {
+  return parseFormatting(bulletize(text || '')).map((s) => s.text).join('');
+}
+
+const markStyle = (f) => {
+  const st = {};
+  if (f.bold) st.fontWeight = '700';
+  if (f.italic) st.fontStyle = 'italic';
+  if (f.underline) st.textDecorationLine = 'underline';
+  return st;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RichVerseText — renders a paragraph with formatting and inline tappable
+// verse references.
 // ─────────────────────────────────────────────────────────────────────────────
 export function RichVerseText({ text, isDark, style, lineHeight = 24 }) {
   const [modalRef, setModalRef] = useState(null);
   if (!text) return null;
 
-  const segments = parseVerseRefs(text);
+  const runs = parseFormatting(bulletize(text));
 
   return (
     <>
       <Text style={[{ lineHeight }, style]}>
-        {segments.map((seg, i) => {
+        {runs.map((run, r) => parseVerseRefs(run.text).map((seg, i) => {
+          const key = `${r}-${i}`;
           if (seg.type === 'text') {
-            return <Text key={i}>{seg.value}</Text>;
+            return <Text key={key} style={markStyle(run)}>{seg.value}</Text>;
           }
           const accent = hashAccent(seg.value);
           return (
             <Text
-              key={i}
+              key={key}
               onPress={() => setModalRef(seg.value)}
-              style={{
+              style={[markStyle(run), {
                 color: accent,
                 fontWeight: '700',
                 textDecorationLine: 'underline',
                 textDecorationColor: accent + '60',
-              }}
+              }]}
             >
               {seg.value}
             </Text>
           );
-        })}
+        }))}
       </Text>
 
       {!!modalRef && (
