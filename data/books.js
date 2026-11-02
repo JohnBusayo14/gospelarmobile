@@ -50,6 +50,18 @@ export const BOOKS = [
     routeParams: undefined,
   },
   {
+    id:          'bible',
+    title:       'Holy Bible',
+    subtitle:    'KJV · ASV · WEB · BBE · Yorùbá · Igbo · Hausa',
+    description: 'Read the whole Bible — even without internet. The King James Version is built in; other versions download once and then work offline.',
+    cover_emoji: '📖',
+    accent:      '#B45309',
+    available:   true,
+    requiresSubscription: false,
+    route:       'Bible',
+    routeParams: undefined,
+  },
+  {
     id:          'victory_month_prayer',
     title:       'Victory Month Prayer',
     subtitle:    '31-day prayer focus',

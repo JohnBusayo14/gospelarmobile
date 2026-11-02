@@ -6,7 +6,7 @@
 
 import axios from 'axios';
 import { PRIMARY_API, withApiFailover } from './apiFailover';
-import { cacheFirst } from './cache';
+import { cacheFirst, networkFirst } from './cache';
 
 // Configurable per-environment via Expo's EXPO_PUBLIC_* env-var convention.
 // Set EXPO_PUBLIC_API_BASE_URL in frontend/.env (or your CI/EAS env) to point

@@ -10,6 +10,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { fetchVerse }   from '../services/bibleApi';
+import { getPassage, getSelectedVersion } from '../services/bible';
 import { API_BASE_URL } from '../context/SubscriptionContext';
 import { useLanguage }  from '../context/LanguageContext';
 import { getTokens, type, space, radii, card } from '../theme/tokens';
@@ -55,6 +56,17 @@ export default function BibleVerseModal({ reference, visible, onClose, isDark })
     setData(null);
     setErrMsg('');
     try {
+      // The offline Bible (in the reader's chosen version) answers first, so
+      // verse links work without internet.
+      try {
+        const offline = await getPassage(ref, await getSelectedVersion());
+        if (offline) {
+          setData({ ...offline, source: 'offline' });
+          setPhase('done');
+          return;
+        }
+      } catch { /* unknown book or unreadable file — fall through */ }
+
       // Admin-managed DB verses take priority over the public API.
       try {
         const dbRes = await fetch(`${API_BASE_URL}/api/bible-verse/${encodeURIComponent(ref)}`);
@@ -172,7 +184,7 @@ export default function BibleVerseModal({ reference, visible, onClose, isDark })
             )}
 
             <Text style={[type.caption, s.source, { color: tk.textMuted }]}>
-              {data.source === 'db'
+              {data.source === 'db' || data.source === 'offline'
                 ? data.translationName
                 : 'World English Bible (WEB) · bible-api.com'}
             </Text>

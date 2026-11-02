@@ -302,10 +302,17 @@ export default function LibraryScreen({ navigation }) {
     fetchBooks()
       .then((rows) => {
         if (cancelled) return;
-        const list = (Array.isArray(rows) && rows.length > 0)
-          ? rows.map(normalizeBook)
-          : BOOKS;
-        setCatalog(list);
+        // The bundled BOOKS stay the catalogue (they carry the pricing and
+        // gating rules). The server only adds day-by-day BookReader books
+        // we don't already ship — its other rows are stale duplicates
+        // ('sunday-school', 'victory-month-2026', …) that would otherwise
+        // replace the right cards.
+        const norm = (v) => String(v || '').toLowerCase().replace(/-/g, '_');
+        const known = new Set(BOOKS.map((b) => norm(b.id)));
+        const extra = (Array.isArray(rows) ? rows : [])
+          .filter((r) => r.route_screen === 'BookReader' && !known.has(norm(r.slug)))
+          .map(normalizeBook);
+        setCatalog(extra.length ? [...BOOKS, ...extra] : BOOKS);
       })
       .catch(() => { /* keep BOOKS fallback */ })
       .finally(() => { if (!cancelled) setLoading(false); });

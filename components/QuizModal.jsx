@@ -49,13 +49,14 @@
 // Full drop-in replacement below if you prefer it:
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet,
   Dimensions, ActivityIndicator, Animated, Platform,
 } from 'react-native';
 import { API_BASE_URL } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 const BLUE = '#1A56DB';
@@ -65,6 +66,10 @@ export default function QuizModal({
   T, categoryId = 'all', lang = 'en', onComplete,
 }) {
   const { t } = useLanguage();
+  // Colours come from the app theme, not the T prop: the old prop lacked
+  // surfaceEl, so dark mode put near-white text on light-grey cards.
+  const { isDark } = useTheme();
+  const C = useMemo(() => quizColors(isDark), [isDark]);
   const [questions,  setQuestions]  = useState([]);
   const [loading,    setLoading]    = useState(false);
   const [answers,    setAnswers]    = useState({});
@@ -154,47 +159,47 @@ export default function QuizModal({
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={close}>
       <Animated.View style={[s.overlay, { opacity: fadeAnim }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close}/>
-        <View style={[s.sheet, { backgroundColor: T?.surface || '#fff' }]}>
+        <View style={[s.sheet, { backgroundColor: C.sheet }]}>
 
           {/* Header */}
-          <View style={[s.header, { borderBottomColor: T?.border || '#E8EAED' }]}>
+          <View style={[s.header, { borderBottomColor: C.edge }]}>
             <View style={s.headerLeft}>
               <Text style={s.headerIcon}>⚡</Text>
               <View>
-                <Text style={[s.headerTitle, { color: T?.textPrimary || '#111' }]}>
+                <Text style={[s.headerTitle, { color: C.text }]}>
                   {submitted ? t('quiz_results', 'Quiz Results') : t('quiz_lesson_quiz', 'Lesson Quiz')}
                 </Text>
-                <Text style={[s.headerSub, { color: T?.textMuted || '#9AA0AB' }]} numberOfLines={1}>
+                <Text style={[s.headerSub, { color: C.muted }]} numberOfLines={1}>
                   {lessonTitle || t('quiz_quiz_label', 'Quiz')}
                   {categoryId && categoryId !== 'all' ? ` · ${categoryId}` : ''}
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={close} style={[s.closeBtn, { backgroundColor: T?.surfaceEl || '#F0F2F5' }]}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: T?.textPrimary || '#111' }}>✕</Text>
+            <TouchableOpacity onPress={close} style={[s.closeBtn, { backgroundColor: C.card }]}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={s.loadingBox}>
               <ActivityIndicator color={BLUE} size="large"/>
-              <Text style={[s.loadingTxt, { color: T?.textMuted || '#9AA0AB' }]}>{t('quiz_loading', 'Loading questions…')}</Text>
+              <Text style={[s.loadingTxt, { color: C.muted }]}>{t('quiz_loading', 'Loading questions…')}</Text>
             </View>
           ) : questions.length === 0 ? (
             <View style={s.loadingBox}>
               <Text style={{ fontSize: 44 }}>📭</Text>
-              <Text style={[s.loadingTxt, { color: T?.textMuted || '#9AA0AB' }]}>{t('quiz_no_questions', 'No quiz questions yet for this lesson.')}</Text>
+              <Text style={[s.loadingTxt, { color: C.muted }]}>{t('quiz_no_questions', 'No quiz questions yet for this lesson.')}</Text>
             </View>
           ) : submitted ? (
             /* Results screen */
             <ScrollView contentContainerStyle={s.body}>
-              <View style={[s.scoreCard, { backgroundColor: pct >= 70 ? '#ECFDF5' : '#FEF2F2', borderColor: pct >= 70 ? '#6EE7B7' : '#FECACA' }]}>
+              <View style={[s.scoreCard, { backgroundColor: pct >= 70 ? C.okBg : C.badBg, borderColor: pct >= 70 ? C.okEdge : C.badEdge }]}>
                 <Text style={{ fontSize: 52 }}>{pct >= 70 ? '🏆' : '📖'}</Text>
-                <Text style={[s.scorePct, { color: pct >= 70 ? '#065F46' : '#991B1B' }]}>{pct}%</Text>
-                <Text style={[s.scoreSub, { color: pct >= 70 ? '#065F46' : '#991B1B' }]}>
+                <Text style={[s.scorePct, { color: pct >= 70 ? C.okFg : C.badFg }]}>{pct}%</Text>
+                <Text style={[s.scoreSub, { color: pct >= 70 ? C.okFg : C.badFg }]}>
                   {t('quiz_score_format', '{score} / {max} points').replace('{score}', String(score)).replace('{max}', String(maxScore))}
                 </Text>
-                <Text style={[s.scoreMsg, { color: pct >= 70 ? '#065F46' : '#991B1B' }]}>
+                <Text style={[s.scoreMsg, { color: pct >= 70 ? C.okFg : C.badFg }]}>
                   {pct >= 90 ? t('quiz_excellent', 'Excellent! 🎉') : pct >= 70 ? t('quiz_well_done', 'Well done! ✓') : t('quiz_keep_studying', 'Keep studying! 💪')}
                 </Text>
               </View>
@@ -204,21 +209,21 @@ export default function QuizModal({
                 const isRight  = chosen.toLowerCase() === correct;
                 const opts     = q.options || {};
                 return (
-                  <View key={q.id} style={[s.qCard, { backgroundColor: T?.surfaceEl || '#F0F2F5', borderColor: isRight ? '#6EE7B7' : '#FECACA' }]}>
+                  <View key={q.id} style={[s.qCard, { backgroundColor: C.card, borderColor: isRight ? C.okEdge : C.badEdge }]}>
                     <Text style={[s.qNum, { color: BLUE }]}>{t('quiz_q_label', 'Q')}{i+1}</Text>
-                    <Text style={[s.qText, { color: T?.textPrimary || '#111' }]}>{q.question}</Text>
+                    <Text style={[s.qText, { color: C.text }]}>{q.question}</Text>
                     {Object.entries(opts).map(([k, v]) => {
                       const isCorrect = k.toLowerCase() === correct;
                       const isChosen  = k.toLowerCase() === chosen.toLowerCase();
                       return (
                         <View key={k} style={[s.optRow, {
-                          backgroundColor: isCorrect ? '#ECFDF5' : isChosen ? '#FEF2F2' : 'transparent',
-                          borderColor:     isCorrect ? '#6EE7B7' : isChosen ? '#FECACA' : 'transparent',
+                          backgroundColor: isCorrect ? C.okBg : isChosen ? C.badBg : 'transparent',
+                          borderColor:     isCorrect ? C.okEdge : isChosen ? C.badEdge : 'transparent',
                         }]}>
-                          <Text style={[s.optK, { color: isCorrect ? '#065F46' : isChosen ? '#991B1B' : T?.textMuted || '#9AA0AB' }]}>
+                          <Text style={[s.optK, { color: isCorrect ? C.okFg : isChosen ? C.badFg : C.muted }]}>
                             {k.toUpperCase()}.
                           </Text>
-                          <Text style={[s.optV, { color: T?.textPrimary || '#111' }]}>{v}</Text>
+                          <Text style={[s.optV, { color: C.text }]}>{v}</Text>
                           {isCorrect && <Text style={{ fontSize: 14 }}>✓</Text>}
                           {isChosen && !isCorrect && <Text style={{ fontSize: 14 }}>✗</Text>}
                         </View>
@@ -228,44 +233,44 @@ export default function QuizModal({
                 );
               })}
               <TouchableOpacity onPress={close} style={[s.submitBtn, { backgroundColor: BLUE }]}>
-                <Text style={s.submitBtnTxt}>{t('btn_done', 'Done')}</Text>
+                <Text style={[s.submitBtnTxt, { color: '#fff' }]}>{t('btn_done', 'Done')}</Text>
               </TouchableOpacity>
             </ScrollView>
           ) : (
             /* Questions screen */
             <ScrollView contentContainerStyle={s.body}>
-              <View style={[s.progressBar, { backgroundColor: T?.surfaceEl || '#F0F2F5' }]}>
+              <View style={[s.progressBar, { backgroundColor: C.card }]}>
                 <View style={[s.progressFill, { backgroundColor: BLUE, width: `${Math.round((Object.keys(answers).length / questions.length) * 100)}%` }]}/>
               </View>
-              <Text style={[s.progressLabel, { color: T?.textMuted || '#9AA0AB' }]}>
+              <Text style={[s.progressLabel, { color: C.muted }]}>
                 {t('quiz_n_of_total_answered', '{n} of {total} answered').replace('{n}', String(Object.keys(answers).length)).replace('{total}', String(questions.length))}
               </Text>
               {questions.map((q, i) => {
                 const opts = q.options || {};
                 const chosen = answers[q.id];
                 return (
-                  <View key={q.id} style={[s.qCard, { backgroundColor: T?.surfaceEl || '#F0F2F5' }]}>
+                  <View key={q.id} style={[s.qCard, { backgroundColor: C.card, borderColor: C.edge }]}>
                     <Text style={[s.qNum, { color: BLUE }]}>{t('quiz_q_label', 'Q')}{i+1} · {q.points || 10} {t('quiz_pts', 'pts')}</Text>
-                    <Text style={[s.qText, { color: T?.textPrimary || '#111' }]}>{q.question}</Text>
+                    <Text style={[s.qText, { color: C.text }]}>{q.question}</Text>
                     {Object.entries(opts).map(([k, v]) => (
                       <TouchableOpacity key={k} onPress={() => selectAnswer(q.id, k)} activeOpacity={0.75}
                         style={[s.optRow, {
                           backgroundColor: chosen === k ? BLUE + '18' : 'transparent',
-                          borderColor:     chosen === k ? BLUE       : T?.border || '#E8EAED',
+                          borderColor:     chosen === k ? BLUE       : C.edge,
                           borderWidth: 1.5,
                         }]}>
-                        <View style={[s.optCircle, { borderColor: chosen === k ? BLUE : T?.border || '#E8EAED', backgroundColor: chosen === k ? BLUE : 'transparent' }]}>
-                          <Text style={{ fontSize: 11, fontWeight: '900', color: chosen === k ? '#fff' : T?.textMuted || '#9AA0AB' }}>{k.toUpperCase()}</Text>
+                        <View style={[s.optCircle, { borderColor: chosen === k ? BLUE : C.edge, backgroundColor: chosen === k ? BLUE : 'transparent' }]}>
+                          <Text style={{ fontSize: 11, fontWeight: '900', color: chosen === k ? '#fff' : C.muted }}>{k.toUpperCase()}</Text>
                         </View>
-                        <Text style={[s.optV, { color: T?.textPrimary || '#111' }]}>{v}</Text>
+                        <Text style={[s.optV, { color: C.text }]}>{v}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 );
               })}
               <TouchableOpacity onPress={submit} disabled={!allAnswered} activeOpacity={0.85}
-                style={[s.submitBtn, { backgroundColor: allAnswered ? BLUE : T?.surfaceEl || '#F0F2F5' }]}>
-                <Text style={[s.submitBtnTxt, { color: allAnswered ? '#fff' : T?.textMuted || '#9AA0AB' }]}>
+                style={[s.submitBtn, { backgroundColor: allAnswered ? BLUE : C.card }]}>
+                <Text style={[s.submitBtnTxt, { color: allAnswered ? '#fff' : C.muted }]}>
                   {allAnswered ? t('quiz_submit_answers', 'Submit Answers →') : t('quiz_answer_all_n', 'Answer all {n} questions').replace('{n}', String(questions.length))}
                 </Text>
               </TouchableOpacity>
@@ -276,6 +281,22 @@ export default function QuizModal({
     </Modal>
   );
 }
+
+// Light values match the modal's original look; dark values use the same
+// card / edge / text ramp as the rest of the book screens (bookTones).
+const quizColors = (isDark) => ({
+  sheet:   isDark ? '#0A0F1A' : '#FFFFFF',
+  card:    isDark ? '#121826' : '#F0F2F5',
+  edge:    isDark ? '#1F2A40' : '#E8EAED',
+  text:    isDark ? '#F3F4F6' : '#111111',
+  muted:   isDark ? '#9CA3AF' : '#9AA0AB',
+  okBg:    isDark ? 'rgba(16,185,129,0.16)' : '#ECFDF5',
+  okEdge:  isDark ? '#10B981' : '#6EE7B7',
+  okFg:    isDark ? '#6EE7B7' : '#065F46',
+  badBg:   isDark ? 'rgba(239,68,68,0.16)' : '#FEF2F2',
+  badEdge: isDark ? '#EF4444' : '#FECACA',
+  badFg:   isDark ? '#FCA5A5' : '#991B1B',
+});
 
 const s = StyleSheet.create({
   overlay:     { flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' },

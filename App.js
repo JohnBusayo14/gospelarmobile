@@ -27,6 +27,7 @@ import PaymentScreen  from './screen/PaymentScreen';
 import LibraryScreen           from './screen/LibraryScreen';
 import BookReaderScreen        from './screen/BookReaderScreen';
 import HymnBookScreen          from './screen/HymnBookScreen';
+import BibleScreen             from './screen/BibleScreen';
 import BookPaywallScreen       from './screen/BookPaywallScreen';
 import HomeScreen              from './screen/Homescreen';
 import CombinedUnitsPage       from './screen/CombinedUnitsPage';
@@ -198,6 +199,7 @@ function AppNavigator() {
           the library tile level, not inside the reader. */}
       <Stack.Screen name="BookReader" component={BookReaderScreen} />
       <Stack.Screen name="HymnBook" component={HymnBookScreen} />
+      <Stack.Screen name="Bible" component={BibleScreen} />
 
       {/* Core content — subscription guarded */}
       <Stack.Screen
