@@ -97,10 +97,19 @@ const useSSAudioSettings = () => {
 // Same Yoruba/Igbo/Hausa/English devotional content builder used by
 // DevotionalReadingScreen — inline copy so this screen stays in sync with
 // the reader page without an extra import surface.
+// Manual days: message → Reflection, prayer point → Prayer, point of
+// emphasis → Application; anything missing falls back to the generic text.
 const getDevotionalContent = (day, lang = 'en') => {
   if (!day) return { prayer: '', reflection: '', application: '' };
-  // Days loaded from the Sunday School manual carry the printed devotional.
-  if (day.text) return { message: day.text, emphasis: day.emphasis || '', prayer: day.prayer || '' };
+  const tpl = getTemplateContent(day, lang);
+  return {
+    prayer:      day.prayer   || tpl.prayer,
+    reflection:  day.text     || tpl.reflection,
+    application: day.emphasis || tpl.application,
+  };
+};
+
+const getTemplateContent = (day, lang) => {
   const sc = day.scripture || '';
   if (lang === 'yo') return {
     prayer:      `Baba Ọ̀run, bí mo ṣe ń ronú lórí ${sc} lónìí, ṣí ojú ọkàn mi kí n lè rí ohun tí O fẹ́ kọ́ mí. Ràn mí lọ́wọ́ kí n má ṣe gbọ́ Ọ̀rọ̀ Rẹ nìkan, ṣùgbọ́n kí n tẹ̀lé e. Ní orúkọ Jesu, Àmín.`,
@@ -212,17 +221,11 @@ export default function SundaySchoolVoiceReading({ route, navigation }) {
         body:  currentDay.scripture,
       });
     }
-    if (content.message) {
-      list.push({ id: 'message', kind: 'reflection', title: t('dev_message', 'Message'), body: content.message });
-    }
-    if (content.emphasis) {
-      list.push({ id: 'emphasis', kind: 'application', title: t('dev_point_of_emphasis', 'Point of Emphasis'), body: content.emphasis });
-    }
     if (content.prayer) {
       list.push({
         id:    'prayer',
         kind:  'prayer',
-        title: content.message ? t('dev_prayer_point', 'Prayer Point') : t('dev_prayer', 'Prayer'),
+        title: t('dev_prayer', 'Prayer'),
         body:  content.prayer,
       });
     }

@@ -18,13 +18,22 @@ import { RichVerseText } from '../components/BibleVerseLink';
 const { width } = Dimensions.get('window');
 const BLUE='#1A56DB', BLUE_MID='#3B82F6', BLUE_LIGHT='#EFF6FF', AMBER='#F59E0B', AMBER_LIGHT='#FEF3C7';
 
+// Days loaded from the Sunday School manual carry the printed devotional:
+// the message goes in Reflection, the prayer point in Prayer and the point of
+// emphasis in Application. Missing pieces (e.g. a language whose devotional is
+// not translated yet) fall back to the generic text below.
 const getDevotionalContent = (day, lang='en') => {
   if (!day) return { prayer:'', reflection:'', application:'' };
-  // Days loaded from the Sunday School manual carry the printed devotional:
-  // message, point of emphasis, prayer point and Bible-in-a-year reading.
-  if (day.text) return {
-    message: day.text, emphasis: day.emphasis||'', prayer: day.prayer||'', bible: day.bible_reading||'',
+  const tpl = getTemplateContent(day, lang);
+  return {
+    prayer:      day.prayer   || tpl.prayer,
+    reflection:  day.text     || tpl.reflection,
+    application: day.emphasis || tpl.application,
+    bible:       day.bible_reading || '',
   };
+};
+
+const getTemplateContent = (day, lang) => {
   const sc = day.scripture||'';
   if (lang==='yo') return {
     prayer:      `Baba Ọ̀run, bí mo ṣe ń ronú lórí ${sc} lónìí, ṣí ojú ọkàn mi kí n lè rí ohun tí O fẹ́ kọ́ mí. Ràn mí lọ́wọ́ kí n má ṣe gbọ́ Ọ̀rọ̀ Rẹ nìkan, ṣùgbọ́n kí n tẹ̀lé e. Ní orúkọ Jesu, Àmín.`,
@@ -50,15 +59,11 @@ const getDevotionalContent = (day, lang='en') => {
 
 // Each section now carries a Lucide-style component instead of an emoji glyph
 // so it picks up the same visual language as the bottom nav.
-const buildSections = (t, fromBook) => fromBook ? [
-  {key:'message',  Icon:ICONS.Book,     label:t('dev_message','Message'),                 color:BLUE,     lightBg:BLUE_LIGHT},
-  {key:'emphasis', Icon:ICONS.Target,   label:t('dev_point_of_emphasis','Point of Emphasis'), color:'#7C3AED',lightBg:'#F5F3FF'},
-  {key:'prayer',   Icon:ICONS.Prayer,   label:t('dev_prayer_point','Prayer Point'),       color:AMBER,    lightBg:AMBER_LIGHT},
-  {key:'bible',    Icon:ICONS.Calendar, label:t('dev_bible_in_a_year','Reading The Bible Through In A Year'), color:'#10B981',lightBg:'#ECFDF5'},
-] : [
+const buildSections = (t, hasBible) => [
   {key:'prayer',      Icon:ICONS.Prayer,      label:t('dev_prayer','Prayer'),           color:BLUE,    lightBg:BLUE_LIGHT},
   {key:'reflection',  Icon:ICONS.Reflection,  label:t('dev_reflection','Reflection'),   color:'#7C3AED',lightBg:'#F5F3FF'},
   {key:'application', Icon:ICONS.Application, label:t('dev_application','Application'), color:AMBER,   lightBg:AMBER_LIGHT},
+  ...(hasBible ? [{key:'bible', Icon:ICONS.Calendar, label:t('dev_bible_in_a_year','Reading The Bible Through In A Year'), color:'#10B981',lightBg:'#ECFDF5'}] : []),
 ];
 
 // SectionHeader takes an Icon component (preferred) or falls back to an emoji
@@ -128,14 +133,13 @@ export default function DevotionalReadingScreen({route,navigation}) {
   const { fade, translateY } = useScreenEntry();
   const {devotional,allDays:paramAllDays,lessonTitle}=route.params||{};
   const allDays=Array.isArray(paramAllDays)&&paramAllDays.length>0?paramAllDays:[devotional].filter(Boolean);
-  const fromBook=!!(allDays[dayIndex]||devotional)?.text;
-  const SECTIONS=useMemo(()=>buildSections(t,fromBook),[t,fromBook]);
   const [dayIndex,setDayIndex]=useState(0);
   const [highlights,setHighlights]=useState([]);
   const fadeAnim=useRef(new Animated.Value(1)).current;
   const scrollRef=useRef(null);
   const currentDay=allDays[dayIndex]||devotional;
   const content=useMemo(()=>getDevotionalContent(currentDay,lang),[currentDay,lang]);
+  const SECTIONS=useMemo(()=>buildSections(t,!!content.bible),[t,content.bible]);
   const STORAGE_KEY=`highlights_dev_${currentDay?.day?.replace(/\s/g,'_')||dayIndex}`;
 
   useEffect(()=>{AsyncStorage.getItem(STORAGE_KEY).then(raw=>setHighlights(raw?JSON.parse(raw):[])).catch(()=>setHighlights([]));},[STORAGE_KEY]);
