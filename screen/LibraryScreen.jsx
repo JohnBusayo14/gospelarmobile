@@ -277,7 +277,7 @@ const BookCard = ({ book, index, onPress, tk, isDark, t, canAccessBook }) => {
 };
 
 // ── Main screen ───────────────────────────────────────────────────────────────
-export default function LibraryScreen({ navigation }) {
+export default function LibraryScreen({ navigation, route }) {
   const { isDark } = useTheme();
   const { t }      = useLanguage();
   const { canAccessBook, isSubscribed, isTrial, daysRemaining } = useSubscription();
@@ -358,6 +358,18 @@ export default function LibraryScreen({ navigation }) {
     // Open — either no subscription required, or the user already owns it.
     navigation.navigate(book.route, book.routeParams);
   };
+
+  // A tapped push notification (new / updated book) lands here with
+  // { openBook: slug }: open that book once the catalogue has loaded, through
+  // handleOpen so paywalls and per-book routing still apply.
+  const openBookSlug = route?.params?.openBook;
+  useEffect(() => {
+    if (!openBookSlug || loading) return;
+    navigation.setParams({ openBook: undefined });
+    const norm = (v) => String(v || '').toLowerCase().replace(/-/g, '_');
+    const book = catalog.find((b) => norm(b.id) === norm(openBookSlug) || norm(b.slug) === norm(openBookSlug));
+    if (book && book.available !== false) handleOpen(book);
+  }, [openBookSlug, loading, catalog]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: tk.bg }]} edges={['top']}>

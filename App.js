@@ -8,9 +8,10 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer }        from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider }           from 'react-native-safe-area-context';
-import { ActivityIndicator, View, Alert } from 'react-native';
+import { ActivityIndicator, View, Alert, AppState } from 'react-native';
 import * as Notifications             from 'expo-notifications';
 import NotificationService            from './services/NotificationService';
+import { registerForPush }            from './services/pushRegistration';
 import { useContentSync }             from './services/contentSync';
 
 // ── Contexts ──────────────────────────────────────────────────────────────────
@@ -138,15 +139,25 @@ function AppNavigator() {
 
     // Initialise notifications
     NotificationService.init();
+    // Server push (new videos / book updates) — re-registers after sign-in too.
+    registerForPush();
 
     // Handle notification taps. We branch on the `type` payload set by each
     // notification scheduler so taps deep-link straight to the relevant
     // screen instead of just opening the app cold.
     const sub = Notifications.addNotificationResponseReceivedListener(response => {
-      const type = response.notification.request.content.data?.type;
+      const data = response.notification.request.content.data || {};
+      const type = data.type;
       if (!navigationRef.current) return;
 
-      if (type === 'quiz' || type === 'devotional') {
+      if (type === 'video' && data.videoId) {
+        // Server push: a new Sunday School video was published.
+        navigationRef.current.navigate('VideoPlayer', { videoId: data.videoId });
+      } else if (type === 'book' && data.slug) {
+        // Server push: a book is new or updated — open it through the
+        // Library so its paywall / per-book routing still applies.
+        navigationRef.current.navigate('Library', { openBook: data.slug });
+      } else if (type === 'quiz' || type === 'devotional') {
         navigationRef.current.navigate('HomeScreen');
       } else if (type === 'fastEnded' || type === 'fastStarted' || type === 'fastMidpoint') {
         // Victory Month fast alarm — route to the Fasting Hub so the user
@@ -159,7 +170,13 @@ function AppNavigator() {
       }
     });
 
-    return () => sub.remove();
+    // Back in the foreground: refresh the push registration so a new sign-in
+    // or language change reaches the server (no-op when nothing changed).
+    const appStateSub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') registerForPush();
+    });
+
+    return () => { sub.remove(); appStateSub.remove(); };
   }, []);
 
   if (!initialRoute) {
