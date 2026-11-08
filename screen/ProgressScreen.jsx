@@ -37,6 +37,7 @@ import {
 import {
   fetchReadingStats, fetchReadingCalendar, fetchReadingLeaderboard,
 } from '../services/reading';
+import AdSlot from '../components/ads/AdSlot';
 
 const API = API_BASE_URL;
 
@@ -687,6 +688,7 @@ export default function ProgressScreen({ navigation }) {
               )}
             </>
           )}
+          <AdSlot dark={isDark} />
         </ScrollView>
 
       </Animated.View>

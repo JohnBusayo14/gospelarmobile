@@ -12,6 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { fetchUnits }  from '../services/api';
 import useApi from '../hooks/useApi';
 import { SkeletonList, ErrorState } from '../components/FetchStates';
+import AdSlot from '../components/ads/AdSlot';
 
 const { width } = Dimensions.get('window');
 
@@ -215,6 +216,7 @@ export default function SecondPage({ navigation }) {
               <Text style={[s.footerText, { color: isDark ? '#334155' : '#94A3B8' }]}>{t('unitsFooter')}</Text>
             </View>
           )}
+          <AdSlot dark={isDark} />
         </ScrollView>
       )}
     </SafeAreaView>

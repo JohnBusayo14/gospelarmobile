@@ -20,6 +20,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { API_BASE_URL } from '../context/SubscriptionContext';
 import { getTokens }   from '../theme/tokens';
 import { ICONS }       from '../components/icons';
+import AdSlot from '../components/ads/AdSlot';
 
 const BLUE = '#1A56DB';
 
@@ -213,6 +214,7 @@ export default function ChurchDirectoryScreen({ navigation }) {
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={BLUE} />}
           keyboardShouldPersistTaps="handled"
+          ListFooterComponent={<AdSlot dark={isDark} />}
           ListEmptyComponent={
             <View style={s.center}>
               <Text style={[s.emptyTitle, { color: tk.textPrimary }]}>{t('dir_empty', 'No churches found')}</Text>

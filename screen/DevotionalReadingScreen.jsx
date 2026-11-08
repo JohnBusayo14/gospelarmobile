@@ -14,6 +14,7 @@ import { useScreenEntry } from '../hooks/useFluidAnim';
 import { useReadingTimer } from '../hooks/useReadingTimer';
 import { silentReadingCheckIn } from '../services/reading';
 import { RichVerseText } from '../components/BibleVerseLink';
+import { noteLessonCompleted, showInterstitialIfAllowed } from '../services/ads';
 
 const { width } = Dimensions.get('window');
 const BLUE='#1A56DB', BLUE_MID='#3B82F6', BLUE_LIGHT='#EFF6FF', AMBER='#F59E0B', AMBER_LIGHT='#FEF3C7';
@@ -172,7 +173,7 @@ export default function DevotionalReadingScreen({route,navigation}) {
       <StatusBar barStyle={isDark?'light-content':'dark-content'} backgroundColor={tk.pageBg}/>
       {/* TOP BAR */}
       <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:20,paddingTop:8,paddingBottom:16,backgroundColor:tk.pageBg}}>
-        <TouchableOpacity onPress={()=>navigation.goBack()} activeOpacity={0.75} style={{width:40,height:40,borderRadius:20,justifyContent:'center',alignItems:'center',backgroundColor:tk.surfaceEl}}>
+        <TouchableOpacity onPress={()=>{ navigation.goBack(); noteLessonCompleted(); setTimeout(()=>showInterstitialIfAllowed(),600); }} activeOpacity={0.75} style={{width:40,height:40,borderRadius:20,justifyContent:'center',alignItems:'center',backgroundColor:tk.surfaceEl}}>
           <ICONS.ArrowLeft color={tk.textPrimary} size={20} sw={2.25} />
         </TouchableOpacity>
         <View style={{alignItems:'center'}}>

@@ -31,6 +31,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BOOKS } from '../data/books';
 import { fetchBooks } from '../services/api';
 import { ICONS } from '../components/icons';
+import AdSlot from '../components/ads/AdSlot';
 
 // Normalize a row from /api/books into the shape the cards already render.
 // Falls back to the matching local BOOKS entry for image assets (require())
@@ -481,6 +482,9 @@ export default function LibraryScreen({ navigation, route }) {
         {/* FEATURED */}
         <FeaturedCard book={featured} onPress={handleOpen} t={t} />
 
+        {/* AD — between the featured book and the grid */}
+        <AdSlot dark={isDark} />
+
         {/* GRID HEADER */}
         {others.length > 0 && (
           <View style={s.gridHead}>
@@ -508,6 +512,9 @@ export default function LibraryScreen({ navigation, route }) {
             />
           ))}
         </View>
+
+        {/* AD — end of the shelf */}
+        <AdSlot dark={isDark} />
 
         <View style={s.footer}>
           <Text style={[s.footerTxt, { color: tk.textMuted }]}>

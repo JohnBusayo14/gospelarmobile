@@ -20,6 +20,8 @@ import HymnModal          from '../components/HymnModal';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
 import { useScreenEntry } from '../hooks/useFluidAnim';
+import AdSlot from '../components/ads/AdSlot';
+import { setAudience, noteLessonCompleted, showInterstitialIfAllowed } from '../services/ads';
 
 const { width, height } = Dimensions.get('window');
 
@@ -597,10 +599,13 @@ export default function LessonPage({ route, navigation }) {
   const tk = useMemo(() => ({ ...getTokens(isDark), ...bookTones(isDark) }), [isDark]);
   const { fade, translateY } = useScreenEntry();
 
+  useEffect(() => { setAudience(category?.id || 'adult'); }, [category?.id]);
+
   const [lesson,        setLesson]        = useState(items);
   const [loading,       setLoading]       = useState(true);
   const [quizVisible,   setQuizVisible]   = useState(false);
   const [quizDone,      setQuizDone]      = useState(false);  // true if quiz already taken for this lesson
+  const justFinishedQuiz = useRef(false);   // set on submit; consumed when the results card is closed
   const [hymnVisible,   setHymnVisible]   = useState(false);
   const [activeTab,     setActiveTab]     = useState(1);  // Units tab active on LessonPage
   const [questionsOpen, setQuestionsOpen] = useState(false);
@@ -706,11 +711,22 @@ export default function LessonPage({ route, navigation }) {
     <SafeAreaView style={[s.safe, { backgroundColor:tk.pageBg }]} edges={['top']}>
       <StatusBar barStyle={isDark?'light-content':'dark-content'} backgroundColor={tk.pageBg}/>
 
-      <QuizModal visible={quizVisible} onClose={()=>setQuizVisible(false)}
+      <QuizModal visible={quizVisible}
+        onClose={() => {
+          setQuizVisible(false);
+          // Interstitial only AFTER the user has seen and dismissed their score,
+          // once per lesson, and never for children/intermediate (ads.js enforces).
+          if (justFinishedQuiz.current) {
+            justFinishedQuiz.current = false;
+            setTimeout(() => showInterstitialIfAllowed({ category: category?.id || 'adult' }), 500);
+          }
+        }}
         lessonId={lesson?.id} lessonTitle={lesson?.title} T={buildTheme(isDark)}
         categoryId={category?.id || 'adult'} lang={lang}
         onComplete={async () => {
           setQuizDone(true);
+          justFinishedQuiz.current = true;
+          noteLessonCompleted();
           // Persist completion so it survives app restarts
           try {
             const raw = await AsyncStorage.getItem('completedLessons');
@@ -832,6 +848,10 @@ export default function LessonPage({ route, navigation }) {
               </ScrollView>
             </View>
           )}
+
+          {/* AD — inline between the overview and the lesson notes (not bottom-anchored:
+              it would cover the Daily Reading button) */}
+          <AdSlot category={category?.id || 'adult'} dark={isDark} />
 
           {/* LESSON PARTS — full dark mode */}
           {Array.isArray(c.lesson_part) && c.lesson_part.length>0 && (

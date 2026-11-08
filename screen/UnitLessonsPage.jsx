@@ -13,6 +13,7 @@ import { fetchLessonsByUnit } from '../services/api';
 import { stripFormatting } from '../components/BibleVerseLink';
 import useApi from '../hooks/useApi';
 import { SkeletonList, ErrorState, EmptyState } from '../components/FetchStates';
+import AdSlot from '../components/ads/AdSlot';
 
 const { width } = Dimensions.get('window');
 const P = {
@@ -235,6 +236,7 @@ export default function UnitLessonsPage({ route, navigation }) {
               <Text style={[s.footerText, { color: isDark ? '#334155' : '#94A3B8' }]}>{t('tapToStudy')}</Text>
             </View>
           )}
+          <AdSlot category={String(unit?.id || '').split('_unit')[0] || undefined} dark={isDark} />
         </ScrollView>
       )}
     </SafeAreaView>

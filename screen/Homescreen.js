@@ -18,6 +18,8 @@ import { useLanguage }   from '../context/LanguageContext';
 import { fetchPreviewLessons } from '../services/api';
 import { useComingSoonCategories } from '../services/comingSoon';
 import { API_BASE_URL, useSubscription } from '../context/SubscriptionContext';
+import AdSlot from '../components/ads/AdSlot';
+import { setAudience } from '../services/ads';
 import AppTabBar from '../components/AppTabBar';
 import { ICONS } from '../components/icons';
 import { getTokens, PALETTE } from '../theme/tokens';
@@ -483,6 +485,7 @@ export default function Homescreen({ navigation }) {
                       return;
                     }
                     setCategoryId(c.id);
+                    setAudience(c.id);   // child-safe ad settings follow the chosen age group
                     navigation.navigate(c.route || 'SecondPage', { category:c });
                   }}
                   tk={tk}
@@ -492,6 +495,9 @@ export default function Homescreen({ navigation }) {
             })}
           </View>
         </View>
+
+        {/* AD — between the age groups and recent lessons */}
+        <AdSlot category={categoryId} dark={isDark} />
 
         {/* ── RECENT LESSONS ── */}
         <View style={s.section}>

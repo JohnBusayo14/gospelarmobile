@@ -25,6 +25,7 @@ import EmojiIcon from '../components/EmojiIcon';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
 import { useScreenEntry } from '../hooks/useFluidAnim';
+import AdSlot from '../components/ads/AdSlot';
 
 const { width } = require('react-native').Dimensions.get('window');
 
@@ -501,6 +502,9 @@ export default function CombinedUnitsPage({ route, navigation }) {
             ))}
           </View>
         </View>
+
+        {/* AD */}
+        <AdSlot category={routeCategory?.id} dark={isDark} />
 
         {/* ── FOOTER ── */}
         <View style={s.footer}>

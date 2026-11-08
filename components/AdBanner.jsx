@@ -15,12 +15,16 @@ import { API_BASE_URL } from '../context/SubscriptionContext';
 const { width, height } = Dimensions.get('window');
 const BLUE = '#1A56DB';
 
+// Module-level so dismissals survive the component unmounting when the user
+// navigates away from Library/Home (App.js only mounts it on those routes).
+const dismissedIds = new Set();
+
 export default function AdBanner() {
   const [banner,  setBanner]  = useState(null);
   const [visible, setVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(0.85)).current;  // scale anim for center modal
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-  const dismissed = useRef(new Set()).current;   // track dismissed banner IDs per session
+  const dismissed = dismissedIds;                // dismissed banner IDs this session
   // Track the in-flight enter/dismiss animation so a follow-up start() can
   // stop the previous one cleanly. Without this, toggling visibility while
   // an animation is mid-flight (or React reconnecting a frozen subtree) can

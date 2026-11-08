@@ -30,6 +30,7 @@ import {
   fetchReadingStats, fetchReadingCalendar, fetchReadingLeaderboard,
   submitReadingCheckIn,
 } from '../services/reading';
+import AdSlot from '../components/ads/AdSlot';
 
 // Brand palette — blue primary per the spec.
 const BLUE       = '#1A56DB';
@@ -764,6 +765,7 @@ export default function StatsScreen({ navigation }) {
             </Glass>
           </>
         )}
+        <AdSlot dark={isDark} />
       </Animated.ScrollView>
 
       {/* Settings tab removed — Settings lives on the Library home only. */}

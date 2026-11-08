@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gospelar",
     "slug": "newnew",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
@@ -80,7 +80,15 @@
       ],
       "expo-web-browser",
       "expo-video",
-      "expo-asset"
+      "expo-asset",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "Gospelar uses this to show ads that are more relevant to you."
+        }
+      ]
     ],
     "extra": {
       "eas": {
