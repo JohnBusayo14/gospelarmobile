@@ -54,6 +54,7 @@ export const BOOKS = [
     title:       'Holy Bible',
     subtitle:    'KJV · ASV · WEB · BBE · Yorùbá · Igbo · Hausa',
     description: 'Read the whole Bible — even without internet. The King James Version is built in; other versions download once and then work offline.',
+    cover:       require('../assets/bible.png'),
     cover_emoji: '📖',
     accent:      '#B45309',
     available:   true,
