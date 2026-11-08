@@ -401,6 +401,9 @@ export const SubscriptionProvider = ({ children }) => {
           code:    data.code || 'verify_failed',
           message: data.message || 'Payment could not be verified.',
           detail:  data.detail || null,
+          // Provider-side status ('abandoned', 'ongoing', …) so the checkout
+          // can tell an abandoned attempt from a bank transfer still in flight.
+          txnStatus: data.txn_status || null,
         };
       }
 

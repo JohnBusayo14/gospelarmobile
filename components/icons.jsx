@@ -224,6 +224,13 @@ export const ICONS = {
       <Path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </Glyph>
   ),
+  CreditCard: (p) => (
+    <Glyph {...p}>
+      <Rect x="2" y="5" width="20" height="14" rx="2" />
+      <Line x1="2" y1="10" x2="22" y2="10" />
+      <Line x1="6" y1="15" x2="10" y2="15" />
+    </Glyph>
+  ),
   Unlock: (p) => (
     <Glyph {...p}>
       <Rect x="4" y="11" width="16" height="10" rx="2" />

@@ -479,7 +479,7 @@ export default function Homescreen({ navigation }) {
                           .replace('{target}', targetLbl),
                         [
                           { text: t('btn_not_now', 'Not now'), style: 'cancel' },
-                          { text: t('upgrade', 'Upgrade'), onPress: () => navigation.navigate('PaymentScreen') },
+                          { text: t('upgrade', 'Upgrade'), onPress: () => navigation.navigate('PaymentScreen', { plan: 'all' }) },
                         ],
                       );
                       return;

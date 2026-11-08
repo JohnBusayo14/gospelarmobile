@@ -292,7 +292,7 @@ export default function AccountScreen({ navigation }) {
         {SUBSCRIPTIONS_ENABLED && !isExpired && !isAll && (
           <ActionBtn gradient={['#7C3AED','#5B21B6']} iconPath={IC.upgrade}
             label={t('account_upgrade_label', 'Upgrade to All Categories')} sub={t('account_upgrade_sub', 'Unlock every age group · ₦1,000')}
-            shadowColor="#7C3AED" onPress={() => navigation.navigate('PaymentScreen')} />
+            shadowColor="#7C3AED" onPress={() => navigation.navigate('PaymentScreen', { plan: 'all' })} />
         )}
         {SUBSCRIPTIONS_ENABLED && (isExpired || daysLeft <= 30) && (
           <ActionBtn
@@ -303,7 +303,7 @@ export default function AccountScreen({ navigation }) {
               ? t('account_renew_sub', 'Reactivate your access · from ₦500')
               : t('account_extend_sub', '{n} days left — top up now').replace('{n}', String(daysLeft))}
             shadowColor={isExpired ? '#EF4444' : BLUE}
-            onPress={() => navigation.navigate('PaymentScreen')} />
+            onPress={() => navigation.navigate('PaymentScreen', isAll ? { plan: 'all' } : { plan: 'single', category: catKey })} />
         )}
         {SUBSCRIPTIONS_ENABLED && !isSubscribed && (
           <ActionBtn gradient={[BLUE,BLUE_DARK]} iconPath={IC.star}
