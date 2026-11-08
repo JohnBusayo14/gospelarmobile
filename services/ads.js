@@ -65,7 +65,9 @@ export const subscribeAds = (fn) => { state.listeners.add(fn); return () => stat
 export const adsReady     = () => state.enabled;
 export const adsChildMode = () => state.childMode;
 
-// Children (4–11) and Intermediate (12–17) get child-directed treatment.
+// Children (4–11) and Intermediate (12–17) are NEVER shown ads (Google Play
+// Families Policy / AdMob child-directed rules). Child mode is sticky: it stays
+// on until the user opens an adult/youth category.
 export const isChildCategory = (cat) => cat === 'children' || cat === 'intermediate';
 
 // ── Request configuration ────────────────────────────────────────────────────
@@ -144,10 +146,14 @@ export async function initAds() {
 
     // Consent (EU/UK UMP form) must finish before the first ad request.
     const { AdsConsent, default: mobileAds } = GMA;
+    // Fail closed: if the consent flow errors (or the user declines), request
+    // no ads. Better no ads than ads without a valid consent record.
     try {
       const info = await AdsConsent.gatherConsent({ tagForUnderAgeOfConsent: state.childMode });
-      if (info && info.canRequestAds === false) return;       // user refused → no ads
-    } catch { /* consent form unavailable — SDK falls back to its own handling */ }
+      if (!info || info.canRequestAds !== true) return;
+    } catch {
+      return;
+    }
 
     await applyRequestConfig();
     await mobileAds().initialize();
@@ -166,7 +172,7 @@ export function noteLessonCompleted() {
   AsyncStorage.setItem(K_LESS, String(state.lessonsSinceAd)).catch(() => {});
 }
 
-export const bannersAllowed = () => state.enabled && !state.isTeacher;
+export const bannersAllowed = () => state.enabled && !state.isTeacher && !state.childMode;
 
 // Show an interstitial if every rule allows it. Resolves true if one was shown.
 //   category — lesson category; child categories never get interstitials.

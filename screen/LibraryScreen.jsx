@@ -32,6 +32,7 @@ import { BOOKS } from '../data/books';
 import { fetchBooks } from '../services/api';
 import { ICONS } from '../components/icons';
 import AdSlot from '../components/ads/AdSlot';
+import HouseAdCard from '../components/HouseAdCard';
 
 // Normalize a row from /api/books into the shape the cards already render.
 // Falls back to the matching local BOOKS entry for image assets (require())
@@ -459,6 +460,9 @@ export default function LibraryScreen({ navigation, route }) {
           </View>
           <ICONS.ChevronRight color={tk.textMuted} size={18} sw={2.25} />
         </TouchableOpacity>
+
+        {/* Gospelar's own announcement card (inline, dismissible — not a popup) */}
+        <HouseAdCard tk={tk} />
 
         {/* FREE-TRIAL COUNTDOWN — only while on the promotional free month */}
         {isTrial && (

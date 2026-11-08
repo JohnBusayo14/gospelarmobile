@@ -214,7 +214,7 @@ export default function ChurchDirectoryScreen({ navigation }) {
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={BLUE} />}
           keyboardShouldPersistTaps="handled"
-          ListFooterComponent={<AdSlot dark={isDark} />}
+          ListFooterComponent={<AdSlot dark={isDark} enabled={visible.length > 0} />}
           ListEmptyComponent={
             <View style={s.center}>
               <Text style={[s.emptyTitle, { color: tk.textPrimary }]}>{t('dir_empty', 'No churches found')}</Text>

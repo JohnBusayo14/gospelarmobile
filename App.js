@@ -75,7 +75,6 @@ import AboutScreen          from './screen/AboutScreen';
 
 // ── Subscription guard ────────────────────────────────────────────────────────
 import SubscriptionGuard from './components/SubscriptionGuard';
-import AdBanner          from './components/AdBanner';
 import { initAds }       from './services/ads';
 
 // ── Teacher screens ───────────────────────────────────────────────────────────
@@ -442,14 +441,7 @@ function AppNavigator() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Screens where the house-ad popup (AdBanner) may appear. Everywhere else —
-// lessons, quizzes, readers, login, payment — it stays out of the way so it
-// never stacks on top of an AdMob ad or interrupts reading.
-const HOUSE_AD_ROUTES = ['Library', 'HomeScreen'];
-
 export default function App() {
-  const [routeName, setRouteName] = useState(null);
-
   // AdMob: consent → SDK init → preload. Safe no-op where the SDK is absent.
   useEffect(() => { initAds(); }, []);
 
@@ -459,13 +451,8 @@ export default function App() {
         <LanguageProvider>
           <SubscriptionProvider>
             {/* The ref here is crucial for the global logout to work */}
-            <NavigationContainer
-              ref={navigationRef}
-              onReady={() => setRouteName(navigationRef.current?.getCurrentRoute?.()?.name ?? null)}
-              onStateChange={() => setRouteName(navigationRef.current?.getCurrentRoute?.()?.name ?? null)}
-            >
+            <NavigationContainer ref={navigationRef}>
               <AppNavigator />
-              {HOUSE_AD_ROUTES.includes(routeName) && <AdBanner />}
             </NavigationContainer>
           </SubscriptionProvider>
         </LanguageProvider>

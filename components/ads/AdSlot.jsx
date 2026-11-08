@@ -14,10 +14,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   adsReady, bannersAllowed, adsChildMode, bannerUnitId, getGMA,
-  subscribeAds, setAudience,
+  subscribeAds, setAudience, isChildCategory,
 } from '../../services/ads';
 
-export default function AdSlot({ category, style, dark = false }) {
+export default function AdSlot({ category, style, dark = false, enabled = true }) {
   const [, force] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -29,6 +29,9 @@ export default function AdSlot({ category, style, dark = false }) {
   useEffect(() => subscribeAds(() => { setFailed(false); setLoaded(false); force((n) => n + 1); }), []);
 
   const GMA = getGMA();
+  // No ads for children/intermediate, on screens with nothing to show yet, or
+  // before the SDK + consent are ready.
+  if (!enabled || isChildCategory(category)) return null;
   if (!GMA || !adsReady() || !bannersAllowed() || failed) return null;
 
   const { BannerAd, BannerAdSize } = GMA;
@@ -47,7 +50,9 @@ export default function AdSlot({ category, style, dark = false }) {
 }
 
 const s = StyleSheet.create({
-  wrap:   { alignItems: 'center', marginVertical: 10, overflow: 'hidden' },
+  // Generous vertical space so the ad is never jammed against a tappable card
+  // or button (accidental clicks are an AdMob policy violation).
+  wrap:   { alignItems: 'center', marginVertical: 24, overflow: 'hidden' },
   // Keep mounted (so it can load) but take no space until there is an ad.
   hidden: { height: 0, marginVertical: 0, opacity: 0 },
   label:  { fontSize: 10, fontWeight: '600', letterSpacing: 0.6, color: '#6B7280', marginBottom: 2 },
