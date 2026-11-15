@@ -5,7 +5,9 @@
 //   2. hasChecked=false until server responds at least once with current email
 //   3. While hasChecked=false → Guard shows spinner (never shows blur/modal)
 //   4. isSubscribed only updated AFTER server responds
-//   5. Cache = UI display only, never grants access
+//   5. Cache never grants NEW access. One exception: when the server can't be
+//      reached, the last server-confirmed status for the SAME email is used
+//      until its own expiry date, so paying users aren't locked out offline.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
@@ -29,6 +31,7 @@ const PAYMENT_TIMEOUT_MS = 90_000;   // verify-payment (Paystack + DB write)
 
 const CACHE_EXPIRY_KEY = 'gofamint_sub_expiry';
 const CACHE_ACTIVE_KEY = 'gofamint_sub_active';
+const CACHE_EMAIL_KEY  = 'gofamint_sub_email';   // whose status the cache holds
 const STALE_KEYS       = ['subscriptionExpiry', 'gofamint_sub_expiry_old'];
 
 const DEFAULT_PLANS = {
@@ -240,9 +243,11 @@ export const SubscriptionProvider = ({ children }) => {
           if (active && expiry) {
             await AsyncStorage.setItem(CACHE_EXPIRY_KEY, expiry);
             await AsyncStorage.setItem(CACHE_ACTIVE_KEY, '1');
+            await AsyncStorage.setItem(CACHE_EMAIL_KEY, em);
           } else {
             await AsyncStorage.removeItem(CACHE_EXPIRY_KEY);
             await AsyncStorage.removeItem(CACHE_ACTIVE_KEY);
+            await AsyncStorage.removeItem(CACHE_EMAIL_KEY);
           }
         } else {
           console.warn('[Sub] Server returned status', res.status);
@@ -253,7 +258,28 @@ export const SubscriptionProvider = ({ children }) => {
       } catch (netErr) {
         console.warn('[Sub] Network error:', netErr.message);
         setServerError(true);
-        // Do NOT change isSubscribed on network error — keep previous values for UX
+        // Server unreachable (offline, slow network, cold start). Fall back to
+        // the last SERVER-CONFIRMED active status for this same email, bounded
+        // by its own expiry — otherwise a paying user on a bad connection is
+        // bounced to the Victory paywall and shown ads. The cache is written
+        // only after a successful status check or payment verify.
+        try {
+          const kv = Object.fromEntries(await AsyncStorage.multiGet([
+            CACHE_EMAIL_KEY, CACHE_ACTIVE_KEY, CACHE_EXPIRY_KEY,
+            'sub_plan_type', 'sub_category', 'sub_books',
+          ]));
+          const exp = kv[CACHE_EXPIRY_KEY];
+          if (kv[CACHE_EMAIL_KEY] === em && kv[CACHE_ACTIVE_KEY] === '1' && exp && new Date(exp) > new Date()) {
+            let books = [];
+            try { books = JSON.parse(kv.sub_books || '[]'); } catch {}
+            setIsSubscribed(true);
+            setExpiryDate(exp);
+            setDaysRemaining(calculateDaysRemaining(exp));
+            setPlanType(kv.sub_plan_type || 'single');
+            setSubscribedCategory(kv.sub_category || null);
+            setSubscribedBooks(Array.isArray(books) ? books : []);
+          }
+        } catch { /* no usable cache — stay as-is */ }
         lastCheckedEmail.current = em;
       }
 
@@ -435,6 +461,7 @@ export const SubscriptionProvider = ({ children }) => {
         if (expiry) {
           await AsyncStorage.setItem(CACHE_EXPIRY_KEY, expiry);
           await AsyncStorage.setItem(CACHE_ACTIVE_KEY, '1');
+          await AsyncStorage.setItem(CACHE_EMAIL_KEY, userEmail);
         }
         console.log('[Sub] ✅ Activated | cat:', newCategory, '| plan:', newPlanType, '| books:', newBooks, '| until:', expiry);
         return { success: true };

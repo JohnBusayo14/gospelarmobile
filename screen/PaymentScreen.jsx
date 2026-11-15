@@ -34,7 +34,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar,
   ActivityIndicator, KeyboardAvoidingView, Platform, Animated, Pressable,
-  Linking, BackHandler,
+  Linking, BackHandler, Share,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage        from '@react-native-async-storage/async-storage';
@@ -64,7 +64,14 @@ const DEFAULT_PREMIUM = { price_kobo: 100000, days: 300 };
 const PROVIDER        = { id: 'paystack', label: 'Paystack', methods: 'Card · Bank transfer · USSD' };
 
 const BROWSER_OPTS = {
-  showInRecents:      false,
+  // MUST be true. false adds FLAG_ACTIVITY_NO_HISTORY on Android, which
+  // destroys the checkout the moment the user switches to their bank app to
+  // make Paystack's bank transfer / approve an OTP — they'd come back to
+  // nothing. With true the checkout survives as its own Recents entry.
+  showInRecents:      true,
+  // iOS: skip the confusing "Gospelar wants to use paystack.co to Sign In"
+  // system alert (no cookies are needed for a one-off checkout).
+  preferEphemeralSession: true,
   controlsColor:      '#FFFFFF',
   toolbarColor:       '#060E20',
   dismissButtonStyle: 'close',
@@ -90,6 +97,26 @@ const isHardFailure = (code = '') =>
 // a field; older ones only embed it in the message.
 const txnStatusOf = (r) =>
   (r?.txnStatus || r?.message?.match(/status is "([a-z_]+)"/i)?.[1] || '').toLowerCase();
+
+// JSON fetch with a timeout. Never throws: { ok, status, data }.
+async function fetchJson(path, { method = 'GET', body, timeoutMs = 30_000 } = {}) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res  = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body:    body ? JSON.stringify(body) : undefined,
+      signal:  ctrl.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: {}, aborted: e?.name === 'AbortError' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Small building blocks
@@ -292,8 +319,12 @@ export default function PaymentScreen({ navigation, route }) {
   const { fade, translateY } = useScreenEntry();
   const {
     verifyPayment, plans, email: accountEmail, expiryDate,
-    isSubscribed, isTrial, planType,
+    isSubscribed, isTrial, planType, refreshPlans, recheck,
   } = useSubscription();
+
+  // Show the price the server will actually charge (the admin may have
+  // changed it since the plans were cached at launch).
+  useEffect(() => { refreshPlans?.(); }, [refreshPlans]);
 
   const returnTo = route?.params?.returnTo || null;
   const premium  = plans?.[PREMIUM_PLAN] || DEFAULT_PREMIUM;
@@ -304,6 +335,16 @@ export default function PaymentScreen({ navigation, route }) {
   const [emailError, setEmailError]     = useState('');
   const emailLocked = !!accountEmail;
   useEffect(() => { if (accountEmail) setEmail(accountEmail); }, [accountEmail]);
+
+  // ── Payment method: card (Paystack, instant) or direct bank transfer ─────
+  const [method, setMethod]         = useState('card');
+  const [btInfo, setBtInfo]         = useState(null);   // { enabled, bank_name, account_number, account_name, amount_kobo }
+  const [btReq, setBtReq]           = useState(null);   // { code, status, amount_kobo, sender_name, note, … }
+  const [btBank, setBtBank]         = useState(null);
+  const [senderName, setSenderName] = useState('');
+  const [senderError, setSenderError] = useState('');
+  const [btBusy, setBtBusy]         = useState(false);
+  const [btMsg, setBtMsg]           = useState('');
 
   // ── Flow state ───────────────────────────────────────────────────────────
   // checkout → processing → (verifying) → success
@@ -447,11 +488,17 @@ export default function PaymentScreen({ navigation, route }) {
   // Resume a transaction interrupted by the app being killed mid-payment.
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(PENDING_KEY).then((raw) => {
+    AsyncStorage.getItem(PENDING_KEY).then(async (raw) => {
       if (!alive || !raw) return;
       let saved = null;
       try { saved = JSON.parse(raw); } catch { /* corrupt */ }
       if (!saved?.reference || Date.now() - (saved.savedAt || 0) > PENDING_TTL_MS) { clearPending(); return; }
+      // Started by a different account on this device (logged out since)?
+      // Verifying it would switch the stored account email and trip the
+      // session check into a forced logout — leave it alone.
+      const current = ((await AsyncStorage.getItem('userEmail')) || '').toLowerCase();
+      if (current && saved.email !== current) { clearPending(); return; }
+      if (!alive) return;
       txRef.current = saved;
       setTx(saved);
       runVerify(saved, { restoring: true });
@@ -461,17 +508,135 @@ export default function PaymentScreen({ navigation, route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Start checkout ───────────────────────────────────────────────────────
-  const startCheckout = async () => {
+  // ── Bank transfer ────────────────────────────────────────────────────────
+  // Load whether direct transfer is offered, and any transfer this account
+  // already has in flight (so reopening the screen shows where it stands).
+  useEffect(() => {
+    let alive = true;
+    fetchJson('/api/payments/bank-transfer/info').then(({ ok, data }) => {
+      if (alive && ok && data.enabled) setBtInfo(data);
+    });
+    if (accountEmail) {
+      fetchJson(`/api/payments/bank-transfer/status/${encodeURIComponent(accountEmail)}`).then(({ ok, data }) => {
+        if (!alive || !ok || !data.request) return;
+        if (data.request.status === 'approved' && !isSubscribed) recheck?.();
+        if (data.request.status === 'submitted' || data.request.status === 'awaiting_transfer') {
+          setBtReq(data.request);
+          setBtBank(data.bank);
+          if (data.request.sender_name) setSenderName(data.request.sender_name);
+        }
+      });
+    }
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountEmail]);
+
+  const validEmailOrFlag = () => {
     const em = email.trim().toLowerCase();
-    if (!EMAIL_RE.test(em)) {
-      const msg = em
-        ? t('pay_email_invalid', 'Enter a valid email address.')
-        : t('pay_email_required', 'Please enter your email.');
-      setEmailError(msg);
-      setNotice({ tone: 'error', text: msg });
+    if (EMAIL_RE.test(em)) return em;
+    const msg = em
+      ? t('pay_email_invalid', 'Enter a valid email address.')
+      : t('pay_email_required', 'Please enter your email.');
+    setEmailError(msg);
+    setNotice({ tone: 'error', text: msg });
+    return null;
+  };
+
+  const startTransfer = async () => {
+    const em = validEmailOrFlag();
+    if (!em) return;
+    setNotice(null);
+    setBtBusy(true);
+    const { ok, data, aborted } = await fetchJson('/api/payments/bank-transfer', { method: 'POST', body: { email: em } });
+    setBtBusy(false);
+    if (!mountedRef.current) return;
+    if (!ok || !data.request) {
+      setNotice({
+        tone: 'error',
+        text: data.message || (aborted
+          ? t('pay_err_timeout', 'The connection timed out. Please try again.')
+          : t('pay_err_network', 'Network error — check your connection and try again.')),
+      });
       return;
     }
+    setBtReq(data.request);
+    setBtBank(data.bank);
+    setBtMsg('');
+    setPhase(data.request.status === 'submitted' ? 'transfer_review' : 'transfer');
+  };
+
+  const submitTransfer = async () => {
+    const name = senderName.trim();
+    if (name.length < 3) {
+      setSenderError(t('bt_sender_required', 'Enter the name on the account you sent the money from.'));
+      return;
+    }
+    setBtBusy(true);
+    const { ok, data } = await fetchJson(`/api/payments/bank-transfer/${encodeURIComponent(btReq.code)}/submit`, {
+      method: 'POST', body: { email: btReq.email, sender_name: name },
+    });
+    setBtBusy(false);
+    if (!mountedRef.current) return;
+    if (!ok || !data.request) {
+      setSenderError(data.message || t('pay_err_network', 'Network error — check your connection and try again.'));
+      return;
+    }
+    setBtReq(data.request);
+    setBtMsg('');
+    setPhase('transfer_review');
+  };
+
+  const checkTransfer = async () => {
+    if (!btReq) return;
+    setBtBusy(true);
+    const { ok, data } = await fetchJson(`/api/payments/bank-transfer/status/${encodeURIComponent(btReq.email)}`);
+    if (!mountedRef.current) return;
+    if (!ok) {
+      setBtBusy(false);
+      setBtMsg(t('pay_check_network', "We couldn't reach the server to confirm your payment. Check your connection and tap Check again."));
+      return;
+    }
+    const r = data.request?.code === btReq.code ? data.request : btReq;
+    setBtReq(r);
+    if (r.status === 'approved') {
+      await recheck?.();   // pull the new Premium status (ads off, books unlocked)
+      setBtBusy(false);
+      if (!mountedRef.current) return;
+      const done = {
+        reference: r.code, email: r.email, title, amountKobo: r.amount_kobo, returnTo,
+      };
+      txRef.current = done;
+      setTx(done);
+      doneRef.current = true;
+      setPhase('success');
+      return;
+    }
+    setBtBusy(false);
+    setBtMsg(r.status === 'rejected'
+      ? ''
+      : t('bt_not_yet', "Not confirmed yet. We check transfers several times a day and will email you as soon as Premium is active."));
+  };
+
+  const shareTransferDetails = () => {
+    const bank = btBank || btInfo || {};
+    Share.share({
+      message:
+        `${bank.bank_name}\n${bank.account_number}\n${bank.account_name}\n`
+        + `${t('bt_amount', 'Amount')}: ${formatNaira(btReq?.amount_kobo)}\n`
+        + `${t('bt_narration', 'Narration')}: ${btReq?.code}`,
+    }).catch(() => {});
+  };
+
+  const payWithCardInstead = () => {
+    setMethod('card');
+    setBtMsg('');
+    setPhase('checkout');
+  };
+
+  // ── Start checkout ───────────────────────────────────────────────────────
+  const startCheckout = async () => {
+    const em = validEmailOrFlag();
+    if (!em) return;
 
     setNotice(null);
     doneRef.current = false;
@@ -545,14 +710,22 @@ export default function PaymentScreen({ navigation, route }) {
   // book), otherwise return to wherever they tapped "Remove ads".
   const finish = useCallback(() => {
     const dest = txRef.current?.returnTo || returnTo;
-    if (dest?.name) navigation.replace(dest.name, dest.params);
-    else exitScreen();
+    if (!dest?.name) { exitScreen(); return; }
+    // The book's paywall underneath already swapped itself for the book the
+    // moment access was granted — just go back to it instead of stacking a
+    // second copy (which made Back show the same screen twice).
+    const nav  = navigation.getState?.();
+    const prev = nav?.routes?.[nav.index - 1];
+    if (prev?.name === dest.name) navigation.goBack();
+    else navigation.replace(dest.name, dest.params);
   }, [navigation, returnTo, exitScreen]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (phase === 'processing' || phase === 'verifying') return true;
-      if (phase === 'pending' || phase === 'failed')       { backToCheckout(); return true; }
+      if (phase === 'pending' || phase === 'failed' || phase === 'transfer' || phase === 'transfer_review') {
+        backToCheckout(); return true;
+      }
       if (phase === 'success')                             { finish(); return true; }
       return false;
     });
@@ -562,8 +735,10 @@ export default function PaymentScreen({ navigation, route }) {
   const stepIndex = phase === 'checkout' ? 0 : phase === 'success' ? 2 : 1;
   const onHeaderBack =
     phase === 'checkout' ? exitScreen :
-    phase === 'pending' || phase === 'failed' ? backToCheckout :
+    ['pending', 'failed', 'transfer', 'transfer_review'].includes(phase) ? backToCheckout :
     null;
+  const transferAvailable = !!btInfo?.enabled;
+  const usingTransfer     = transferAvailable && method === 'transfer';
 
   const benefits = [
     { Icon: ICONS.EyeOff, text: t('premium_benefit_ads', 'No ads anywhere in the app') },
@@ -670,6 +845,62 @@ export default function PaymentScreen({ navigation, route }) {
               </>
             )}
 
+            {/* ── Pay with (only when direct transfer is switched on) ──── */}
+            {transferAvailable && (
+              <>
+                <Text style={[st.sectionTitle, { color: tk.textSec }]}>{t('pay_section_method', 'Pay with')}</Text>
+                {[
+                  { id: 'card', Icon: ICONS.CreditCard,
+                    title: t('pay_method_card', 'Card, USSD or bank app'),
+                    sub:   t('pay_method_card_sub', 'Instant · secured by Paystack') },
+                  { id: 'transfer', Icon: ICONS.Landmark,
+                    title: t('pay_method_transfer', 'Direct bank transfer'),
+                    sub:   t('pay_method_transfer_sub', 'To our {bank} account · confirmed within a few hours')
+                      .replace('{bank}', String(btInfo.bank_name || '').replace(/\s*MFB$/i, '')) },
+                ].map((m) => {
+                  const active = method === m.id;
+                  return (
+                    <TouchableOpacity
+                      key={m.id}
+                      activeOpacity={0.9}
+                      onPress={() => { setMethod(m.id); setNotice(null); }}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: active }}
+                      style={[st.methodRow, {
+                        backgroundColor: tk.surface,
+                        borderColor: active ? PURPLE : tk.border,
+                        borderWidth: active ? 1.5 : 1,
+                      }]}
+                    >
+                      <View style={[st.radio, { borderColor: active ? PURPLE : tk.border }]}>
+                        {active && <View style={[st.radioDot, { backgroundColor: PURPLE }]} />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[st.emailTxt, { color: tk.textPrimary }]}>{m.title}</Text>
+                        <Text style={[st.emailSub, { color: tk.textMuted }]}>{m.sub}</Text>
+                      </View>
+                      <m.Icon color={tk.textMuted} size={20} sw={2} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+
+            {/* A transfer already in flight for this account */}
+            {btReq && btReq.status === 'submitted' && (
+              <TouchableOpacity
+                onPress={() => setPhase('transfer_review')}
+                activeOpacity={0.85}
+                style={[st.infoRow, { backgroundColor: AMBER + '14', borderColor: AMBER + '55' }]}
+              >
+                <ICONS.Clock color={AMBER} size={16} sw={2.25} />
+                <Text style={[st.infoTxt, { color: tk.textPrimary }]}>
+                  {t('bt_in_review_banner', 'Your bank transfer ({code}) is being confirmed. Tap to check its status.')
+                    .replace('{code}', btReq.code)}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <Text style={[st.finePrint, { color: tk.textMuted }]}>
               {t('premium_valid_until', 'Premium is valid until {date}. Renew any time — you choose whether to continue.')
                 .replace('{date}', formatDate(validUntil))}
@@ -679,22 +910,164 @@ export default function PaymentScreen({ navigation, route }) {
           {/* ── Sticky pay bar ─────────────────────────────────────────── */}
           <View style={[st.footer, { paddingBottom: insets.bottom + 12, backgroundColor: tk.bg, borderTopColor: tk.border }]}>
             {!!notice && <Notice tone={notice.tone} text={notice.text} />}
-            <PrimaryButton
-              icon={ICONS.Lock}
-              color={PURPLE}
-              label={t('pay_pay_amount', 'Pay {amount}').replace('{amount}', formatNaira(premium.price_kobo))}
-              onPress={startCheckout}
-            />
+            {usingTransfer ? (
+              <PrimaryButton
+                icon={ICONS.Landmark}
+                color={PURPLE}
+                disabled={btBusy}
+                label={btBusy ? t('pay_checking', 'Checking…') : t('bt_get_details', 'Get bank details')}
+                onPress={startTransfer}
+              />
+            ) : (
+              <PrimaryButton
+                icon={ICONS.Lock}
+                color={PURPLE}
+                label={t('pay_pay_amount', 'Pay {amount}').replace('{amount}', formatNaira(premium.price_kobo))}
+                onPress={startCheckout}
+              />
+            )}
             <View style={st.secureRow}>
               <ICONS.ShieldCheck color={tk.textMuted} size={12} sw={2.25} />
               <Text style={[st.secureTxt, { color: tk.textMuted }]}>
-                {t('pay_secured_methods', 'Secured by {p} · {m}')
-                  .replace('{p}', PROVIDER.label)
-                  .replace('{m}', PROVIDER.methods)}
+                {usingTransfer
+                  ? t('bt_footer_note', 'Premium is switched on after we confirm your transfer')
+                  : t('pay_secured_methods', 'Secured by {p} · {m}')
+                      .replace('{p}', PROVIDER.label)
+                      .replace('{m}', PROVIDER.methods)}
               </Text>
             </View>
           </View>
         </KeyboardAvoidingView>
+      )}
+
+      {phase === 'transfer' && btReq && (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={[st.btTitle, { color: tk.textPrimary }]}>
+              {t('bt_title', 'Transfer {amount}').replace('{amount}', formatNaira(btReq.amount_kobo))}
+            </Text>
+            <Text style={[st.btSub, { color: tk.textSec }]}>
+              {t('bt_sub', 'Send exactly this amount from your bank app to the account below.')}
+            </Text>
+
+            <View style={[st.btCard, { backgroundColor: tk.surface, borderColor: tk.border }]}>
+              {[
+                { label: t('bt_bank', 'Bank'),                 value: (btBank || btInfo)?.bank_name },
+                { label: t('bt_account_number', 'Account number'), value: (btBank || btInfo)?.account_number, big: true },
+                { label: t('bt_account_name', 'Account name'), value: (btBank || btInfo)?.account_name },
+                { label: t('bt_amount', 'Amount'),             value: formatNaira(btReq.amount_kobo), big: true },
+                { label: t('bt_narration', 'Narration / description'), value: btReq.code, accent: true },
+              ].map((r, i, arr) => (
+                <View key={r.label} style={[st.btRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: tk.border }]}>
+                  <Text style={[st.btLabel, { color: tk.textMuted }]}>{r.label}</Text>
+                  <Text
+                    selectable
+                    style={[r.big ? st.btValueBig : st.btValue, { color: r.accent ? PURPLE : tk.textPrimary }]}
+                  >
+                    {r.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <View style={st.btShareRow}>
+              <Text style={[st.btHint, { color: tk.textMuted }]}>
+                {t('bt_copy_hint', 'Press and hold a detail to copy it')}
+              </Text>
+              <TouchableOpacity onPress={shareTransferDetails} hitSlop={8} accessibilityRole="button">
+                <Text style={[st.btShare, { color: BLUE }]}>{t('bt_share', 'Share details')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {[
+              t('bt_step1', 'Open your bank app and send {amount} to the account above.').replace('{amount}', formatNaira(btReq.amount_kobo)),
+              t('bt_step2', 'Type {code} in the narration so we can match your payment.').replace('{code}', btReq.code),
+              t('bt_step3', 'Come back here, enter the sender name and tap "I\'ve made the transfer".'),
+            ].map((txt, i) => (
+              <View key={i} style={st.btStep}>
+                <View style={[st.btStepNum, { backgroundColor: PURPLE }]}>
+                  <Text style={st.btStepNumTxt}>{i + 1}</Text>
+                </View>
+                <Text style={[st.btStepTxt, { color: tk.textPrimary }]}>{txt}</Text>
+              </View>
+            ))}
+
+            <Text style={[st.sectionTitle, { color: tk.textSec }]}>{t('bt_sender_label', 'Name on the sending account')}</Text>
+            <View style={[st.inputWrap, { backgroundColor: tk.surface, borderColor: senderError ? RED : tk.border }]}>
+              <ICONS.User color={tk.textMuted} size={18} sw={2.25} />
+              <TextInput
+                style={[st.input, { color: tk.textPrimary }]}
+                placeholder={t('bt_sender_placeholder', 'e.g. Adaeze Okafor')}
+                placeholderTextColor={tk.textMuted}
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="name"
+                returnKeyType="done"
+                value={senderName}
+                onChangeText={(v) => { setSenderName(v); setSenderError(''); }}
+                onSubmitEditing={submitTransfer}
+              />
+            </View>
+            <Text style={[st.helpTxt, { color: senderError ? RED : tk.textMuted }]}>
+              {senderError || t('bt_sender_help', 'Helps us find your transfer quickly.')}
+            </Text>
+          </ScrollView>
+
+          <View style={[st.footer, { paddingBottom: insets.bottom + 12, backgroundColor: tk.bg, borderTopColor: tk.border }]}>
+            <PrimaryButton
+              icon={ICONS.Check}
+              color={PURPLE}
+              disabled={btBusy}
+              label={btBusy ? t('pay_checking', 'Checking…') : t('bt_done_btn', "I've made the transfer")}
+              onPress={submitTransfer}
+            />
+            <LinkButton label={t('bt_pay_card_instead', 'Pay with card instead')} onPress={payWithCardInstead} tk={tk} />
+          </View>
+        </KeyboardAvoidingView>
+      )}
+
+      {phase === 'transfer_review' && btReq && (
+        btReq.status === 'rejected' ? (
+          <StatusView tone="red" icon={ICONS.AlertTriangle} tk={tk}
+            title={t('bt_rejected_title', "We couldn't confirm your transfer")}
+            body={(btReq.note ? `${btReq.note}\n\n` : '')
+              + t('bt_rejected_body', "If you did send the money, reply to the email we sent you with your transfer receipt and we'll sort it out.")}
+          >
+            <PrimaryButton label={t('bt_pay_card_instead', 'Pay with card instead')} icon={ICONS.CreditCard} onPress={payWithCardInstead} />
+            <LinkButton label={t('bt_try_again', 'Start a new transfer')} onPress={() => { setMethod('transfer'); setBtReq(null); setPhase('checkout'); }} tk={tk} />
+          </StatusView>
+        ) : (
+          <StatusView tone="amber" icon={ICONS.Clock} tk={tk}
+            title={t('bt_review_title', "We're confirming your transfer")}
+            body={t('bt_review_body', "As soon as we see {amount} from {sender}, Premium switches on — usually within a few hours. We'll email {email}, so you can close the app.")
+              .replace('{amount}', formatNaira(btReq.amount_kobo))
+              .replace('{sender}', btReq.sender_name || t('bt_you', 'you'))
+              .replace('{email}', btReq.email)}
+          >
+            <View style={[st.miniOrder, { backgroundColor: tk.surface, borderColor: tk.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[st.miniTitle, { color: tk.textPrimary }]}>{title}</Text>
+                <Text style={[st.miniRef, { color: tk.textMuted }]} selectable>
+                  {t('bt_narration', 'Narration / description')}: {btReq.code}
+                </Text>
+              </View>
+              <Text style={[st.miniPrice, { color: tk.textPrimary }]}>{formatNaira(btReq.amount_kobo)}</Text>
+            </View>
+            {!!btMsg && <Text style={[st.btMsg, { color: tk.textSec }]}>{btMsg}</Text>}
+            <PrimaryButton
+              label={btBusy ? t('pay_checking', 'Checking…') : t('bt_check_status', 'Check status')}
+              icon={ICONS.RefreshCw}
+              disabled={btBusy}
+              onPress={checkTransfer}
+            />
+            <View style={{ height: 10 }} />
+            <SecondaryButton label={t('bt_view_details', 'View transfer details')} icon={ICONS.Landmark} onPress={() => setPhase('transfer')} tk={tk} />
+            <LinkButton label={t('bt_pay_card_instead', 'Pay with card instead')} onPress={payWithCardInstead} tk={tk} />
+          </StatusView>
+        )
       )}
 
       {phase === 'processing' && (
@@ -785,6 +1158,26 @@ const st = StyleSheet.create({
   benefitTxt:   { flex: 1, fontSize: 14, fontWeight: '700' },
 
   infoRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, borderWidth: 1, padding: 12, marginTop: 12 },
+
+  // Payment method + bank transfer
+  methodRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, marginBottom: 10 },
+  radio:        { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDot:     { width: 10, height: 10, borderRadius: 5 },
+  btTitle:      { fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
+  btSub:        { fontSize: 13.5, lineHeight: 20, marginTop: 4, marginBottom: 14 },
+  btCard:       { borderRadius: 16, borderWidth: 1, paddingHorizontal: 16 },
+  btRow:        { paddingVertical: 11 },
+  btLabel:      { fontSize: 11.5, fontWeight: '700', letterSpacing: 0.2 },
+  btValue:      { fontSize: 15, fontWeight: '800', marginTop: 3 },
+  btValueBig:   { fontSize: 22, fontWeight: '900', letterSpacing: 0.5, marginTop: 2 },
+  btShareRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, marginBottom: 18, paddingHorizontal: 2 },
+  btHint:       { fontSize: 11.5, fontWeight: '600' },
+  btShare:      { fontSize: 13, fontWeight: '800' },
+  btStep:       { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
+  btStepNum:    { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  btStepNumTxt: { color: '#fff', fontSize: 11.5, fontWeight: '900' },
+  btStepTxt:    { flex: 1, fontSize: 13.5, lineHeight: 20, fontWeight: '600' },
+  btMsg:        { fontSize: 13, lineHeight: 19, textAlign: 'center', marginBottom: 12 },
   infoTxt:      { flex: 1, fontSize: 12.5, fontWeight: '600', lineHeight: 18 },
 
   // Email
