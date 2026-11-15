@@ -1,32 +1,33 @@
 // screens/PaymentScreen.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-// Single-page checkout for Sunday School plans and per-book SKUs.
+// Gospelar Premium checkout. The app is freemium: Sunday School is free with
+// ads; ONE paid plan — Premium — removes all ads and unlocks premium books
+// (Victory Month Prayer). Premium is the admin-priced 'all' plan on the
+// backend, which already grants the 'all' books wildcard.
 //
-//   1 · Details   One scrolling page: plan (+ age group), billing email,
-//                 payment method, order summary and a sticky "Pay ₦X" bar.
-//   2 · Payment   The provider's hosted checkout opens in a Chrome Custom Tab
-//                 (Android) / ASWebAuthenticationSession (iOS) through
-//                 WebBrowser.openAuthSessionAsync. Google Play treats this as
-//                 the system browser, not a native WebView, so the Payments
-//                 policy restriction on in-app checkout does not apply. The
-//                 backend's /api/payments/callback redirects to
-//                 gospelar://payment-success?ref=…, the tab closes and we
-//                 verify with POST /api/verify-payment.
+//   1 · Details   Premium card (price, benefits), billing email, Pay button.
+//   2 · Payment   Provider's hosted checkout in a Chrome Custom Tab (Android)
+//                 / ASWebAuthenticationSession (iOS) via
+//                 WebBrowser.openAuthSessionAsync — Google Play treats this as
+//                 the system browser, not a native WebView, so its Payments
+//                 policy restriction does not apply. /api/payments/callback
+//                 redirects to gospelar://payment-success?ref=…, the tab
+//                 closes and we verify with POST /api/verify-payment.
 //   3 · Done      Receipt.
 //
-// Robustness:
-//   • Every return path (auth-session redirect, Linking deep link, the user
-//     closing the tab by hand) converges on ONE de-duplicated verify call.
-//   • Closing the tab without the redirect triggers a quiet verify, so a user
-//     who paid and closed early is still activated; one who didn't pay lands
-//     on a recoverable "not confirmed yet" state (Reopen / Check again)
-//     instead of a scary "Payment failed".
-//   • The in-flight transaction is persisted (PENDING_KEY). If Android kills
-//     the app while the user is in their bank app, the next visit to this
-//     screen confirms the payment instead of stranding a paid user.
-//   • Logged-in users pay with their account email (locked). Paying with a
-//     different email would re-key the subscription and trip the session
-//     check into a forced logout.
+// Robustness (unchanged from the previous checkout):
+//   • Every return path (redirect, Linking deep link, user closing the tab)
+//     converges on ONE de-duplicated verify call.
+//   • Closing the tab without the redirect triggers a quiet verify — paid
+//     users are activated; unpaid ones get Reopen / Check again.
+//   • The in-flight transaction is persisted (PENDING_KEY) so a payment
+//     interrupted by Android killing the app is confirmed on the next visit.
+//   • Logged-in users pay with their account email (locked) — another email
+//     would re-key the subscription and force a logout.
+//
+// Route params (all optional):
+//   returnTo: { name, params }  — where to go after paying (e.g. the book the
+//                                 user was trying to open). Default: back.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -40,7 +41,6 @@ import AsyncStorage        from '@react-native-async-storage/async-storage';
 import * as WebBrowser     from 'expo-web-browser';
 import LottieView          from 'lottie-react-native';
 import { API_BASE_URL }    from '../services/api';
-import { useComingSoonCategories } from '../services/comingSoon';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useLanguage }     from '../context/LanguageContext';
@@ -54,16 +54,14 @@ const GREEN  = '#10B981';
 const AMBER  = '#F59E0B';
 const RED    = '#EF4444';
 
+const PREMIUM_PLAN    = 'all';   // backend plan_id that Premium maps to
 const REDIRECT_URL    = 'gospelar://payment-success';
 const PENDING_KEY     = 'gospelar_pending_payment';
 const PENDING_TTL_MS  = 6 * 60 * 60 * 1000;   // bank transfers can take a while
 const INIT_TIMEOUT_MS = 45_000;
 const EMAIL_RE        = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SINGLE_CATS     = ['children', 'intermediate', 'youth', 'adult'];
-const DEFAULT_PLANS   = {
-  single: { price_kobo: 50000,  days: 300 },
-  all:    { price_kobo: 100000, days: 300 },
-};
+const DEFAULT_PREMIUM = { price_kobo: 100000, days: 300 };
+const PROVIDER        = { id: 'paystack', label: 'Paystack', methods: 'Card · Bank transfer · USSD' };
 
 const BROWSER_OPTS = {
   showInRecents:      false,
@@ -71,15 +69,6 @@ const BROWSER_OPTS = {
   toolbarColor:       '#060E20',
   dismissButtonStyle: 'close',
 };
-
-// Flip `enabled` to offer a provider. With one enabled provider the method
-// section renders as a single confirmed row — no extra decision for the user.
-const PROVIDERS = [
-  { id: 'paystack',    label: 'Paystack',    methods: 'Card · Bank transfer · USSD',         currency: 'NGN', enabled: true  },
-  { id: 'flutterwave', label: 'Flutterwave', methods: 'Card · Bank transfer · Mobile money', currency: 'NGN', enabled: false },
-  { id: 'stripe',      label: 'Stripe',      methods: 'International cards · Apple Pay',     currency: 'USD', enabled: false },
-];
-const AVAILABLE_PROVIDERS = PROVIDERS.filter((p) => p.enabled);
 
 // Paystack statuses that mean "money may still be on its way" (bank transfer,
 // USSD). Those keep the pending record alive instead of discarding it.
@@ -93,24 +82,17 @@ const formatDate  = (d) => {
 };
 const addDays = (date, days) => { const d = new Date(date); d.setDate(d.getDate() + (days || 0)); return d; };
 
-const buildCategories = (t) => [
-  { id: 'children',     label: t('cat_children', 'Children'),         emoji: '🌟', color: '#F97316', desc: t('cat_children_range', 'Ages 4 – 11')      },
-  { id: 'intermediate', label: t('cat_intermediate', 'Intermediate'), emoji: '✝️', color: '#10B981', desc: t('cat_intermediate_range', 'Ages 12 – 17') },
-  { id: 'youth',        label: t('cat_youth', 'Youth'),               emoji: '🎯', color: '#2563EB', desc: t('cat_youth_range', 'Ages 18 – 25')        },
-  { id: 'adult',        label: t('cat_adult', 'Adult'),               emoji: '📖', color: '#7C3AED', desc: t('cat_adult_range', '26 & above')           },
-];
-
 // Verify-failure codes that no amount of retrying will fix.
 const isHardFailure = (code = '') =>
   code === 'email_mismatch' || code === 'amount_mismatch' || /_auth$|_key_missing$/.test(code);
 
-// Pull the provider's transaction status out of a failed verify result. Newer
-// backends send it as a field; older ones only embed it in the message.
+// Provider transaction status from a failed verify. Newer backends send it as
+// a field; older ones only embed it in the message.
 const txnStatusOf = (r) =>
   (r?.txnStatus || r?.message?.match(/status is "([a-z_]+)"/i)?.[1] || '').toLowerCase();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Buttons
+// Small building blocks
 // ─────────────────────────────────────────────────────────────────────────────
 const PrimaryButton = ({ label, onPress, disabled, icon: Icon, color = BLUE, style }) => {
   const press = usePressScale();
@@ -149,9 +131,6 @@ const LinkButton = ({ label, onPress, tk }) => (
   </TouchableOpacity>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Header + stepper
-// ─────────────────────────────────────────────────────────────────────────────
 const Header = ({ title, onBack, tk }) => (
   <View style={[st.header, { borderBottomColor: tk.border }]}>
     <View style={st.headerSide}>
@@ -207,68 +186,6 @@ const Stepper = ({ index, tk, t }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Checkout building blocks
-// ─────────────────────────────────────────────────────────────────────────────
-const Section = ({ title, children, tk }) => (
-  <View style={st.section}>
-    <Text style={[st.sectionTitle, { color: tk.textSec }]}>{title}</Text>
-    {children}
-  </View>
-);
-
-const Radio = ({ active, color, tk }) => (
-  <View style={[st.radio, { borderColor: active ? color : tk.border }]}>
-    {active && <View style={[st.radioDot, { backgroundColor: color }]} />}
-  </View>
-);
-
-const PlanOption = ({ active, title, sub, price, days, badge, accent, onPress, tk, t, isDark }) => (
-  <TouchableOpacity
-    activeOpacity={0.9}
-    onPress={onPress}
-    accessibilityRole="radio"
-    accessibilityState={{ checked: active }}
-    style={[st.option, {
-      backgroundColor: active ? (isDark ? accent + '1F' : accent + '0D') : tk.surface,
-      borderColor:     active ? accent : tk.border,
-      borderWidth:     active ? 1.5 : 1,
-    }]}
-  >
-    <Radio active={active} color={accent} tk={tk} />
-    <View style={{ flex: 1 }}>
-      <View style={st.optionTitleRow}>
-        <Text style={[st.optionTitle, { color: tk.textPrimary }]}>{title}</Text>
-        {!!badge && (
-          <View style={[st.badge, { backgroundColor: accent + '1A' }]}>
-            <Text style={[st.badgeTxt, { color: accent }]}>{badge}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={[st.optionSub, { color: tk.textSec }]}>{sub}</Text>
-    </View>
-    <View style={{ alignItems: 'flex-end' }}>
-      <Text style={[st.optionPrice, { color: tk.textPrimary }]}>{price}</Text>
-      <Text style={[st.optionDays, { color: tk.textMuted }]}>{days} {t('pay_days', 'days')}</Text>
-    </View>
-  </TouchableOpacity>
-);
-
-const SummaryRow = ({ label, value, tk, strong, valueColor, note }) => (
-  <View style={st.sumRow}>
-    <Text style={[strong ? st.sumLabelStrong : st.sumLabel, { color: strong ? tk.textPrimary : tk.textSec }]}>{label}</Text>
-    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-      <Text
-        style={[strong ? st.sumValueStrong : st.sumValue, { color: valueColor || tk.textPrimary }]}
-        numberOfLines={2}
-      >
-        {value}
-      </Text>
-      {!!note && <Text style={[st.sumNote, { color: GREEN }]}>{note}</Text>}
-    </View>
-  </View>
-);
-
 const Notice = ({ tone, text }) => {
   const palette = tone === 'error'
     ? { bg: '#FEF2F2', border: '#FECACA', fg: '#B91C1C', Icon: ICONS.AlertCircle }
@@ -281,9 +198,7 @@ const Notice = ({ tone, text }) => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Status (processing / verifying / pending / failed) and receipt views
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Status (processing / verifying / pending / failed) + receipt ────────────
 const StatusView = ({ tone, icon: Icon, spinner, title, body, children, tk }) => {
   const color = { blue: BLUE, amber: AMBER, red: RED, green: GREEN }[tone] || BLUE;
   return (
@@ -302,7 +217,6 @@ const MiniOrder = ({ tx, tk, t }) => (
   <View style={[st.miniOrder, { backgroundColor: tk.surface, borderColor: tk.border }]}>
     <View style={{ flex: 1 }}>
       <Text style={[st.miniTitle, { color: tk.textPrimary }]} numberOfLines={1}>{tx.title}</Text>
-      <Text style={[st.miniSub, { color: tk.textMuted }]} numberOfLines={1}>{tx.access}</Text>
       {!!tx.reference && (
         <Text style={[st.miniRef, { color: tk.textMuted }]} numberOfLines={1} selectable>
           {t('pay_row_reference', 'Ref')}: {tx.reference}
@@ -326,12 +240,11 @@ const ReceiptView = ({ tx, expiryDate, onDone, tk, t, bottomInset }) => {
   }, [scale, fade]);
 
   const rows = [
-    { label: t('pay_row_amount', 'Amount paid'), value: formatNaira(tx.amountKobo) },
-    { label: t('pay_row_plan', 'Plan'),          value: tx.title },
-    { label: t('pay_row_access', 'Access'),      value: tx.access },
+    { label: t('pay_row_amount', 'Amount paid'),      value: formatNaira(tx.amountKobo) },
+    { label: t('pay_row_plan', 'Plan'),               value: tx.title },
     { label: t('pay_row_valid_until', 'Valid until'), value: formatDate(expiryDate) || '—' },
-    { label: t('pay_row_billed_to', 'Billed to'), value: tx.email },
-    { label: t('pay_row_reference', 'Reference'), value: tx.reference, mono: true },
+    { label: t('pay_row_billed_to', 'Billed to'),     value: tx.email },
+    { label: t('pay_row_reference', 'Reference'),     value: tx.reference, mono: true },
   ];
 
   return (
@@ -340,9 +253,9 @@ const ReceiptView = ({ tx, expiryDate, onDone, tk, t, bottomInset }) => {
         <Animated.View style={[st.receipt, { backgroundColor: tk.surface, borderColor: tk.border, opacity: fade, transform: [{ scale }] }]}>
           <View style={{ alignItems: 'center', paddingTop: 8 }}>
             <LottieView source={require('../assets/lottie/success.json')} autoPlay loop={false} style={{ width: 120, height: 120 }} />
-            <Text style={[st.receiptTitle, { color: tk.textPrimary }]}>{t('pay_success_title_v2', 'Payment successful')}</Text>
+            <Text style={[st.receiptTitle, { color: tk.textPrimary }]}>{t('premium_success_title', "You're Premium!")}</Text>
             <Text style={[st.receiptSub, { color: tk.textSec }]}>
-              {t('pay_success_sub_v2', 'Your subscription is active. A confirmation has been sent to your email.')}
+              {t('premium_success_sub', 'Ads are gone and Victory Month Prayer is unlocked. A receipt has been sent to your email.')}
             </Text>
           </View>
           <View style={[st.receiptDivider, { borderColor: tk.border }]} />
@@ -362,7 +275,7 @@ const ReceiptView = ({ tx, expiryDate, onDone, tk, t, bottomInset }) => {
         </Animated.View>
       </ScrollView>
       <View style={[st.footer, { paddingBottom: bottomInset + 14, backgroundColor: tk.bg, borderTopColor: tk.border }]}>
-        <PrimaryButton label={t('pay_start_learning', 'Start learning')} onPress={onDone} color={GREEN} />
+        <PrimaryButton label={t('btn_continue', 'Continue')} onPress={onDone} color={GREEN} />
       </View>
     </View>
   );
@@ -378,38 +291,19 @@ export default function PaymentScreen({ navigation, route }) {
   const insets     = useSafeAreaInsets();
   const { fade, translateY } = useScreenEntry();
   const {
-    verifyPayment, plans: ctxPlans, email: accountEmail, expiryDate,
-    isSubscribed, isTrial, planType, subscribedCategory,
+    verifyPayment, plans, email: accountEmail, expiryDate,
+    isSubscribed, isTrial, planType,
   } = useSubscription();
 
-  const params     = route?.params || {};
-  const bookId     = params.book_id ? String(params.book_id).toLowerCase() : null;
-  const isBookFlow = !!bookId;
-  const plans      = useMemo(() => ({
-    ...ctxPlans,
-    single: ctxPlans?.single || DEFAULT_PLANS.single,
-    all:    ctxPlans?.all    || DEFAULT_PLANS.all,
-  }), [ctxPlans]);
-  const categories = useMemo(() => buildCategories(t), [t]);
-  const comingSoon = useComingSoonCategories('en');
+  const returnTo = route?.params?.returnTo || null;
+  const premium  = plans?.[PREMIUM_PLAN] || DEFAULT_PREMIUM;
+  const title    = t('premium_title', 'Gospelar Premium');
 
-  // ── Selections ───────────────────────────────────────────────────────────
-  // Pre-select from route params (Upgrade → all, Renew → current plan), else
-  // the user's existing single category, else the all-access plan.
-  const hasSinglePlan = planType === 'single' && SINGLE_CATS.includes(subscribedCategory) && !isTrial;
-  const [planId, setPlanId] = useState(() =>
-    params.plan === 'single' || params.plan === 'all' ? params.plan : (hasSinglePlan ? 'single' : 'all'));
-  const [category, setCategory] = useState(() =>
-    SINGLE_CATS.includes(params.category) ? params.category : (hasSinglePlan ? subscribedCategory : null));
-  const [email, setEmail]           = useState(accountEmail || '');
+  const [email, setEmail]               = useState(accountEmail || '');
   const [emailFocused, setEmailFocused] = useState(false);
-  const [providerId, setProviderId] = useState(AVAILABLE_PROVIDERS[0]?.id || 'paystack');
+  const [emailError, setEmailError]     = useState('');
   const emailLocked = !!accountEmail;
-
   useEffect(() => { if (accountEmail) setEmail(accountEmail); }, [accountEmail]);
-  useEffect(() => {
-    if (category && comingSoon.has(category)) setCategory(null);
-  }, [comingSoon, category]);
 
   // ── Flow state ───────────────────────────────────────────────────────────
   // checkout → processing → (verifying) → success
@@ -417,7 +311,6 @@ export default function PaymentScreen({ navigation, route }) {
   //                       ↘ failed  (unrecoverable / server error)
   const [phase, setPhase]           = useState('checkout');
   const [notice, setNotice]         = useState(null);   // { tone, text } on checkout
-  const [fieldErrors, setFieldErrors] = useState({});
   const [pendingMsg, setPendingMsg] = useState('');
   const [failure, setFailure]       = useState(null);   // { message, canRecheck }
   const [tx, setTx]                 = useState(null);
@@ -427,41 +320,10 @@ export default function PaymentScreen({ navigation, route }) {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  // ── Order (what the user is buying) ──────────────────────────────────────
-  const order = useMemo(() => {
-    if (isBookFlow) {
-      const serverPlan = plans[`book_${bookId}`];
-      return {
-        title:     params.book_title || t('pay_book_subscription', 'Book subscription'),
-        access:    t('pay_book_access', 'Every chapter of this book'),
-        priceKobo: serverPlan?.price_kobo || params.price_kobo || 50000,
-        days:      serverPlan?.days || 365,
-        accent:    params.accent || BLUE,
-      };
-    }
-    const p   = plans[planId];
-    const cat = categories.find((c) => c.id === category);
-    return {
-      title:     planId === 'all' ? t('plan_all', 'All Categories') : t('plan_single', 'Single Category'),
-      access:    planId === 'all'
-        ? t('pay_access_all', 'All 4 age groups')
-        : (cat ? `${cat.label} · ${cat.desc}` : t('pay_choose_age_group', 'Choose an age group below')),
-      priceKobo: p.price_kobo,
-      days:      p.days,
-      accent:    planId === 'all' ? PURPLE : BLUE,
-    };
-  }, [isBookFlow, bookId, plans, planId, category, categories, params.book_title, params.price_kobo, params.accent, t]);
-
-  // Renewing the same active plan stacks on top of the remaining days
-  // (backend extends from the current expiry in that case).
-  const carryOver = !isBookFlow && isSubscribed && !isTrial && !!expiryDate
-    && new Date(expiryDate) > new Date()
-    && planType === planId
-    && (planId === 'all' || subscribedCategory === category);
-  const validUntil = addDays(carryOver ? new Date(expiryDate) : new Date(), order.days);
-
-  const savingsPct = Math.round((1 - plans.all.price_kobo / (plans.single.price_kobo * 4)) * 100);
-  const provider   = PROVIDERS.find((p) => p.id === providerId) || AVAILABLE_PROVIDERS[0];
+  // Already Premium (paid, not a trial) → paying again stacks on the days left.
+  const activePremium = isSubscribed && !isTrial && planType === PREMIUM_PLAN
+    && !!expiryDate && new Date(expiryDate) > new Date();
+  const validUntil = addDays(activePremium ? new Date(expiryDate) : new Date(), premium.days);
 
   // ── Pending-transaction persistence ──────────────────────────────────────
   const savePending  = (next) =>
@@ -488,8 +350,7 @@ export default function PaymentScreen({ navigation, route }) {
     }
 
     const code       = r.code || '';
-    const status     = txnStatusOf(r);
-    const inProgress = IN_PROGRESS_STATUSES.includes(status);
+    const inProgress = IN_PROGRESS_STATUSES.includes(txnStatusOf(r));
 
     if (isHardFailure(code)) {
       clearPending();
@@ -602,19 +463,13 @@ export default function PaymentScreen({ navigation, route }) {
 
   // ── Start checkout ───────────────────────────────────────────────────────
   const startCheckout = async () => {
-    const errs = {};
-    if (!isBookFlow && planId === 'single' && !category) {
-      errs.category = t('pay_err_no_category', 'Please select an age category for your plan.');
-    }
     const em = email.trim().toLowerCase();
     if (!EMAIL_RE.test(em)) {
-      errs.email = em
+      const msg = em
         ? t('pay_email_invalid', 'Enter a valid email address.')
         : t('pay_email_required', 'Please enter your email.');
-    }
-    setFieldErrors(errs);
-    if (errs.category || errs.email) {
-      setNotice({ tone: 'error', text: errs.category || errs.email });
+      setEmailError(msg);
+      setNotice({ tone: 'error', text: msg });
       return;
     }
 
@@ -622,7 +477,6 @@ export default function PaymentScreen({ navigation, route }) {
     doneRef.current = false;
     setPhase('processing');
 
-    const verifyCategory = isBookFlow ? null : (planId === 'all' ? 'all' : category);
     const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), INIT_TIMEOUT_MS);
     let data = {};
@@ -632,13 +486,7 @@ export default function PaymentScreen({ navigation, route }) {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         signal:  ctrl.signal,
-        body: JSON.stringify({
-          email:    em,
-          plan:     isBookFlow ? 'single' : planId,
-          category: verifyCategory || 'adult',
-          book_id:  bookId,
-          provider: providerId,
-        }),
+        body: JSON.stringify({ email: em, plan: PREMIUM_PLAN, category: 'all', provider: PROVIDER.id }),
       });
       data = await res.json().catch(() => ({}));
       ok   = data.status === 'success' && !!data.authorization_url && !!data.reference;
@@ -669,13 +517,11 @@ export default function PaymentScreen({ navigation, route }) {
       reference:  data.reference,
       authUrl:    data.authorization_url,
       email:      em,
-      category:   verifyCategory,
-      bookId,
-      provider:   providerId,
-      title:      order.title,
-      access:     order.access,
-      amountKobo: data.amount_kobo || order.priceKobo,
-      dest:       isBookFlow ? 'Library' : 'HomeScreen',
+      category:   'all',
+      bookId:     null,
+      title,
+      amountKobo: data.amount_kobo || premium.price_kobo,
+      returnTo,
     };
     txRef.current = next;
     setTx(next);
@@ -695,9 +541,13 @@ export default function PaymentScreen({ navigation, route }) {
     setPhase('checkout');
   }, []);
 
+  // After paying: open what the user was trying to reach (e.g. the Victory
+  // book), otherwise return to wherever they tapped "Remove ads".
   const finish = useCallback(() => {
-    navigation.replace(txRef.current?.dest || (isBookFlow ? 'Library' : 'HomeScreen'));
-  }, [navigation, isBookFlow]);
+    const dest = txRef.current?.returnTo || returnTo;
+    if (dest?.name) navigation.replace(dest.name, dest.params);
+    else exitScreen();
+  }, [navigation, returnTo, exitScreen]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -710,247 +560,137 @@ export default function PaymentScreen({ navigation, route }) {
   }, [phase, backToCheckout, finish]);
 
   const stepIndex = phase === 'checkout' ? 0 : phase === 'success' ? 2 : 1;
-  const headerTitle = phase === 'success'
-    ? t('pay_receipt', 'Receipt')
-    : t('pay_checkout', 'Checkout');
   const onHeaderBack =
     phase === 'checkout' ? exitScreen :
     phase === 'pending' || phase === 'failed' ? backToCheckout :
     null;
 
+  const benefits = [
+    { Icon: ICONS.EyeOff, text: t('premium_benefit_ads', 'No ads anywhere in the app') },
+    { Icon: ICONS.Book,   text: t('premium_benefit_victory', 'Victory Month Prayer — all 31 days') },
+    { Icon: ICONS.Star,   text: t('premium_benefit_books', 'Every premium book we add') },
+    { Icon: ICONS.Heart,  text: t('premium_benefit_support', 'Supports the Sunday School ministry') },
+  ];
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tk.bg }} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={tk.bg} />
-      <Header title={headerTitle} onBack={onHeaderBack} tk={tk} />
+      <Header title={phase === 'success' ? t('pay_receipt', 'Receipt') : title} onBack={onHeaderBack} tk={tk} />
       <Stepper index={stepIndex} tk={tk} t={t} />
 
       {phase === 'checkout' && (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Animated.ScrollView
             style={{ opacity: fade, transform: [{ translateY }] }}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 28 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* ── 1. What you're buying ─────────────────────────────────── */}
-            {isBookFlow ? (
-              <Section title={t('pay_section_item', 'Your purchase')} tk={tk}>
-                <View style={[st.option, { backgroundColor: tk.surface, borderColor: order.accent, borderWidth: 1.5 }]}>
-                  <View style={[st.bookIcon, { backgroundColor: order.accent + '1A' }]}>
-                    <ICONS.Book color={order.accent} size={20} sw={2.25} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[st.optionTitle, { color: tk.textPrimary }]} numberOfLines={2}>{order.title}</Text>
-                    <Text style={[st.optionSub, { color: tk.textSec }]}>{order.access}</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[st.optionPrice, { color: tk.textPrimary }]}>{formatNaira(order.priceKobo)}</Text>
-                    <Text style={[st.optionDays, { color: tk.textMuted }]}>{order.days} {t('pay_days', 'days')}</Text>
-                  </View>
+            {/* ── Premium card ─────────────────────────────────────────── */}
+            <View style={[st.planCard, { backgroundColor: isDark ? PURPLE + '1A' : PURPLE + '0B', borderColor: PURPLE + '55' }]}>
+              <View style={st.planHead}>
+                <View style={[st.crown, { backgroundColor: PURPLE }]}>
+                  <ICONS.Crown color="#fff" size={20} sw={2.25} />
                 </View>
-              </Section>
-            ) : (
-              <Section title={t('pay_section_plan', 'Choose your plan')} tk={tk}>
-                <PlanOption
-                  active={planId === 'all'}
-                  title={t('plan_all', 'All Categories')}
-                  sub={savingsPct >= 10
-                    ? t('pay_save_pct', 'Every age group · save {n}%').replace('{n}', String(savingsPct))
-                    : t('pay_all_tagline', 'Access every age group')}
-                  price={formatNaira(plans.all.price_kobo)}
-                  days={plans.all.days}
-                  badge={t('pay_tag_best_value', 'BEST VALUE')}
-                  accent={PURPLE}
-                  onPress={() => { setPlanId('all'); setNotice(null); setFieldErrors({}); }}
-                  tk={tk} t={t} isDark={isDark}
-                />
-                <PlanOption
-                  active={planId === 'single'}
-                  title={t('plan_single', 'Single Category')}
-                  sub={t('pay_single_tagline', 'Access one age group')}
-                  price={formatNaira(plans.single.price_kobo)}
-                  days={plans.single.days}
-                  accent={BLUE}
-                  onPress={() => { setPlanId('single'); setNotice(null); }}
-                  tk={tk} t={t} isDark={isDark}
-                />
-
-                {planId === 'single' && (
-                  <View style={{ marginTop: 6 }}>
-                    <Text style={[st.subLabel, { color: fieldErrors.category ? RED : tk.textSec }]}>
-                      {t('pay_select_age_group', 'Age group')}
-                    </Text>
-                    <View style={st.catGrid}>
-                      {categories.map((cat) => {
-                        const active = category === cat.id;
-                        const soon   = comingSoon.has(cat.id);
-                        return (
-                          <TouchableOpacity
-                            key={cat.id}
-                            disabled={soon}
-                            activeOpacity={0.88}
-                            accessibilityRole="radio"
-                            accessibilityState={{ checked: active, disabled: soon }}
-                            onPress={() => { setCategory(cat.id); setNotice(null); setFieldErrors((e) => ({ ...e, category: null })); }}
-                            style={[st.catCard, {
-                              backgroundColor: active ? (isDark ? cat.color + '22' : cat.color + '0E') : tk.surface,
-                              borderColor:     active ? cat.color : (fieldErrors.category ? RED + '66' : tk.border),
-                              borderWidth:     active ? 1.5 : 1,
-                              opacity:         soon ? 0.5 : 1,
-                            }]}
-                          >
-                            <Text style={{ fontSize: 20 }}>{cat.emoji}</Text>
-                            <View style={{ flex: 1 }}>
-                              <Text style={[st.catLabel, { color: tk.textPrimary }]} numberOfLines={1}>{cat.label}</Text>
-                              <Text style={[st.catDesc, { color: soon ? cat.color : tk.textMuted }]} numberOfLines={1}>
-                                {soon ? t('class_coming_soon', 'Coming soon') : cat.desc}
-                              </Text>
-                            </View>
-                            {active && (
-                              <View style={[st.catCheck, { backgroundColor: cat.color }]}>
-                                <ICONS.Check color="#fff" size={10} sw={3} />
-                              </View>
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                )}
-
-                <View style={[st.included, { backgroundColor: tk.surface, borderColor: tk.border }]}>
-                  {[
-                    t('pay_inc_lessons', 'Weekly lessons'),
-                    t('pay_inc_devotionals', 'Daily devotionals'),
-                    t('pay_inc_quizzes', 'Lesson quizzes'),
-                    t('pay_inc_languages', '4 languages'),
-                  ].map((f) => (
-                    <View key={f} style={st.includedItem}>
-                      <ICONS.Check color={GREEN} size={13} sw={3} />
-                      <Text style={[st.includedTxt, { color: tk.textSec }]}>{f}</Text>
-                    </View>
-                  ))}
+                <View style={{ flex: 1 }}>
+                  <Text style={[st.planTitle, { color: tk.textPrimary }]}>{title}</Text>
+                  <Text style={[st.planSub, { color: tk.textSec }]}>
+                    {t('premium_one_time', 'One-time payment · no auto-renewal')}
+                  </Text>
                 </View>
-              </Section>
+              </View>
+
+              <View style={st.priceRow}>
+                <Text style={[st.price, { color: tk.textPrimary }]}>{formatNaira(premium.price_kobo)}</Text>
+                <Text style={[st.priceDays, { color: tk.textMuted }]}>/ {premium.days} {t('pay_days', 'days')}</Text>
+              </View>
+
+              <View style={[st.benefits, { borderTopColor: PURPLE + '33' }]}>
+                {benefits.map(({ Icon, text }) => (
+                  <View key={text} style={st.benefitRow}>
+                    <View style={[st.benefitIcon, { backgroundColor: PURPLE + '1A' }]}>
+                      <Icon color={PURPLE} size={14} sw={2.4} />
+                    </View>
+                    <Text style={[st.benefitTxt, { color: tk.textPrimary }]}>{text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {activePremium && (
+              <View style={[st.infoRow, { backgroundColor: GREEN + '12', borderColor: GREEN + '40' }]}>
+                <ICONS.CheckCircle color={GREEN} size={16} sw={2.25} />
+                <Text style={[st.infoTxt, { color: tk.textPrimary }]}>
+                  {t('premium_extend_note', "You're Premium until {date}. Paying now adds {n} more days.")
+                    .replace('{date}', formatDate(expiryDate))
+                    .replace('{n}', String(premium.days))}
+                </Text>
+              </View>
             )}
 
-            {/* ── 2. Billing email ──────────────────────────────────────── */}
-            <Section title={t('pay_section_email', 'Billing email')} tk={tk}>
-              {emailLocked ? (
-                <View style={[st.option, { backgroundColor: tk.surface, borderColor: tk.border }]}>
-                  <View style={[st.bookIcon, { backgroundColor: BLUE + '14' }]}>
-                    <ICONS.Mail color={BLUE} size={18} sw={2.25} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[st.optionTitle, { color: tk.textPrimary, fontSize: 14.5 }]} numberOfLines={1}>{email}</Text>
-                    <Text style={[st.optionSub, { color: tk.textMuted }]}>{t('pay_email_linked', 'Linked to your account')}</Text>
-                  </View>
-                  <ICONS.ShieldCheck color={GREEN} size={18} sw={2.25} />
+            {/* ── Billing email ────────────────────────────────────────── */}
+            <Text style={[st.sectionTitle, { color: tk.textSec }]}>{t('pay_section_email', 'Billing email')}</Text>
+            {emailLocked ? (
+              <View style={[st.emailRow, { backgroundColor: tk.surface, borderColor: tk.border }]}>
+                <ICONS.Mail color={BLUE} size={18} sw={2.25} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[st.emailTxt, { color: tk.textPrimary }]} numberOfLines={1}>{email}</Text>
+                  <Text style={[st.emailSub, { color: tk.textMuted }]}>{t('pay_email_linked', 'Linked to your account')}</Text>
                 </View>
-              ) : (
-                <>
-                  <View style={[st.inputWrap, {
-                    backgroundColor: tk.surface,
-                    borderColor: fieldErrors.email ? RED : emailFocused ? BLUE : tk.border,
-                  }]}>
-                    <ICONS.Mail color={tk.textMuted} size={18} sw={2.25} />
-                    <TextInput
-                      style={[st.input, { color: tk.textPrimary }]}
-                      placeholder={t('register_email_placeholder', 'you@example.com')}
-                      placeholderTextColor={tk.textMuted}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="email"
-                      textContentType="emailAddress"
-                      returnKeyType="done"
-                      value={email}
-                      onChangeText={(v) => { setEmail(v); setFieldErrors((e) => ({ ...e, email: null })); setNotice(null); }}
-                      onFocus={() => setEmailFocused(true)}
-                      onBlur={() => setEmailFocused(false)}
-                    />
-                  </View>
-                  <Text style={[st.helpTxt, { color: fieldErrors.email ? RED : tk.textMuted }]}>
-                    {fieldErrors.email || t('pay_email_help_short', 'Use this email to restore access on any device.')}
-                  </Text>
-                </>
-              )}
-            </Section>
-
-            {/* ── 3. Payment method ─────────────────────────────────────── */}
-            <Section title={t('pay_section_method', 'Payment method')} tk={tk}>
-              {AVAILABLE_PROVIDERS.map((p) => {
-                const active = providerId === p.id;
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    activeOpacity={0.9}
-                    disabled={AVAILABLE_PROVIDERS.length === 1}
-                    onPress={() => setProviderId(p.id)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: active }}
-                    style={[st.option, {
-                      backgroundColor: tk.surface,
-                      borderColor: active ? BLUE : tk.border,
-                      borderWidth: active ? 1.5 : 1,
-                    }]}
-                  >
-                    <Radio active={active} color={BLUE} tk={tk} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[st.optionTitle, { color: tk.textPrimary }]}>{p.label}</Text>
-                      <Text style={[st.optionSub, { color: tk.textSec }]}>{p.methods}</Text>
-                    </View>
-                    <ICONS.CreditCard color={tk.textMuted} size={20} sw={2} />
-                  </TouchableOpacity>
-                );
-              })}
-            </Section>
-
-            {/* ── Order summary ─────────────────────────────────────────── */}
-            <Section title={t('pay_section_summary', 'Order summary')} tk={tk}>
-              <View style={[st.summary, { backgroundColor: tk.surface, borderColor: tk.border }]}>
-                <SummaryRow label={t('pay_row_plan', 'Plan')}   value={order.title}  tk={tk} />
-                <SummaryRow label={t('pay_row_access', 'Access')} value={order.access} tk={tk}
-                  valueColor={!isBookFlow && planId === 'single' && !category ? tk.textMuted : undefined} />
-                <SummaryRow label={t('pay_row_duration', 'Duration')} value={`${order.days} ${t('pay_days', 'days')}`} tk={tk} />
-                <SummaryRow
-                  label={t('pay_row_valid_until', 'Valid until')}
-                  value={formatDate(validUntil)}
-                  note={carryOver ? t('pay_carry_over', 'Includes your remaining days') : null}
-                  tk={tk}
-                />
-                <View style={[st.sumDivider, { backgroundColor: tk.border }]} />
-                <SummaryRow label={t('pay_row_total', 'Total')} value={formatNaira(order.priceKobo)} tk={tk} strong />
+                <ICONS.ShieldCheck color={GREEN} size={18} sw={2.25} />
               </View>
-              <Text style={[st.finePrint, { color: tk.textMuted }]}>
-                {t('pay_fine_print', 'One-time payment. No automatic renewal — you choose whether to renew when your plan ends.')}
-                {provider?.currency && provider.currency !== 'NGN'
-                  ? ' ' + t('pay_usd_note', 'Charged in {c} at checkout.').replace('{c}', provider.currency)
-                  : ''}
-              </Text>
-            </Section>
+            ) : (
+              <>
+                <View style={[st.inputWrap, {
+                  backgroundColor: tk.surface,
+                  borderColor: emailError ? RED : emailFocused ? BLUE : tk.border,
+                }]}>
+                  <ICONS.Mail color={tk.textMuted} size={18} sw={2.25} />
+                  <TextInput
+                    style={[st.input, { color: tk.textPrimary }]}
+                    placeholder={t('register_email_placeholder', 'you@example.com')}
+                    placeholderTextColor={tk.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                    returnKeyType="done"
+                    value={email}
+                    onChangeText={(v) => { setEmail(v); setEmailError(''); setNotice(null); }}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    onSubmitEditing={startCheckout}
+                  />
+                </View>
+                <Text style={[st.helpTxt, { color: emailError ? RED : tk.textMuted }]}>
+                  {emailError || t('pay_email_help_short', 'Use this email to restore access on any device.')}
+                </Text>
+              </>
+            )}
+
+            <Text style={[st.finePrint, { color: tk.textMuted }]}>
+              {t('premium_valid_until', 'Premium is valid until {date}. Renew any time — you choose whether to continue.')
+                .replace('{date}', formatDate(validUntil))}
+            </Text>
           </Animated.ScrollView>
 
-          {/* ── Sticky pay bar ──────────────────────────────────────────── */}
+          {/* ── Sticky pay bar ─────────────────────────────────────────── */}
           <View style={[st.footer, { paddingBottom: insets.bottom + 12, backgroundColor: tk.bg, borderTopColor: tk.border }]}>
             {!!notice && <Notice tone={notice.tone} text={notice.text} />}
-            <View style={st.footerRow}>
-              <View>
-                <Text style={[st.footerLabel, { color: tk.textMuted }]}>{t('pay_row_total', 'Total')}</Text>
-                <Text style={[st.footerPrice, { color: tk.textPrimary }]}>{formatNaira(order.priceKobo)}</Text>
-              </View>
-              <PrimaryButton
-                style={{ flex: 1 }}
-                icon={ICONS.Lock}
-                label={t('pay_pay_amount', 'Pay {amount}').replace('{amount}', formatNaira(order.priceKobo))}
-                onPress={startCheckout}
-              />
-            </View>
+            <PrimaryButton
+              icon={ICONS.Lock}
+              color={PURPLE}
+              label={t('pay_pay_amount', 'Pay {amount}').replace('{amount}', formatNaira(premium.price_kobo))}
+              onPress={startCheckout}
+            />
             <View style={st.secureRow}>
               <ICONS.ShieldCheck color={tk.textMuted} size={12} sw={2.25} />
               <Text style={[st.secureTxt, { color: tk.textMuted }]}>
-                {t('pay_secured_by', 'Payments are processed securely by {p}').replace('{p}', provider?.label || 'Paystack')}
+                {t('pay_secured_methods', 'Secured by {p} · {m}')
+                  .replace('{p}', PROVIDER.label)
+                  .replace('{m}', PROVIDER.methods)}
               </Text>
             </View>
           </View>
@@ -1030,57 +770,35 @@ const st = StyleSheet.create({
   stepLabel:    { fontSize: 11, fontWeight: '700', marginTop: 5 },
   stepLine:     { flex: 1, height: 2, borderRadius: 1, marginTop: 10, marginHorizontal: -14 },
 
-  // Sections
-  section:      { marginTop: 20 },
-  sectionTitle: { fontSize: 13, fontWeight: '800', marginBottom: 10, letterSpacing: 0.1 },
-  subLabel:     { fontSize: 12, fontWeight: '700', marginBottom: 8, marginTop: 4 },
+  // Premium card
+  planCard:     { borderRadius: 18, borderWidth: 1.5, padding: 18 },
+  planHead:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  crown:        { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  planTitle:    { fontSize: 18, fontWeight: '900', letterSpacing: -0.3 },
+  planSub:      { fontSize: 12.5, fontWeight: '600', marginTop: 2 },
+  priceRow:     { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 16 },
+  price:        { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
+  priceDays:    { fontSize: 13, fontWeight: '700' },
+  benefits:     { borderTopWidth: 1, marginTop: 14, paddingTop: 14, gap: 11 },
+  benefitRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  benefitIcon:  { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  benefitTxt:   { flex: 1, fontSize: 14, fontWeight: '700' },
 
-  // Generic selectable row
-  option:         { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 14, marginBottom: 10 },
-  optionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  optionTitle:    { fontSize: 15.5, fontWeight: '800', letterSpacing: -0.2 },
-  optionSub:      { fontSize: 12.5, fontWeight: '500', marginTop: 2 },
-  optionPrice:    { fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
-  optionDays:     { fontSize: 11, fontWeight: '600', marginTop: 1 },
-  badge:          { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  badgeTxt:       { fontSize: 9.5, fontWeight: '900', letterSpacing: 0.8 },
-  radio:          { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  radioDot:       { width: 10, height: 10, borderRadius: 5 },
-  bookIcon:       { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-
-  // Category grid
-  catGrid:      { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
-  catCard:      { width: '48.5%', flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12 },
-  catLabel:     { fontSize: 13.5, fontWeight: '800' },
-  catDesc:      { fontSize: 11, fontWeight: '600', marginTop: 1 },
-  catCheck:     { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-
-  // Included strip
-  included:     { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, rowGap: 8, marginTop: 6 },
-  includedItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 6 },
-  includedTxt:  { fontSize: 12, fontWeight: '600' },
+  infoRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, borderWidth: 1, padding: 12, marginTop: 12 },
+  infoTxt:      { flex: 1, fontSize: 12.5, fontWeight: '600', lineHeight: 18 },
 
   // Email
+  sectionTitle: { fontSize: 13, fontWeight: '800', marginTop: 22, marginBottom: 10 },
+  emailRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
+  emailTxt:     { fontSize: 14.5, fontWeight: '800' },
+  emailSub:     { fontSize: 12, fontWeight: '600', marginTop: 1 },
   inputWrap:    { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, height: 52 },
   input:        { flex: 1, fontSize: 15, fontWeight: '600', padding: 0 },
   helpTxt:      { fontSize: 12, fontWeight: '600', marginTop: 6, marginLeft: 2 },
-
-  // Summary
-  summary:        { borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6 },
-  sumRow:         { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
-  sumLabel:       { fontSize: 13, fontWeight: '600' },
-  sumLabelStrong: { fontSize: 15, fontWeight: '800' },
-  sumValue:       { fontSize: 13, fontWeight: '700', textAlign: 'right' },
-  sumValueStrong: { fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
-  sumNote:        { fontSize: 11, fontWeight: '700', marginTop: 2 },
-  sumDivider:     { height: 1, marginVertical: 4 },
-  finePrint:      { fontSize: 11.5, lineHeight: 17, marginTop: 10, paddingHorizontal: 2 },
+  finePrint:    { fontSize: 11.5, lineHeight: 17, marginTop: 16, paddingHorizontal: 2 },
 
   // Footer
   footer:       { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 20, paddingTop: 12 },
-  footerRow:    { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  footerLabel:  { fontSize: 11, fontWeight: '700' },
-  footerPrice:  { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
   secureRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10 },
   secureTxt:    { fontSize: 11, fontWeight: '600' },
 
@@ -1103,7 +821,6 @@ const st = StyleSheet.create({
   statusBody:   { fontSize: 13.5, lineHeight: 20, textAlign: 'center', maxWidth: 340, marginBottom: 14 },
   miniOrder:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 16 },
   miniTitle:    { fontSize: 14, fontWeight: '800' },
-  miniSub:      { fontSize: 12, fontWeight: '600', marginTop: 2 },
   miniRef:      { fontSize: 10.5, fontWeight: '600', marginTop: 4 },
   miniPrice:    { fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
 

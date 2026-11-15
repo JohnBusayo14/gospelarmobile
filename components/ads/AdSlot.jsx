@@ -11,7 +11,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { PREMIUM_ENABLED } from '../../config/features';
 import {
   adsReady, bannersAllowed, adsChildMode, bannerUnitId, getGMA,
   subscribeAds, setAudience, isChildCategory,
@@ -21,6 +23,7 @@ export default function AdSlot({ category, style, dark = false, enabled = true }
   const [, force] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const navigation = useNavigation();
 
   // Tell the ad service which audience is on screen (child-safe settings).
   useEffect(() => { if (category) setAudience(category); }, [category]);
@@ -37,7 +40,16 @@ export default function AdSlot({ category, style, dark = false, enabled = true }
   const { BannerAd, BannerAdSize } = GMA;
   return (
     <View style={[s.wrap, !loaded && s.hidden, style]} pointerEvents={loaded ? 'auto' : 'none'}>
-      <Text style={[s.label, dark && { color: '#9CA3AF' }]}>Advertisement</Text>
+      <View style={s.labelRow}>
+        <Text style={[s.label, dark && { color: '#9CA3AF' }]}>Advertisement</Text>
+        {/* Free → Premium switch. Kept small and away from the ad itself so
+            it can't be mistaken for (or cause accidental taps on) the ad. */}
+        {PREMIUM_ENABLED && (
+          <TouchableOpacity onPress={() => navigation.navigate('PaymentScreen')} hitSlop={8} accessibilityRole="button">
+            <Text style={s.removeAds}>Remove ads</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       <BannerAd
         unitId={bannerUnitId()}
         size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
@@ -55,5 +67,7 @@ const s = StyleSheet.create({
   wrap:   { alignItems: 'center', marginVertical: 24, overflow: 'hidden' },
   // Keep mounted (so it can load) but take no space until there is an ad.
   hidden: { height: 0, marginVertical: 0, opacity: 0 },
-  label:  { fontSize: 10, fontWeight: '600', letterSpacing: 0.6, color: '#6B7280', marginBottom: 2 },
+  labelRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
+  label:     { fontSize: 10, fontWeight: '600', letterSpacing: 0.6, color: '#6B7280' },
+  removeAds: { fontSize: 10, fontWeight: '800', color: '#1A56DB' },
 });

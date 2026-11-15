@@ -19,7 +19,7 @@ import AsyncStorage       from '@react-native-async-storage/async-storage';
 import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
 import { useTheme }        from '../context/ThemeContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { PREMIUM_ENABLED } from '../config/features';
 import { useLanguage }     from '../context/LanguageContext';
 import { getTokens } from '../theme/tokens';
 import { useScreenEntry } from '../hooks/useFluidAnim';
@@ -141,8 +141,9 @@ export default function AccountScreen({ navigation }) {
 
   const {
     email, expiryDate, daysRemaining,
-    subscribedCategory, planType, isSubscribed, recheck,
+    subscribedCategory, planType, isSubscribed, recheck, plans,
   } = useSubscription();
+  const premiumPrice = '₦' + Math.round((plans?.all?.price_kobo || 100000) / 100).toLocaleString('en-NG');
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -289,12 +290,12 @@ export default function AccountScreen({ navigation }) {
         </View>
 
         {/* ── Action buttons ── */}
-        {SUBSCRIPTIONS_ENABLED && !isExpired && !isAll && (
+        {PREMIUM_ENABLED && !isExpired && !isAll && (
           <ActionBtn gradient={['#7C3AED','#5B21B6']} iconPath={IC.upgrade}
-            label={t('account_upgrade_label', 'Upgrade to All Categories')} sub={t('account_upgrade_sub', 'Unlock every age group · ₦1,000')}
-            shadowColor="#7C3AED" onPress={() => navigation.navigate('PaymentScreen', { plan: 'all' })} />
+            label={t('account_go_premium', 'Go Premium')} sub={t('account_premium_sub', 'No ads · Victory Month Prayer · {price}').replace('{price}', premiumPrice)}
+            shadowColor="#7C3AED" onPress={() => navigation.navigate('PaymentScreen')} />
         )}
-        {SUBSCRIPTIONS_ENABLED && (isExpired || daysLeft <= 30) && (
+        {PREMIUM_ENABLED && isSubscribed && (isExpired || daysLeft <= 30) && (
           <ActionBtn
             gradient={isExpired ? ['#EF4444','#B91C1C'] : [BLUE,BLUE_DARK]}
             iconPath={isExpired ? IC.lock : IC.zap}
@@ -303,11 +304,11 @@ export default function AccountScreen({ navigation }) {
               ? t('account_renew_sub', 'Reactivate your access · from ₦500')
               : t('account_extend_sub', '{n} days left — top up now').replace('{n}', String(daysLeft))}
             shadowColor={isExpired ? '#EF4444' : BLUE}
-            onPress={() => navigation.navigate('PaymentScreen', isAll ? { plan: 'all' } : { plan: 'single', category: catKey })} />
+            onPress={() => navigation.navigate('PaymentScreen')} />
         )}
-        {SUBSCRIPTIONS_ENABLED && !isSubscribed && (
-          <ActionBtn gradient={[BLUE,BLUE_DARK]} iconPath={IC.star}
-            label={t('account_subscribe_now', 'Subscribe Now')} sub={t('account_subscribe_sub', 'From ₦500 · Choose your category')}
+        {PREMIUM_ENABLED && !isSubscribed && (
+          <ActionBtn gradient={['#7C3AED','#5B21B6']} iconPath={IC.star}
+            label={t('account_go_premium', 'Go Premium')} sub={t('account_premium_sub', 'No ads · Victory Month Prayer · {price}').replace('{price}', premiumPrice)}
             shadowColor={BLUE} onPress={() => navigation.navigate('PaymentScreen')} />
         )}
 

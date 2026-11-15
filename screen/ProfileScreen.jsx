@@ -13,7 +13,7 @@ import { ICONS } from '../components/icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { PREMIUM_ENABLED } from '../config/features';
 import { getTokens } from '../theme/tokens';
 import { bookTones, AMBIENT_SHADOW as BOOK_SHADOW } from '../theme/bookSurfaces';
 import { useScreenEntry, usePressScale } from '../hooks/useFluidAnim';
@@ -296,14 +296,15 @@ export default function ProfileScreen({navigation}) {
             {/* ACCOUNT & SUBSCRIPTION */}
             <SectionHead title={t('account','Account').toUpperCase()} Icon={ICONS.Lock} tk={tk}/>
             <View style={{marginHorizontal:20,borderRadius:18,borderWidth:1,overflow:'hidden',backgroundColor:tk.glassFill,borderColor:tk.glassEdge}}>
-              {SUBSCRIPTIONS_ENABLED && (
+              {PREMIUM_ENABLED && (
                 <Row
-                  Icon={ICONS.Award}
-                  label={t('profile_subscription_status', 'Subscription Status')}
+                  Icon={ICONS.Crown}
+                  label={isSubscribed ? t('profile_premium', 'Premium') : t('profile_free_plan', 'Free plan (with ads)')}
                   value={isSubscribed
                     ? t('profile_n_days_remaining', '{n} days remaining').replace('{n}', String(daysRemaining))
-                    : t('profile_no_subscription', 'No active subscription')}
+                    : t('profile_go_premium_sub', 'Go Premium — no ads + Victory Month Prayer')}
                   tk={tk}
+                  onPress={() => navigation.navigate('PaymentScreen')}
                 />
               )}
               <Row Icon={ICONS.LogOut} label={t('sign_out','Sign Out')} tk={tk} onPress={handleLogout} danger noBorder/>

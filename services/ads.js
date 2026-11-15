@@ -18,7 +18,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { API_BASE_URL } from '../context/SubscriptionContext';
+// From services/api (not SubscriptionContext) — the context imports this file
+// to switch ads off for Premium users, so importing back would be a cycle.
+import { API_BASE_URL } from './api';
 
 let GMA = null;
 try { GMA = require('react-native-google-mobile-ads'); } catch { GMA = null; }
@@ -44,10 +46,14 @@ const K_LAST   = 'ads_last_interstitial_at';
 const K_SESS   = 'ads_session_count';
 const K_LESS   = 'ads_lessons_since_ad';
 const K_CHILD  = 'ads_child_mode';
+const K_ADFREE = 'ads_ad_free';   // last known Premium status (avoids an ad flash at launch)
 
 const state = {
   initialised: false,
+  sdkStarted:  false,
   enabled:     false,      // SDK ready + not killed remotely
+  adFree:      false,      // Premium subscriber → no ads at all
+  adFreeKnown: false,      // set once the subscription check has reported
   childMode:   false,
   intervalMs:  DEFAULT_INTERVAL_MS,
   startedAt:   Date.now(),
@@ -115,6 +121,22 @@ function loadInterstitial() {
   } catch { /* ad failures must never affect the app */ }
 }
 
+// ── Premium (ad-free) ────────────────────────────────────────────────────────
+// Called by SubscriptionContext after every server subscription check.
+// Premium users never see a banner or interstitial, and the SDK (and its
+// consent form) isn't even started for them. If a Premium plan lapses, the
+// SDK starts on the spot.
+export function setAdFree(on) {
+  const next = !!on;
+  state.adFreeKnown = true;
+  AsyncStorage.setItem(K_ADFREE, next ? '1' : '0').catch(() => {});
+  const changed = next !== state.adFree;
+  state.adFree = next;
+  if (!next && state.initialised && !state.sdkStarted) startSdk();
+  if (changed) notify();   // mounted <AdSlot>s re-render and disappear / appear
+}
+export const isAdFree = () => state.adFree;
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 export async function initAds() {
   if (state.initialised) return;
@@ -122,10 +144,10 @@ export async function initAds() {
   if (!adsAllowedByBuild) return;
 
   try {
-    const [sess, last, less, child, role] = await Promise.all([
+    const [sess, last, less, child, role, adFree] = await Promise.all([
       AsyncStorage.getItem(K_SESS), AsyncStorage.getItem(K_LAST),
       AsyncStorage.getItem(K_LESS), AsyncStorage.getItem(K_CHILD),
-      AsyncStorage.getItem('userRole'),
+      AsyncStorage.getItem('userRole'), AsyncStorage.getItem(K_ADFREE),
     ]);
     state.sessions       = (parseInt(sess, 10) || 0) + 1;
     state.lastShownAt    = parseInt(last, 10) || 0;
@@ -133,7 +155,19 @@ export async function initAds() {
     state.childMode      = child === '1';
     state.isTeacher      = role === 'teacher' || role === 'admin';
     AsyncStorage.setItem(K_SESS, String(state.sessions)).catch(() => {});
+    // The live subscription check may already have answered; it wins.
+    if (!state.adFreeKnown) state.adFree = adFree === '1';
+  } catch (e) {
+    console.warn('[Ads] init failed:', e?.message);
+  }
+  // Last known Premium → wait; setAdFree(false) starts the SDK if it lapsed.
+  if (!state.adFree) startSdk();
+}
 
+async function startSdk() {
+  if (state.sdkStarted || !adsAllowedByBuild) return;
+  state.sdkStarted = true;
+  try {
     // Remote kill switch / tuning. A missing endpoint (404) means "defaults".
     try {
       const res = await fetch(`${API_BASE_URL}/api/ads/config`);
@@ -172,12 +206,12 @@ export function noteLessonCompleted() {
   AsyncStorage.setItem(K_LESS, String(state.lessonsSinceAd)).catch(() => {});
 }
 
-export const bannersAllowed = () => state.enabled && !state.isTeacher && !state.childMode;
+export const bannersAllowed = () => state.enabled && !state.adFree && !state.isTeacher && !state.childMode;
 
 // Show an interstitial if every rule allows it. Resolves true if one was shown.
 //   category — lesson category; child categories never get interstitials.
 export async function showInterstitialIfAllowed({ category } = {}) {
-  if (!state.enabled || state.isTeacher) return false;
+  if (!state.enabled || state.adFree || state.isTeacher) return false;
   if (isChildCategory(category) || state.childMode) return false;
   if (state.sessions <= MIN_SESSIONS_BEFORE_ADS) return false;
   if (Date.now() - state.startedAt < SESSION_GRACE_MS) return false;

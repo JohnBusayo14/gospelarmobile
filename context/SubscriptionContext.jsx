@@ -11,8 +11,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
-import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { SUBSCRIPTIONS_ENABLED, PREMIUM_ENABLED } from '../config/features';
 import { PRIMARY_API } from '../services/apiFailover';
+import { setAdFree } from '../services/ads';
 
 // Configurable via EXPO_PUBLIC_API_BASE_URL. Defaults to api.gospelar.com;
 // services/apiFailover.js falls back to api2.gospelar.com automatically.
@@ -473,16 +474,33 @@ export const SubscriptionProvider = ({ children }) => {
   // Server-authoritative variant: GET /api/subscription/can-access-book/:email/:bookId
   const canAccessBook = (bookId) => {
     if (!bookId) return true;
-    if (!SUBSCRIPTIONS_ENABLED) return true;
+    // Premium books are gated by the Premium plan, independent of the legacy
+    // Sunday-School paywall (SUBSCRIPTIONS_ENABLED), which stays off.
+    if (!PREMIUM_ENABLED) return true;
     if (!isSubscribed) return false;
     // 'all' wildcard (free trial / all-access grant) unlocks every book.
     if (subscribedBooks.includes('all')) return true;
     return subscribedBooks.includes(String(bookId).toLowerCase());
   };
 
+  // ── Premium (freemium model) ─────────────────────────────────────────────
+  // Any active paid plan makes the user Premium → no ads. Premium books are
+  // unlocked by the all-access plan ('all' books wildcard) via canAccessBook.
+  const isPremium = PREMIUM_ENABLED && isSubscribed;
+
+  // Tell the ad service once the server has answered. A network error keeps
+  // the last known value (cached inside the ad service) instead of flipping a
+  // paying user back to ads.
+  useEffect(() => {
+    if (!hasChecked || serverError) return;
+    setAdFree(isPremium);
+  }, [hasChecked, serverError, isPremium]);
+
   return (
     <SubscriptionContext.Provider value={{
       subscriptionsEnabled: SUBSCRIPTIONS_ENABLED,
+      premiumEnabled:       PREMIUM_ENABLED,
+      isPremium,
       isSubscribed,
       isTrial: SUBSCRIPTIONS_ENABLED && isTrial,
       hasSundaySchool,

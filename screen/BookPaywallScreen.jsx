@@ -32,7 +32,7 @@ export default function BookPaywallScreen({ route, navigation }) {
   const { bookId } = route.params || {};
   const { isDark } = useTheme();
   const { t }      = useLanguage();
-  const { canAccessBook, recheck, isSubscribed } = useSubscription();
+  const { canAccessBook, recheck, isSubscribed, plans } = useSubscription();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
 
@@ -52,15 +52,14 @@ export default function BookPaywallScreen({ route, navigation }) {
     return null;
   }
 
-  const price = book.pricing?.price_kobo || 50000;
+  // Premium books are part of the single Premium plan (no per-book SKU in the
+  // app any more): one price, also removes ads. After paying, PaymentScreen
+  // drops the user straight into this book.
+  const price = plans?.all?.price_kobo || 100000;
 
   const handleSubscribe = () => {
     navigation.navigate('PaymentScreen', {
-      book_id: book.id,
-      book_title: book.title,
-      plan_id: book.pricing?.plan_id || `book_${book.id}`,
-      price_kobo: price,
-      accent: book.accent,
+      returnTo: { name: book.route, params: book.routeParams },
     });
   };
 
@@ -106,7 +105,7 @@ export default function BookPaywallScreen({ route, navigation }) {
             <View style={s.heroInner}>
               <View style={s.lockPill}>
                 <ICONS.Lock color="#fff" size={12} sw={2.4} />
-                <Text style={s.lockPillTxt}>{fmtNaira(price)} · {t('paywall_lifetime_or_renew', 'subscription')}</Text>
+                <Text style={s.lockPillTxt}>{t('paywall_included_premium', 'Included with Premium')}</Text>
               </View>
               <Text style={s.heroTitle} numberOfLines={2}>{book.title}</Text>
               <Text style={s.heroSub} numberOfLines={1}>{book.subtitle}</Text>
@@ -148,7 +147,7 @@ export default function BookPaywallScreen({ route, navigation }) {
               ))}
               <View style={[s.previewFooter, { borderTopColor: tk.border }]}>
                 <Text style={[s.previewFooterTxt, { color: tk.textMuted }]}>
-                  {t('paywall_unlock_to_read', 'Subscribe to unlock every day.')}
+                  {t('paywall_unlock_premium', 'Go Premium to unlock every day — and remove all ads.')}
                 </Text>
               </View>
             </View>
@@ -160,7 +159,7 @@ export default function BookPaywallScreen({ route, navigation }) {
           <View style={[s.trustRow, { backgroundColor: tk.surface, borderColor: tk.border }]}>
             <View style={s.trustItem}>
               <ICONS.Book color={tk.textPrimary} size={18} sw={2.25} />
-              <Text style={[s.trustTxt, { color: tk.textPrimary }]}>{t('paywall_offline', 'Offline-friendly')}</Text>
+              <Text style={[s.trustTxt, { color: tk.textPrimary }]}>{t('paywall_no_ads', 'No ads')}</Text>
             </View>
             <View style={[s.trustDivider, { backgroundColor: tk.border }]} />
             <View style={s.trustItem}>
@@ -188,12 +187,12 @@ export default function BookPaywallScreen({ route, navigation }) {
       {/* STICKY CTA */}
       <View style={[s.ctaWrap, { backgroundColor: tk.bg, borderTopColor: tk.border }]}>
         <View style={s.ctaPrice}>
-          <Text style={[s.ctaPriceLabel, { color: tk.textMuted }]}>{t('paywall_price_label', 'PRICE')}</Text>
+          <Text style={[s.ctaPriceLabel, { color: tk.textMuted }]}>{t('paywall_premium_label', 'PREMIUM')}</Text>
           <Text style={[s.ctaPriceTxt,   { color: tk.textPrimary }]}>{fmtNaira(price)}</Text>
         </View>
         <TouchableOpacity onPress={handleSubscribe} activeOpacity={0.85}
           style={[s.cta, { backgroundColor: book.accent }]}>
-          <Text style={s.ctaTxt}>{t('paywall_subscribe', 'Subscribe')}</Text>
+          <Text style={s.ctaTxt}>{t('paywall_go_premium', 'Go Premium')}</Text>
           <ICONS.ArrowLeft color="#fff" size={18} sw={2.4} style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
       </View>

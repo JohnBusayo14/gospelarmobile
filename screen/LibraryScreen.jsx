@@ -24,7 +24,7 @@ import AsyncStorage      from '@react-native-async-storage/async-storage';
 import { useTheme }      from '../context/ThemeContext';
 import { useLanguage }   from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { SUBSCRIPTIONS_ENABLED, PREMIUM_ENABLED } from '../config/features';
 import { getTokens, PALETTE } from '../theme/tokens';
 import { useScreenEntry, useStaggerEntry } from '../hooks/useFluidAnim';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -83,7 +83,6 @@ const CARD_HEIGHT = CARD_WIDTH * 1.35;
 const BLUE       = PALETTE.blue;
 const BLUE_LIGHT = '#EFF6FF';
 
-const fmtNaira = (kobo) => '₦' + Math.round((kobo || 0) / 100).toLocaleString();
 
 // Resolve the visual + tap state for a card. Pure function so it can be
 // tested independently of the React tree if we ever want to.
@@ -99,20 +98,20 @@ function resolveCardState(book, canAccessBook, t) {
       showLock: false,
     };
   }
-  if (book.requiresSubscription && SUBSCRIPTIONS_ENABLED) {
+  if (book.requiresSubscription && PREMIUM_ENABLED) {
     if (canAccessBook(book.id)) {
       return {
         state: 'subscribed',
-        pillTxt: t('lib_owned', 'Owned'),
+        pillTxt: t('lib_unlocked', 'Unlocked'),
         pillBg:  '#10B981',
         pillFg:  '#fff',
         showLock: false,
       };
     }
-    const price = book.pricing?.price_kobo || 50000;
+    // Premium books are unlocked by the single Premium plan, not sold one by one.
     return {
       state: 'locked',
-      pillTxt: fmtNaira(price),
+      pillTxt: t('lib_premium', 'Premium'),
       pillBg:  book.accent,
       pillFg:  '#fff',
       showLock: true,

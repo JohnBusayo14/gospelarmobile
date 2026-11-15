@@ -13,12 +13,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Linking } from 'react-native';
-import { API_BASE_URL } from '../context/SubscriptionContext';
+import { API_BASE_URL, useSubscription } from '../context/SubscriptionContext';
 
 const dismissedIds = new Set();   // per session
 
 export default function HouseAdCard({ tk }) {
   const [banner, setBanner] = useState(null);
+  const { isPremium } = useSubscription();   // Premium = no sponsored content
 
   useEffect(() => {
     let alive = true;
@@ -33,7 +34,7 @@ export default function HouseAdCard({ tk }) {
     return () => { alive = false; };
   }, []);
 
-  if (!banner) return null;
+  if (!banner || isPremium) return null;
 
   const img = banner.image_base64
     ? { uri: `data:image/jpeg;base64,${banner.image_base64}` }

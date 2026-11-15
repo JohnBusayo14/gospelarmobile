@@ -15,7 +15,7 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useSubscription }  from '../context/SubscriptionContext';
 import { useTheme }         from '../context/ThemeContext';
-import { SUBSCRIPTIONS_ENABLED } from '../config/features';
+import { PREMIUM_ENABLED } from '../config/features';
 
 export default function BookGuard({ bookId, navigation, children }) {
   const { hasChecked, canAccessBook } = useSubscription();
@@ -32,7 +32,8 @@ export default function BookGuard({ bookId, navigation, children }) {
     }
   }, [hasChecked, allowed, bookId, navigation]);
 
-  if (!SUBSCRIPTIONS_ENABLED) return children;
+  // Premium switched off → every book is open.
+  if (!PREMIUM_ENABLED) return children;
 
   if (!hasChecked || !allowed) {
     return (
