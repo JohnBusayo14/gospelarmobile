@@ -12,6 +12,9 @@ import { ActivityIndicator, View, Alert, AppState } from 'react-native';
 import * as Notifications             from 'expo-notifications';
 import NotificationService            from './services/NotificationService';
 import { registerForPush }            from './services/pushRegistration';
+import { openNotificationTarget, STARTUP_ROUTES } from './services/notificationRouting';
+import { refreshUnread }              from './services/inbox';
+import NotificationsScreen            from './screen/NotificationsScreen';
 import { useContentSync }             from './services/contentSync';
 
 // ── Contexts ──────────────────────────────────────────────────────────────────
@@ -137,38 +140,39 @@ function AppNavigator() {
     // Always show SplashScreen first — it checks local session and routes accordingly
     setInitialRoute('SplashScreen');
 
-    // Initialise notifications
-    NotificationService.init();
-    // Server push (new videos / book updates) — re-registers after sign-in too.
-    registerForPush();
+    // Local reminders first, then server push registration — one after the
+    // other so the OS permission prompt is only requested once.
+    NotificationService.init().catch(() => {}).finally(() => registerForPush());
 
-    // Handle notification taps. We branch on the `type` payload set by each
-    // notification scheduler so taps deep-link straight to the relevant
-    // screen instead of just opening the app cold.
-    const sub = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data || {};
-      const type = data.type;
-      if (!navigationRef.current) return;
+    // Notification taps → the right screen (services/notificationRouting).
+    // A tap can arrive before navigation is ready or while Splash / Login is
+    // showing (e.g. the tap that launched a closed app), so it waits — up to
+    // 30 s — until the user is past start-up, then navigates.
+    const handled = new Set();
+    let waitTimer = null;
+    const handleResponse = (response) => {
+      if (!response) return;
+      const id = response.notification?.request?.identifier;
+      if (id && handled.has(id)) return;
+      if (id) handled.add(id);
+      const data = response.notification?.request?.content?.data || {};
+      const started = Date.now();
+      const tryOpen = () => {
+        const nav = navigationRef.current;
+        const route = nav?.isReady?.() ? nav.getCurrentRoute()?.name : null;
+        if (route && !STARTUP_ROUTES.includes(route)) {
+          openNotificationTarget(nav, data);
+        } else if (Date.now() - started < 30_000) {
+          waitTimer = setTimeout(tryOpen, 400);
+        }
+      };
+      tryOpen();
+    };
+    const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    Notifications.getLastNotificationResponseAsync().then(handleResponse).catch(() => {});
 
-      if (type === 'video' && data.videoId) {
-        // Server push: a new Sunday School video was published.
-        navigationRef.current.navigate('VideoPlayer', { videoId: data.videoId });
-      } else if (type === 'book' && data.slug) {
-        // Server push: a book is new or updated — open it through the
-        // Library so its paywall / per-book routing still applies.
-        navigationRef.current.navigate('Library', { openBook: data.slug });
-      } else if (type === 'quiz' || type === 'devotional') {
-        navigationRef.current.navigate('HomeScreen');
-      } else if (type === 'fastEnded' || type === 'fastStarted' || type === 'fastMidpoint') {
-        // Victory Month fast alarm — route to the Fasting Hub so the user
-        // can mark complete / see remaining time / start the next fast.
-        navigationRef.current.navigate('VictoryFastingHub');
-      } else if (type === 'prayerReminder') {
-        // Recurring prayer reminder — open the Reminders screen so the user
-        // can adjust the time or jump straight into today's prayer.
-        navigationRef.current.navigate('VictoryReminders');
-      }
-    });
+    // A push arriving while the app is open → refresh the inbox bell.
+    const recvSub = Notifications.addNotificationReceivedListener(() => { refreshUnread(); });
 
     // Back in the foreground: refresh the push registration so a new sign-in
     // or language change reaches the server (no-op when nothing changed).
@@ -176,7 +180,7 @@ function AppNavigator() {
       if (s === 'active') registerForPush();
     });
 
-    return () => { sub.remove(); appStateSub.remove(); };
+    return () => { sub.remove(); recvSub.remove(); appStateSub.remove(); clearTimeout(waitTimer); };
   }, []);
 
   if (!initialRoute) {
@@ -394,6 +398,7 @@ function AppNavigator() {
           from route params so its in-screen links route back to the right
           book context. */}
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="ChurchDirectory" component={ChurchDirectoryScreen} />
 
       {/* Gospeler ID — per-user digital Christian identity. Not Subscription-

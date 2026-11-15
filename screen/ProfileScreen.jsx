@@ -159,6 +159,15 @@ export default function ProfileScreen({navigation}) {
     finally{setSaving(false);}
   };
 
+  // Save the push switch immediately (it used to only change local state,
+  // so turning it off did nothing unless the whole profile was re-saved).
+  const handleNotificationsToggle=(v)=>{
+    setNotifications(v);
+    if(!email)return;
+    fetch(`${API}/api/profile/${encodeURIComponent(email)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({notifications:v})})
+      .then(r=>{if(!r.ok)throw new Error();})
+      .catch(()=>{setNotifications(!v);Alert.alert(t('profile_save_failed','Save Failed'),t('profile_could_not_save','Could not save.'));});
+  };
   const handleLangChange=(code)=>{setLang(code);if(email)fetch(`${API}/api/profile/${encodeURIComponent(email)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({lang_pref:code})}).catch(()=>{});};
   const handleThemeToggle=()=>{toggleTheme();if(email)fetch(`${API}/api/profile/${encodeURIComponent(email)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({dark_mode:!isDark})}).catch(()=>{});};
   const handleLogout=()=>{Alert.alert(t('sign_out','Sign Out'),t('set_signout_confirm','Are you sure?'),[{text:t('btn_cancel','Cancel'),style:'cancel'},{text:t('sign_out','Sign Out'),style:'destructive',onPress:async()=>{await AsyncStorage.multiRemove(['userEmail','userToken']);navigation.reset({index:0,routes:[{name:'Login'}]});}}]);};
@@ -290,7 +299,7 @@ export default function ProfileScreen({navigation}) {
             <SectionHead title={t('notifications','Notifications').toUpperCase()} Icon={ICONS.Bell} tk={tk}/>
             <View style={{marginHorizontal:20,borderRadius:18,borderWidth:1,overflow:'hidden',backgroundColor:tk.glassFill,borderColor:tk.glassEdge}}>
               <Row Icon={ICONS.Bell} label={t('profile_push_notifications','Push Notifications')} value={t('profile_push_sub','Lesson reminders and updates')} tk={tk} noBorder
-                right={<Switch value={notifications} onValueChange={setNotifications} trackColor={{false:'#D1D5DB',true:'#10B98190'}} thumbColor={notifications?'#10B981':'#fff'} ios_backgroundColor="#D1D5DB"/>}/>
+                right={<Switch value={notifications} onValueChange={handleNotificationsToggle} trackColor={{false:'#D1D5DB',true:'#10B98190'}} thumbColor={notifications?'#10B981':'#fff'} ios_backgroundColor="#D1D5DB"/>}/>
             </View>
 
             {/* ACCOUNT & SUBSCRIPTION */}

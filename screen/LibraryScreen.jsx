@@ -33,6 +33,7 @@ import { fetchBooks } from '../services/api';
 import { ICONS } from '../components/icons';
 import AdSlot from '../components/ads/AdSlot';
 import HouseAdCard from '../components/HouseAdCard';
+import { useUnreadCount } from '../services/inbox';
 
 // Normalize a row from /api/books into the shape the cards already render.
 // Falls back to the matching local BOOKS entry for image assets (require())
@@ -282,6 +283,7 @@ export default function LibraryScreen({ navigation, route }) {
   const { isDark } = useTheme();
   const { t }      = useLanguage();
   const { canAccessBook, isSubscribed, isTrial, daysRemaining } = useSubscription();
+  const unreadCount = useUnreadCount();
   const tk = useMemo(() => getTokens(isDark), [isDark]);
   const { fade, translateY } = useScreenEntry();
 
@@ -402,16 +404,35 @@ export default function LibraryScreen({ navigation, route }) {
               </Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Settings')}
-            activeOpacity={0.75}
-            hitSlop={4}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings', 'Settings')}
-            style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}
-          >
-            <ICONS.Settings color={tk.textPrimary} size={18} sw={2.25} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.75}
+              hitSlop={4}
+              accessibilityRole="button"
+              accessibilityLabel={unreadCount
+                ? t('notif_unread_a11y', 'Notifications, {n} unread').replace('{n}', String(unreadCount))
+                : t('notifications', 'Notifications')}
+              style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}
+            >
+              <ICONS.Bell color={tk.textPrimary} size={18} sw={2.25} />
+              {unreadCount > 0 && (
+                <View style={[s.bellBadge, { borderColor: tk.bg }]}>
+                  <Text style={s.bellBadgeTxt}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Settings')}
+              activeOpacity={0.75}
+              hitSlop={4}
+              accessibilityRole="button"
+              accessibilityLabel={t('settings', 'Settings')}
+              style={[s.iconBtn, { backgroundColor: tk.surfaceEl }]}
+            >
+              <ICONS.Settings color={tk.textPrimary} size={18} sw={2.25} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* COMPACT HERO — just a welcome line; the screen leads with action,
@@ -551,6 +572,9 @@ const s = StyleSheet.create({
   brand:        { fontSize:16, fontWeight:'900', letterSpacing:-0.3 },
   brandSub:     { fontSize:9.5, fontWeight:'800', letterSpacing:2, marginTop:2 },
   iconBtn:      { width:40, height:40, borderRadius:20, justifyContent:'center', alignItems:'center' },
+  bellBadge:    { position:'absolute', top:-3, right:-3, minWidth:18, height:18, borderRadius:9, paddingHorizontal:4,
+                  backgroundColor:'#EF4444', borderWidth:2, alignItems:'center', justifyContent:'center' },
+  bellBadgeTxt: { color:'#fff', fontSize:9.5, fontWeight:'900' },
 
   // Hero
   hero:       { paddingHorizontal: GUTTER, paddingTop: 14, paddingBottom: 22 },

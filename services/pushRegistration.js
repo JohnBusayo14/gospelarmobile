@@ -38,7 +38,7 @@ export async function registerForPush({ force = false } = {}) {
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(CONTENT_CHANNEL, {
-        name: 'New videos & book updates',
+        name: 'Gospelar updates & announcements',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 150, 250],
         lightColor: '#1A56DB',
