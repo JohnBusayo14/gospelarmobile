@@ -61,12 +61,7 @@ const PENDING_TTL_MS  = 6 * 60 * 60 * 1000;   // bank transfers can take a while
 const INIT_TIMEOUT_MS = 45_000;
 const EMAIL_RE        = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_PREMIUM = { price_kobo: 100000, days: 300 };
-// Online checkouts. Kora Pay is offered only when the backend has its key
-// (GET /api/payments/providers); its checkout shows every channel Kora has.
-const PROVIDERS = {
-  paystack: { id: 'paystack', label: 'Paystack', methods: 'Card · Bank transfer · USSD' },
-  korapay:  { id: 'korapay',  label: 'Kora Pay', methods: 'Card · Bank transfer · Pay with Bank' },
-};
+const PROVIDER        = { id: 'paystack', label: 'Paystack', methods: 'Card · Bank transfer · USSD' };
 
 const BROWSER_OPTS = {
   // MUST be true. false adds FLAG_ACTIVITY_NO_HISTORY on Android, which
@@ -516,17 +511,6 @@ export default function PaymentScreen({ navigation, route }) {
   // ── Bank transfer ────────────────────────────────────────────────────────
   // Load whether direct transfer is offered, and any transfer this account
   // already has in flight (so reopening the screen shows where it stands).
-  // Which online checkouts the server can take (Kora Pay appears once its
-  // key is set). Paystack is always offered.
-  const [liveProviders, setLiveProviders] = useState(['paystack']);
-  useEffect(() => {
-    let alive = true;
-    fetchJson('/api/payments/providers').then(({ ok, data }) => {
-      if (alive && ok && Array.isArray(data.providers)) setLiveProviders(['paystack', ...data.providers]);
-    });
-    return () => { alive = false; };
-  }, []);
-
   useEffect(() => {
     let alive = true;
     fetchJson('/api/payments/bank-transfer/info').then(({ ok, data }) => {
@@ -667,7 +651,7 @@ export default function PaymentScreen({ navigation, route }) {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         signal:  ctrl.signal,
-        body: JSON.stringify({ email: em, plan: PREMIUM_PLAN, category: 'all', provider: provider.id }),
+        body: JSON.stringify({ email: em, plan: PREMIUM_PLAN, category: 'all', provider: PROVIDER.id }),
       });
       data = await res.json().catch(() => ({}));
       ok   = data.status === 'success' && !!data.authorization_url && !!data.reference;
@@ -755,20 +739,6 @@ export default function PaymentScreen({ navigation, route }) {
     null;
   const transferAvailable = !!btInfo?.enabled;
   const usingTransfer     = transferAvailable && method === 'transfer';
-  const koraAvailable     = liveProviders.includes('korapay');
-  const provider          = koraAvailable && method === 'korapay' ? PROVIDERS.korapay : PROVIDERS.paystack;
-  const methodOptions = [
-    { id: 'card', Icon: ICONS.CreditCard,
-      title: t('pay_method_card', 'Card, USSD or bank app'),
-      sub:   t('pay_method_card_sub', 'Instant · secured by Paystack') },
-    koraAvailable && { id: 'korapay', Icon: ICONS.CreditCard,
-      title: t('pay_method_korapay', 'Card, bank transfer or Pay with Bank'),
-      sub:   t('pay_method_korapay_sub', 'Instant · secured by Kora Pay') },
-    transferAvailable && { id: 'transfer', Icon: ICONS.Landmark,
-      title: t('pay_method_transfer', 'Direct bank transfer'),
-      sub:   t('pay_method_transfer_sub', 'To our {bank} account · confirmed within a few hours')
-        .replace('{bank}', String(btInfo.bank_name || '').replace(/\s*MFB$/i, '')) },
-  ].filter(Boolean);
 
   const benefits = [
     { Icon: ICONS.EyeOff, text: t('premium_benefit_ads', 'No ads anywhere in the app') },
@@ -875,11 +845,19 @@ export default function PaymentScreen({ navigation, route }) {
               </>
             )}
 
-            {/* ── Pay with (when there is more than one way to pay) ───── */}
-            {methodOptions.length > 1 && (
+            {/* ── Pay with (only when direct transfer is switched on) ──── */}
+            {transferAvailable && (
               <>
                 <Text style={[st.sectionTitle, { color: tk.textSec }]}>{t('pay_section_method', 'Pay with')}</Text>
-                {methodOptions.map((m) => {
+                {[
+                  { id: 'card', Icon: ICONS.CreditCard,
+                    title: t('pay_method_card', 'Card, USSD or bank app'),
+                    sub:   t('pay_method_card_sub', 'Instant · secured by Paystack') },
+                  { id: 'transfer', Icon: ICONS.Landmark,
+                    title: t('pay_method_transfer', 'Direct bank transfer'),
+                    sub:   t('pay_method_transfer_sub', 'To our {bank} account · confirmed within a few hours')
+                      .replace('{bank}', String(btInfo.bank_name || '').replace(/\s*MFB$/i, '')) },
+                ].map((m) => {
                   const active = method === m.id;
                   return (
                     <TouchableOpacity
@@ -954,8 +932,8 @@ export default function PaymentScreen({ navigation, route }) {
                 {usingTransfer
                   ? t('bt_footer_note', 'Premium is switched on after we confirm your transfer')
                   : t('pay_secured_methods', 'Secured by {p} · {m}')
-                      .replace('{p}', provider.label)
-                      .replace('{m}', provider.methods)}
+                      .replace('{p}', PROVIDER.label)
+                      .replace('{m}', PROVIDER.methods)}
               </Text>
             </View>
           </View>
