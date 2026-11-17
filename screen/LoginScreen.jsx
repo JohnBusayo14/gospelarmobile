@@ -106,7 +106,7 @@ const inf = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main screen
 // ─────────────────────────────────────────────────────────────────────────────
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ navigation, route }) {
   const { isDark }  = useTheme();
   const { recheck } = useSubscription();
   const { t }       = useLanguage();
@@ -115,7 +115,8 @@ export default function LoginScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const hero = heroSize(width, height);
 
-  const [email,    setEmail]    = useState('');
+  // Coming back from a password reset: the email is passed along.
+  const [email,    setEmail]    = useState(String(route?.params?.email || ''));
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading,  setLoading]  = useState(false);
@@ -401,12 +402,7 @@ export default function LoginScreen({ navigation }) {
 
               {/* Forgot password */}
               <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    t('login_reset_title', 'Reset Password'),
-                    t('login_reset_msg', 'Contact your administrator to reset your password.')
-                  )
-                }
+                onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}
                 activeOpacity={0.7}
                 style={{ alignSelf: 'flex-end', marginBottom: 20, marginTop: -8 }}
               >

@@ -25,6 +25,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 // ── Auth screens (public) ─────────────────────────────────────────────────────
 import LoginScreen    from './screen/LoginScreen';
 import RegisterScreen from './screen/RegisterScreen';
+import ForgotPasswordScreen from './screen/ForgotPasswordScreen';
 import PaymentScreen  from './screen/PaymentScreen';
 
 // ── Main content screens (protected) ─────────────────────────────────────────
@@ -212,6 +213,7 @@ function AppNavigator() {
       {/* Auth — public, no guard */}
       <Stack.Screen name="Login"         component={LoginScreen} />
       <Stack.Screen name="Register"      component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="PaymentScreen" component={PaymentScreen} />
 
       {/* Library launcher — post-auth landing page, lists every book.
