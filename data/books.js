@@ -105,6 +105,18 @@ export const BOOKS = [
     routeParams: { bookSlug: 'church_hymnal', bookTitle: 'Church Hymnal' },
   },
   {
+    id:          'games',
+    title:       'Bible Games',
+    subtitle:    'Trivia · Word · Verses · Hymns',
+    description: 'Play Bible games, learn the Word and earn XP on the leaderboard.',
+    cover:       require('../assets/games.png'),
+    accent:      '#DB2777',
+    available:   true,
+    requiresSubscription: false,
+    route:       'GamesHub',
+    routeParams: undefined,
+  },
+  {
     id:          'teacher_manual',
     title:       'Teacher Manual',
     subtitle:    'Lesson plans + class notes',

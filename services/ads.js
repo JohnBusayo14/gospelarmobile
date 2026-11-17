@@ -34,11 +34,17 @@ try { GMA = require('react-native-google-mobile-ads'); } catch { GMA = null; }
 const ANDROID_UNITS = {
   banner:       'ca-app-pub-3190805229756882/2999966683',
   interstitial: 'ca-app-pub-3190805229756882/4121476662',
+  // Rewarded (Bible Games lifelines / hints). Empty until the AdMob unit is
+  // created — games then fall back to their free uses instead of ads.
+  rewarded:     '',
 };
 const REAL_BANNER_ID = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID
   || (Platform.OS === 'android' ? ANDROID_UNITS.banner : '');
 const REAL_INTERSTITIAL_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID
   || (Platform.OS === 'android' ? ANDROID_UNITS.interstitial : '');
+
+const REAL_REWARDED_ID = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID
+  || (Platform.OS === 'android' ? ANDROID_UNITS.rewarded : '');
 
 const adsAllowedByBuild = !!GMA && Platform.OS !== 'web' &&
   (__DEV__ || (!!REAL_BANNER_ID && !!REAL_INTERSTITIAL_ID));
@@ -47,6 +53,10 @@ export const bannerUnitId = () =>
   (__DEV__ || !REAL_BANNER_ID) ? GMA?.TestIds?.ADAPTIVE_BANNER : REAL_BANNER_ID;
 const interstitialUnitId = () =>
   (__DEV__ || !REAL_INTERSTITIAL_ID) ? GMA?.TestIds?.INTERSTITIAL : REAL_INTERSTITIAL_ID;
+
+// Rewarded ads need their own unit; a release without one simply has none.
+const rewardedUnitId = () =>
+  __DEV__ ? GMA?.TestIds?.REWARDED : REAL_REWARDED_ID;
 
 // ── Frequency policy ─────────────────────────────────────────────────────────
 const MIN_SESSIONS_BEFORE_ADS   = 2;          // none in the first 2 launches
@@ -75,6 +85,8 @@ const state = {
   isTeacher:   false,
   interstitial: null,
   interstitialLoaded: false,
+  rewarded:     null,
+  rewardedLoaded: false,
   listeners:   new Set(),
 };
 
@@ -112,6 +124,7 @@ export async function setAudience(category) {
     await applyRequestConfig();
     state.interstitialLoaded = false;
     loadInterstitial();             // reload under the new settings
+    loadRewarded();
     notify();                       // banners re-request under the new settings
   } catch {}
 }
@@ -131,6 +144,76 @@ function loadInterstitial() {
     ad.addAdEventListener(AdEventType.ERROR,  () => { state.interstitialLoaded = false; });
     ad.load();
   } catch { /* ad failures must never affect the app */ }
+}
+
+// ── Rewarded (opt-in: the player chooses to watch for a lifeline / hint) ─────
+function loadRewarded() {
+  if (!state.enabled || !GMA || !rewardedUnitId()) return;
+  try {
+    const { RewardedAd, RewardedAdEventType, AdEventType } = GMA;
+    const ad = RewardedAd.createForAdRequest(rewardedUnitId(), {
+      requestNonPersonalizedAdsOnly: state.childMode,
+    });
+    state.rewarded = ad;
+    state.rewardedLoaded = false;
+    ad.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      if (state.rewarded === ad) { state.rewardedLoaded = true; notify(); }
+    });
+    ad.addAdEventListener(AdEventType.ERROR, () => { if (state.rewarded === ad) state.rewardedLoaded = false; });
+    ad.load();
+  } catch { /* ad failures must never affect the app */ }
+}
+
+// True when a rewarded ad is loaded and this user may see ads at all.
+export const rewardedAvailable = () =>
+  state.enabled && !state.adFree && !state.isTeacher && !state.childMode &&
+  state.rewardedLoaded && !!state.rewarded;
+
+// Shows the loaded rewarded ad. Resolves true only if the user earned the
+// reward (watched to the end); false if closed early, not loaded or failed.
+export function showRewarded() {
+  if (!rewardedAvailable() || !GMA) return Promise.resolve(false);
+  const ad = state.rewarded;
+  const { RewardedAdEventType, AdEventType } = GMA;
+  return new Promise((resolve) => {
+    let earned = false;
+    let done = false;
+    const subs = [];
+    const finish = () => {
+      if (done) return;
+      done = true;
+      subs.forEach((u) => { try { u(); } catch {} });
+      state.rewardedLoaded = false;
+      if (state.rewarded === ad) loadRewarded();   // preload the next one
+      notify();
+      resolve(earned);
+    };
+    try {
+      subs.push(ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => { earned = true; }));
+      subs.push(ad.addAdEventListener(AdEventType.CLOSED, finish));
+      subs.push(ad.addAdEventListener(AdEventType.ERROR, finish));
+      ad.show().catch(finish);
+    } catch { finish(); }
+  });
+}
+
+// Interstitial between game levels / rounds. Same rules as the lesson one
+// (grace period, interval, never for children/teachers/Premium) except it
+// doesn't wait for 3 finished lessons. Never call it mid-question.
+export async function showGameInterstitial() {
+  if (!state.enabled || state.adFree || state.isTeacher || state.childMode) return false;
+  if (state.sessions <= MIN_SESSIONS_BEFORE_ADS) return false;
+  if (Date.now() - state.startedAt < SESSION_GRACE_MS) return false;
+  if (Date.now() - state.lastShownAt < state.intervalMs) return false;
+  if (!state.interstitialLoaded || !state.interstitial) return false;
+  try {
+    await state.interstitial.show();
+    state.lastShownAt = Date.now();
+    AsyncStorage.setItem(K_LAST, String(state.lastShownAt)).catch(() => {});
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ── Premium (ad-free) ────────────────────────────────────────────────────────
@@ -205,6 +288,7 @@ async function startSdk() {
     await mobileAds().initialize();
     state.enabled = true;
     loadInterstitial();
+    loadRewarded();
     notify();
   } catch (e) {
     console.warn('[Ads] init failed:', e?.message);
