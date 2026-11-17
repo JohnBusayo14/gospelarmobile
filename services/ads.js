@@ -25,8 +25,20 @@ import { API_BASE_URL } from './api';
 let GMA = null;
 try { GMA = require('react-native-google-mobile-ads'); } catch { GMA = null; }
 
-const REAL_BANNER_ID       = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || '';
-const REAL_INTERSTITIAL_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || '';
+// Gospelar's AdMob ad units (publisher pub-3190805229756882, Android app
+// ca-app-pub-3190805229756882~2326358894 — set in app.json). Unit IDs are
+// public (they ship inside every APK), so they live here as defaults: that
+// way EAS builds AND over-the-air updates carry them without any env setup.
+// EXPO_PUBLIC_ADMOB_* still override them. iOS has no AdMob app of its own
+// yet, so iOS release builds show no ads until its IDs are added here.
+const ANDROID_UNITS = {
+  banner:       'ca-app-pub-3190805229756882/2999966683',
+  interstitial: 'ca-app-pub-3190805229756882/4121476662',
+};
+const REAL_BANNER_ID = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID
+  || (Platform.OS === 'android' ? ANDROID_UNITS.banner : '');
+const REAL_INTERSTITIAL_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID
+  || (Platform.OS === 'android' ? ANDROID_UNITS.interstitial : '');
 
 const adsAllowedByBuild = !!GMA && Platform.OS !== 'web' &&
   (__DEV__ || (!!REAL_BANNER_ID && !!REAL_INTERSTITIAL_ID));
