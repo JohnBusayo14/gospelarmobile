@@ -85,7 +85,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3190805229756882~2326358894",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "iosAppId": "ca-app-pub-3190805229756882~1909611832",
           "userTrackingUsageDescription": "Gospelar uses this to show ads that are more relevant to you."
         }
       ]

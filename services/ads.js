@@ -29,22 +29,29 @@ try { GMA = require('react-native-google-mobile-ads'); } catch { GMA = null; }
 // ca-app-pub-3190805229756882~2326358894 — set in app.json). Unit IDs are
 // public (they ship inside every APK), so they live here as defaults: that
 // way EAS builds AND over-the-air updates carry them without any env setup.
-// EXPO_PUBLIC_ADMOB_* still override them. iOS has no AdMob app of its own
-// yet, so iOS release builds show no ads until its IDs are added here.
+// EXPO_PUBLIC_ADMOB_* still override them. An empty unit means that ad type
+// is off on that platform (a release never falls back to test ads).
 const ANDROID_UNITS = {
   banner:       'ca-app-pub-3190805229756882/2999966683',
   interstitial: 'ca-app-pub-3190805229756882/4121476662',
-  // Rewarded (Bible Games lifelines / hints). Empty until the AdMob unit is
-  // created — games then fall back to their free uses instead of ads.
+  // Rewarded (Bible Games lifelines / hints).
+  rewarded:     'ca-app-pub-3190805229756882/9172291660',
+};
+// iOS AdMob app ca-app-pub-3190805229756882~1909611832 (set in app.json).
+// Its units are not created yet — iOS release builds show no ads until they
+// are added here.
+const IOS_UNITS = {
+  banner:       '',
+  interstitial: '',
   rewarded:     '',
 };
-const REAL_BANNER_ID = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID
-  || (Platform.OS === 'android' ? ANDROID_UNITS.banner : '');
-const REAL_INTERSTITIAL_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID
-  || (Platform.OS === 'android' ? ANDROID_UNITS.interstitial : '');
+const UNITS = Platform.OS === 'android' ? ANDROID_UNITS
+  : Platform.OS === 'ios' ? IOS_UNITS
+  : { banner: '', interstitial: '', rewarded: '' };
 
-const REAL_REWARDED_ID = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID
-  || (Platform.OS === 'android' ? ANDROID_UNITS.rewarded : '');
+const REAL_BANNER_ID = process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || UNITS.banner;
+const REAL_INTERSTITIAL_ID = process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || UNITS.interstitial;
+const REAL_REWARDED_ID = process.env.EXPO_PUBLIC_ADMOB_REWARDED_ID || UNITS.rewarded;
 
 const adsAllowedByBuild = !!GMA && Platform.OS !== 'web' &&
   (__DEV__ || (!!REAL_BANNER_ID && !!REAL_INTERSTITIAL_ID));
