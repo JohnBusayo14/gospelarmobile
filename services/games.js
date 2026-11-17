@@ -136,3 +136,22 @@ export const shuffle = (arr) => {
 
 // Games only know four content languages; anything else plays in English.
 export const gameLang = (lang) => (['en', 'yo', 'ig', 'ha'].includes(lang) ? lang : 'en');
+
+// ── Rewards (XP → vouchers) ──────────────────────────────────────────────────
+// Errors carry .reason ('not_enough_xp' | 'out_of_stock' | 'limit_reached' |
+// 'account_too_new') and the server's plain-English message.
+const rewardError = (e) => {
+  const err = new Error(e?.response?.data?.error || e?.message || 'Something went wrong.');
+  err.reason = e?.response?.data?.reason;
+  err.status = e?.response?.status;
+  return err;
+};
+export async function fetchRewards() {
+  try { return (await client.get('/api/rewards')).data; } catch (e) { throw rewardError(e); }
+}
+export async function redeemReward(id) {
+  try { return (await client.post(`/api/rewards/${id}/redeem`)).data; } catch (e) { throw rewardError(e); }
+}
+export async function fetchMyVouchers() {
+  try { return (await client.get('/api/rewards/mine')).data.redemptions || []; } catch (e) { throw rewardError(e); }
+}

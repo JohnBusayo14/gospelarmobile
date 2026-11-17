@@ -3,6 +3,8 @@
 // four app languages. gt(lang, key, vars) → string; English is the fallback.
 // Translations: please have a native speaker review before wide release.
 
+import EXTRA from './strings2';
+
 const S = {
   en: {
     hub_title: 'Bible Games',
@@ -225,6 +227,9 @@ const S = {
     ad_unavailable: 'Babu talla a shirye yanzu. Sake gwadawa nan ba da daɗewa ba.',
   },
 };
+
+// Merge the extra tables into the main one.
+for (const l of Object.keys(EXTRA)) Object.assign(S[l], EXTRA[l]);
 
 export function gt(lang, key, vars) {
   let s = (S[lang] && S[lang][key]) || S.en[key] || key;

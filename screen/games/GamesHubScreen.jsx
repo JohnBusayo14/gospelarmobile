@@ -19,9 +19,9 @@ const ACCENT = '#DB2777';
 
 const GAMES = [
   { id: 'trivia', route: 'TriviaGame',  title: 'g_trivia', sub: 'g_trivia_sub', color: '#DB2777', icon: 'Trophy', ready: true  },
-  { id: 'word',   route: 'DailyWord',   title: 'g_word',   sub: 'g_word_sub',   color: '#0EA5E9', icon: 'Book',   ready: false },
-  { id: 'verse',  route: 'VerseBuilder',title: 'g_verse',  sub: 'g_verse_sub',  color: '#10B981', icon: 'Quote',  ready: false },
-  { id: 'hymn',   route: 'FinishHymn',  title: 'g_hymn',   sub: 'g_hymn_sub',   color: '#7C3AED', icon: 'Music',  ready: false },
+  { id: 'word',   route: 'DailyWord',   title: 'g_word',   sub: 'g_word_sub',   color: '#0EA5E9', icon: 'Book',   ready: true  },
+  { id: 'verse',  route: 'VerseBuilder',title: 'g_verse',  sub: 'g_verse_sub',  color: '#10B981', icon: 'Quote',  ready: true  },
+  { id: 'hymn',   route: 'FinishHymn',  title: 'g_hymn',   sub: 'g_hymn_sub',   color: '#7C3AED', icon: 'Music',  ready: true  },
 ];
 
 export default function GamesHubScreen({ navigation }) {
@@ -74,6 +74,16 @@ export default function GamesHubScreen({ navigation }) {
           <Text style={s.cap}>{T('hub_daily_cap', { n: cap })}</Text>
         </LinearGradient>
 
+        <TouchableOpacity onPress={() => navigation.navigate('Rewards')} activeOpacity={0.85} accessibilityRole="button"
+          style={[s.rewardsBar, { backgroundColor: tk.surface, borderColor: ACCENT + '55' }]}>
+          <Text style={{ fontSize: 26 }}>🎁</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.h3, { color: tk.textPrimary }]}>{T('rw_title')}</Text>
+            <Text style={[type.caption, { color: tk.textMuted, marginTop: 2 }]}>{T('rw_hub')}</Text>
+          </View>
+          <ICONS.ChevronRight color={ACCENT} size={20} />
+        </TouchableOpacity>
+
         {GAMES.map((g) => {
           const Icon = ICONS[g.icon] || ICONS.Star;
           return (
@@ -117,6 +127,7 @@ const s = StyleSheet.create({
   statLbl: { color: 'rgba(255,255,255,0.85)', fontSize: 11.5, fontWeight: '700', marginTop: 2 },
   statDiv: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.3)' },
   cap: { color: 'rgba(255,255,255,0.8)', fontSize: 11.5, fontWeight: '600', marginTop: 12, textAlign: 'center' },
+  rewardsBar: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: radii.xl, borderWidth: 1.5, marginBottom: space.lg, minHeight: 68 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: radii.xl, borderWidth: 1, marginBottom: space.md, minHeight: 80 },
   cardIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },

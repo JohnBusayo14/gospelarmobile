@@ -33,6 +33,10 @@ import BookReaderScreen        from './screen/BookReaderScreen';
 import HymnBookScreen          from './screen/HymnBookScreen';
 import GamesHubScreen          from './screen/games/GamesHubScreen';
 import TriviaGameScreen        from './screen/games/TriviaGameScreen';
+import DailyWordScreen         from './screen/games/DailyWordScreen';
+import VerseBuilderScreen      from './screen/games/VerseBuilderScreen';
+import FinishHymnScreen        from './screen/games/FinishHymnScreen';
+import RewardsScreen           from './screen/games/RewardsScreen';
 import BibleScreen             from './screen/BibleScreen';
 import BookPaywallScreen       from './screen/BookPaywallScreen';
 import HomeScreen              from './screen/Homescreen';
@@ -224,6 +228,10 @@ function AppNavigator() {
       <Stack.Screen name="HymnBook" component={HymnBookScreen} />
       <Stack.Screen name="GamesHub" component={GamesHubScreen} />
       <Stack.Screen name="TriviaGame" component={TriviaGameScreen} />
+      <Stack.Screen name="DailyWord" component={DailyWordScreen} />
+      <Stack.Screen name="VerseBuilder" component={VerseBuilderScreen} />
+      <Stack.Screen name="FinishHymn" component={FinishHymnScreen} />
+      <Stack.Screen name="Rewards" component={RewardsScreen} />
       <Stack.Screen name="Bible" component={BibleScreen} />
 
       {/* Core content — subscription guarded */}

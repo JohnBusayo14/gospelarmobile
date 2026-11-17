@@ -17,6 +17,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { getTokens, type, space, radii } from '../../theme/tokens';
 import { ICONS } from '../../components/icons';
+import Confetti from '../../components/games/Confetti';
 import RewardButton, { useRewardGate, gateCaption } from '../../components/games/RewardButton';
 import { gt } from '../../data/games/strings';
 import { LEVELS, QUESTIONS_PER_LEVEL, PASS_MARK, buildLevel, spareQuestion } from '../../data/games/trivia';
@@ -286,6 +287,7 @@ export default function TriviaGameScreen({ navigation }) {
             <Text style={[type.h3, { color: tk.textSec }]}>{T('back_levels')}</Text>
           </TouchableOpacity>
         </ScrollView>
+        {result.passed && <Confetti />}
       </SafeAreaView>
     );
   }
