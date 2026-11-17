@@ -38,12 +38,10 @@ const ANDROID_UNITS = {
   rewarded:     'ca-app-pub-3190805229756882/9172291660',
 };
 // iOS AdMob app ca-app-pub-3190805229756882~1909611832 (set in app.json).
-// Its units are not created yet — iOS release builds show no ads until they
-// are added here.
 const IOS_UNITS = {
-  banner:       '',
-  interstitial: '',
-  rewarded:     '',
+  banner:       'ca-app-pub-3190805229756882/1078179222',
+  interstitial: 'ca-app-pub-3190805229756882/9981317161',
+  rewarded:     'ca-app-pub-3190805229756882/7818188256',
 };
 const UNITS = Platform.OS === 'android' ? ANDROID_UNITS
   : Platform.OS === 'ios' ? IOS_UNITS
