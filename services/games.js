@@ -149,8 +149,8 @@ const rewardError = (e) => {
 export async function fetchRewards() {
   try { return (await client.get('/api/rewards')).data; } catch (e) { throw rewardError(e); }
 }
-export async function redeemReward(id) {
-  try { return (await client.post(`/api/rewards/${id}/redeem`)).data; } catch (e) { throw rewardError(e); }
+export async function redeemReward(id, bank) {
+  try { return (await client.post(`/api/rewards/${id}/redeem`, bank || {})).data; } catch (e) { throw rewardError(e); }
 }
 export async function fetchMyVouchers() {
   try { return (await client.get('/api/rewards/mine')).data.redemptions || []; } catch (e) { throw rewardError(e); }

@@ -5,7 +5,7 @@
 // under "My vouchers".
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Share, RefreshControl, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Share, RefreshControl, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -35,6 +35,9 @@ export default function RewardsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [won, setWon] = useState(null);            // redemption just made
+  const [bankFor, setBankFor] = useState(null);    // cash reward being requested
+  const [bank, setBank] = useState({ bank_name: '', account_number: '', account_name: '' });
+  const [sent, setSent] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -50,6 +53,7 @@ export default function RewardsScreen({ navigation }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const redeem = (item) => {
+    if (item.kind === 'cash') { setBankFor(item); return; }
     Alert.alert(
       T('rw_confirm_title', { t: item.title }),
       T('rw_confirm_body', { n: item.xp_cost }),
@@ -71,6 +75,22 @@ export default function RewardsScreen({ navigation }) {
     );
   };
 
+  const submitBank = () => {
+    const item = bankFor;
+    Alert.alert(T('rw_confirm_title', { t: item.title }), T('rw_confirm_body', { n: item.xp_cost }), [
+      { text: T('rw_cancel'), style: 'cancel' },
+      { text: T('rw_submit'), onPress: async () => {
+        setBusyId(item.id);
+        try {
+          await redeemReward(item.id, bank);
+          setBankFor(null); setSent(true); setBank({ bank_name: '', account_number: '', account_name: '' });
+          await load();
+        } catch (e) { Alert.alert(e.message); }
+        setBusyId(null);
+      } },
+    ]);
+  };
+
   const shareCode = (c) => Share.share({ message: `${c.title}${c.value_label ? ` (${c.value_label})` : ''}: ${c.code}` }).catch(() => {});
 
   const header = (
@@ -87,6 +107,62 @@ export default function RewardsScreen({ navigation }) {
     return (
       <SafeAreaView style={[s.root, { backgroundColor: tk.bg }]}>{header}
         <View style={s.center}><Text style={[type.body, { color: tk.textSec, textAlign: 'center', paddingHorizontal: 32 }]}>{T('rw_signin')}</Text></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (sent) {
+    return (
+      <SafeAreaView style={[s.root, { backgroundColor: tk.bg }]}>
+        {header}
+        <View style={s.center}>
+          <Text style={{ fontSize: 60 }}>⏳</Text>
+          <Text style={[type.h1, { color: ACCENT, marginTop: space.md, textAlign: 'center' }]}>{T('rw_sent')}</Text>
+          <Text style={[type.body, { color: tk.textSec, textAlign: 'center', marginTop: 8, paddingHorizontal: 32 }]}>{T('rw_sent_body')}</Text>
+          <TouchableOpacity style={[s.primary, { backgroundColor: ACCENT, alignSelf: 'stretch', marginHorizontal: space.xl, marginTop: space.xl }]} onPress={() => { setSent(false); setTab('mine'); }} accessibilityRole="button">
+            <Text style={s.primaryTxt}>{T('rw_vouchers')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (bankFor) {
+    const field = (key, label, extra = {}) => (
+      <View style={{ marginBottom: space.md }}>
+        <Text style={[type.caption, { color: tk.textSec, marginBottom: 6 }]}>{label}</Text>
+        <TextInput
+          value={bank[key]} onChangeText={(v) => setBank((b) => ({ ...b, [key]: v }))}
+          placeholderTextColor={tk.textMuted} autoCorrect={false}
+          style={[s.input, { color: tk.textPrimary, backgroundColor: tk.surface, borderColor: tk.border }]}
+          {...extra}
+        />
+      </View>
+    );
+    const ready = bank.bank_name.trim().length > 1 && /^\d{10}$/.test(bank.account_number.replace(/\s+/g, '')) && bank.account_name.trim().length > 2;
+    return (
+      <SafeAreaView style={[s.root, { backgroundColor: tk.bg }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={s.top}>
+          <TouchableOpacity onPress={() => setBankFor(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Back" style={[s.iconBtn, { backgroundColor: tk.surface }]}>
+            <ICONS.ArrowLeft color={tk.textPrimary} size={20} />
+          </TouchableOpacity>
+          <Text style={[type.h3, { color: tk.textPrimary, flex: 1, textAlign: 'center' }]} numberOfLines={1}>{bankFor.title}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ padding: space.xl }} keyboardShouldPersistTaps="handled">
+            <Text style={[type.h2, { color: tk.textPrimary }]}>{T('rw_bank_title')}</Text>
+            <Text style={[type.sub, { color: tk.textSec, marginTop: 6, marginBottom: space.lg }]}>{T('rw_bank_hint')}</Text>
+            {field('bank_name', T('rw_bank_name'), { autoCapitalize: 'words' })}
+            {field('account_number', T('rw_acct_no'), { keyboardType: 'number-pad', maxLength: 12 })}
+            {field('account_name', T('rw_acct_name'), { autoCapitalize: 'words' })}
+            <TouchableOpacity disabled={!ready || busyId === bankFor.id} onPress={submitBank} accessibilityRole="button"
+              style={[s.primary, { backgroundColor: ready ? ACCENT : tk.surfaceEl, marginTop: space.md }]}>
+              {busyId === bankFor.id ? <ActivityIndicator color="#fff" /> : <Text style={[s.primaryTxt, { color: ready ? '#fff' : tk.textMuted }]}>{T('rw_submit')} · {bankFor.xp_cost.toLocaleString()} XP</Text>}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -148,7 +224,8 @@ export default function RewardsScreen({ navigation }) {
                 <Text style={s.emoji}>{it.emoji || '🎁'}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[type.h3, { color: tk.textPrimary }]}>{it.title}</Text>
-                  {!!it.value_label && <Text style={[type.caption, { color: ACCENT, marginTop: 2 }]}>{it.value_label}</Text>}
+                  {!!it.value_label && <Text style={[type.caption, { color: ACCENT, marginTop: 2 }]}>{it.kind === 'cash' ? `${T('rw_cash')} · ` : ''}{it.value_label}</Text>}
+                  {it.already_redeemed > 0 && <Text style={[type.caption, { color: '#10B981', marginTop: 2 }]}>✓ {T('rw_redeemed_n', { n: it.already_redeemed })}</Text>}
                   {!!it.description && <Text style={[type.sub, { color: tk.textMuted, marginTop: 4 }]} numberOfLines={3}>{it.description}</Text>}
                   <Text style={[type.caption, { color: tk.textSec, marginTop: 6 }]}>
                     {it.xp_cost.toLocaleString()} XP{short && it.in_stock ? ` · ${T('rw_need', { n: (it.xp_cost - balance).toLocaleString() })}` : ''}
@@ -171,12 +248,23 @@ export default function RewardsScreen({ navigation }) {
           <View key={m.id} style={[s.card, { backgroundColor: tk.surface, borderColor: tk.border, alignItems: 'flex-start' }]}>
             <View style={{ flex: 1 }}>
               <Text style={[type.h3, { color: tk.textPrimary }]}>{m.title}{m.value_label ? ` · ${m.value_label}` : ''}</Text>
-              <Text selectable style={[s.codeSm, { color: tk.textPrimary }]}>{m.code}</Text>
+              {m.kind === 'cash' ? (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={{ color: m.status === 'paid' ? '#10B981' : m.status === 'rejected' ? '#DC2626' : '#F59E0B', fontWeight: '800', fontSize: 13.5 }}>
+                    {m.status === 'paid' ? T('rw_st_paid') : m.status === 'rejected' ? T('rw_st_rejected') : T('rw_st_pending')}
+                  </Text>
+                  <Text style={[type.caption, { color: tk.textSec, marginTop: 3 }]}>{m.bank_name} · {m.account_number}</Text>
+                  {!!m.paid_ref && <Text style={[type.caption, { color: tk.textSec }]}>{T('rw_ref', { r: m.paid_ref })}</Text>}
+                  {!!m.admin_note && <Text style={[type.caption, { color: tk.textSec }]}>{m.admin_note}</Text>}
+                </View>
+              ) : <Text selectable style={[s.codeSm, { color: tk.textPrimary }]}>{m.code}</Text>}
               <Text style={[type.caption, { color: tk.textMuted, marginTop: 4 }]}>{new Date(m.created_at).toLocaleDateString()} · {m.xp_cost} XP</Text>
             </View>
-            <TouchableOpacity onPress={() => shareCode(m)} hitSlop={10} accessibilityRole="button" accessibilityLabel={T('rw_copy')}>
-              <ICONS.Share color={ACCENT} size={20} />
-            </TouchableOpacity>
+            {m.kind !== 'cash' && (
+              <TouchableOpacity onPress={() => shareCode(m)} hitSlop={10} accessibilityRole="button" accessibilityLabel={T('rw_copy')}>
+                <ICONS.Share color={ACCENT} size={20} />
+              </TouchableOpacity>
+            )}
           </View>
         ))}
       </ScrollView>
@@ -199,6 +287,7 @@ const s = StyleSheet.create({
   redeem: { minWidth: 86, minHeight: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   codeBox: { alignSelf: 'stretch', padding: 22, borderRadius: radii.xl, borderWidth: 2, borderStyle: 'dashed', alignItems: 'center', marginVertical: space.xl },
   code: { fontSize: 26, fontWeight: '900', letterSpacing: 1.5, textAlign: 'center' },
+  input: { minHeight: 52, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, fontSize: 16, fontWeight: '600' },
   codeSm: { fontSize: 16, fontWeight: '800', letterSpacing: 1, marginTop: 6 },
   primary: { alignSelf: 'stretch', minHeight: 54, borderRadius: 16, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   primaryTxt: { color: '#fff', fontSize: 16, fontWeight: '800' },
