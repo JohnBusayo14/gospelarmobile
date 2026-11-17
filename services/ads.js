@@ -32,8 +32,8 @@ try { GMA = require('react-native-google-mobile-ads'); } catch { GMA = null; }
 // EXPO_PUBLIC_ADMOB_* still override them. An empty unit means that ad type
 // is off on that platform (a release never falls back to test ads).
 const ANDROID_UNITS = {
-  banner:       'ca-app-pub-3190805229756882/2999966683',
-  interstitial: 'ca-app-pub-3190805229756882/4121476662',
+  banner:       'ca-app-pub-3190805229756882/9789745477',
+  interstitial: 'ca-app-pub-3190805229756882/7887130158',
   // Rewarded (Bible Games lifelines / hints).
   rewarded:     'ca-app-pub-3190805229756882/9172291660',
 };
